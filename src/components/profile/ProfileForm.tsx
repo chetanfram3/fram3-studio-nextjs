@@ -8,7 +8,6 @@ import {
   Button,
   Paper,
   Alert,
-  CircularProgress,
   Snackbar,
   Typography,
   Dialog,
@@ -19,11 +18,13 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  CircularProgress,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { Error as ErrorIcon, Save as SaveIcon } from "@mui/icons-material";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { useProfileForm } from "@/hooks/useProfileForm";
+import { LoadingAnimation } from "@/components/common/LoadingAnimation";
 import ProfileBanner from "./ProfileBanner";
 import BasicInfoSection from "./BasicInfoSection";
 import AddressSection from "./AddressSection";
@@ -86,24 +87,26 @@ export default function ProfileForm() {
     setShowErrorDialog(false);
   };
 
+  // Show loading animation while loading profile
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="400px"
-      >
-        <CircularProgress sx={{ color: "primary.main" }} size={60} />
-      </Box>
+      <Container maxWidth="lg">
+        <LoadingAnimation message="Loading your profile..." minHeight="80vh" />
+      </Container>
     );
   }
 
+  // Show error if profile failed to load
   if (!profile) {
     return (
       <Container maxWidth="lg">
         <Box sx={{ py: 4 }}>
-          <Alert severity="error">Failed to load profile</Alert>
+          <Alert
+            severity="error"
+            sx={{ borderRadius: `${brand.borderRadius}px` }}
+          >
+            Failed to load profile. Please refresh the page or contact support.
+          </Alert>
         </Box>
       </Container>
     );
@@ -222,7 +225,7 @@ export default function ProfileForm() {
               }
             />
 
-            {/* Sticky Save Button */}
+            {/* Sticky Save Button with loading state */}
             <Box
               sx={{
                 mt: 3,
