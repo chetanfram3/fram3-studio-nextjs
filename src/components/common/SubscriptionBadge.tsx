@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Tooltip, Chip } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useAuthStore } from "@/store/authStore";
 import { SubscriptionLevels, AccessLevels } from "@/config/constants";
@@ -16,6 +17,7 @@ type SubscriptionLevel =
   (typeof SubscriptionLevels)[keyof typeof SubscriptionLevels];
 
 export const SubscriptionBadge = () => {
+  const theme = useTheme();
   const { claims } = useAuthStore();
 
   const subscription = (claims?.subscription || "starter") as SubscriptionLevel;
@@ -54,7 +56,7 @@ export const SubscriptionBadge = () => {
         </Box>
       </Tooltip>
 
-      {/* Admin Badge */}
+      {/* Admin Badge - Now fully theme-aware */}
       {isAdmin && (
         <Chip
           icon={<AdminPanelSettingsIcon />}
@@ -64,16 +66,30 @@ export const SubscriptionBadge = () => {
             .join(" ")}
           size="small"
           sx={{
-            bgcolor: "background.default",
+            bgcolor: "background.paper",
             color: "primary.main",
-            border: (theme) => `1px solid ${theme.palette.grey[300]}`,
+            border: 1,
+            borderColor: "divider",
+            transition: theme.transitions.create(
+              ["background-color", "border-color", "transform"],
+              { duration: theme.transitions.duration.short }
+            ),
+            "&:hover": {
+              bgcolor:
+                theme.palette.mode === "dark"
+                  ? "rgba(255, 255, 255, 0.08)"
+                  : "rgba(0, 0, 0, 0.04)",
+              borderColor: "primary.main",
+              transform: "translateY(-1px)",
+            },
             "& .MuiChip-icon": {
-              color: (theme) => theme.palette.grey[700],
+              color: "primary.main",
               fontSize: "1rem",
             },
             "& .MuiChip-label": {
               fontSize: "0.75rem",
-              fontWeight: 500,
+              fontWeight: 600,
+              color: "text.primary",
             },
           }}
         />
