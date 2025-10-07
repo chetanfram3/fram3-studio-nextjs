@@ -215,7 +215,7 @@ export default function MetadataSection({
                 sx={{
                   borderRadius: `${brand.borderRadius}px`,
                   borderColor: "primary.main",
-                  borderWidth: 2,
+                  borderWidth: 1,
                   color: "primary.main",
                   fontWeight: 500,
                   px: 2,
