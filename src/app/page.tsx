@@ -1,103 +1,553 @@
-import Image from "next/image";
+// src/app/page.tsx
+'use client';
+
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Grid,
+  Card,
+  CardContent,
+  IconButton,
+  useTheme,
+  useMediaQuery,
+  Chip,
+  Stack,
+} from '@mui/material';
+import {
+  RocketLaunch as RocketIcon,
+  Code as CodeIcon,
+  Palette as PaletteIcon,
+  Speed as SpeedIcon,
+  Security as SecurityIcon,
+  CloudQueue as CloudIcon,
+  ArrowForward as ArrowIcon,
+  GitHub as GitHubIcon,
+} from '@mui/icons-material';
+import { getCurrentBrand } from '@/config/brandConfig';
+import { BrandLogo, BrandSwitcher } from '@/components/branding';
+import { useThemeMode } from '@/theme';
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const theme = useTheme();
+  const { isDarkMode, toggleTheme } = useThemeMode();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const brand = getCurrentBrand();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const features = [
+    {
+      icon: <RocketIcon fontSize="large" />,
+      title: 'Lightning Fast',
+      description:
+        'Built with Next.js 15 and optimized for performance with server components and streaming.',
+    },
+    {
+      icon: <CodeIcon fontSize="large" />,
+      title: 'Developer Friendly',
+      description:
+        'TypeScript, ESLint, and Prettier configured out of the box for the best DX.',
+    },
+    {
+      icon: <PaletteIcon fontSize="large" />,
+      title: 'Multi-Brand Theming',
+      description:
+        'Switch between brands seamlessly with our advanced theming system supporting light and dark modes.',
+    },
+    {
+      icon: <SpeedIcon fontSize="large" />,
+      title: 'Highly Performant',
+      description:
+        'Optimized bundle sizes, code splitting, and lazy loading for blazing fast load times.',
+    },
+    {
+      icon: <SecurityIcon fontSize="large" />,
+      title: 'Type Safe',
+      description:
+        'Full TypeScript support with strict mode enabled for maximum type safety.',
+    },
+    {
+      icon: <CloudIcon fontSize="large" />,
+      title: 'Cloud Ready',
+      description:
+        'Deploy anywhere - Vercel, AWS, Google Cloud, or your own infrastructure.',
+    },
+  ];
+
+  const stats = [
+    { value: '100%', label: 'Type Safe' },
+    { value: '3+', label: 'Brand Themes' },
+    { value: '2', label: 'Theme Modes' },
+    { value: '∞', label: 'Possibilities' },
+  ];
+
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        color: 'text.primary',
+      }}
+    >
+      {/* Header */}
+      <Box
+        component="header"
+        sx={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 'sticky',
+          bgcolor: 'background.default',
+          borderBottom: 1,
+          borderColor: 'divider',
+          backdropFilter: 'blur(10px)',
+          backgroundColor: isDarkMode
+            ? 'rgba(0, 0, 0, 0.8)'
+            : 'rgba(255, 255, 255, 0.8)',
+        }}
+      >
+        <Container maxWidth="xl">
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              py: 2,
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <BrandLogo showText={!isMobile} size="medium" />
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {!isMobile && <BrandSwitcher />}
+              <IconButton
+                onClick={toggleTheme}
+                sx={{
+                  bgcolor: 'secondary.main',
+                  color: 'secondary.contrastText',
+                  '&:hover': {
+                    bgcolor: 'secondary.dark',
+                  },
+                }}
+              >
+                {isDarkMode ? '🌞' : '🌙'}
+              </IconButton>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* Hero Section */}
+      <Box
+        sx={{
+          position: 'relative',
+          overflow: 'hidden',
+          py: { xs: 8, md: 16 },
+          background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.secondary.main}15 100%)`,
+        }}
+      >
+        <Container maxWidth="xl">
+          <Box
+            sx={{
+              textAlign: 'center',
+              position: 'relative',
+              zIndex: 1,
+            }}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+            {/* Development Badge */}
+            {process.env.NODE_ENV === 'development' && (
+              <Chip
+                label="Development Preview"
+                color="warning"
+                size="small"
+                sx={{ mb: 3 }}
+              />
+            )}
+
+            {/* Main Heading */}
+            <Typography
+              variant="h1"
+              sx={{
+                fontSize: { xs: '2.5rem', md: '4rem', lg: '5rem' },
+                fontWeight: 800,
+                mb: 3,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontFamily: brand.fonts.heading,
+                lineHeight: 1.2,
+              }}
+            >
+              {brand.name}
+            </Typography>
+
+            {/* Tagline */}
+            <Typography
+              variant="h4"
+              sx={{
+                mb: 4,
+                color: 'text.secondary',
+                fontWeight: 400,
+                maxWidth: '800px',
+                mx: 'auto',
+                fontSize: { xs: '1.25rem', md: '1.75rem' },
+              }}
+            >
+              {brand.tagline}
+            </Typography>
+
+            {/* Description */}
+            <Typography
+              variant="body1"
+              sx={{
+                mb: 6,
+                color: 'text.secondary',
+                maxWidth: '600px',
+                mx: 'auto',
+                fontSize: { xs: '1rem', md: '1.125rem' },
+                lineHeight: 1.8,
+              }}
+            >
+              Experience the power of multi-brand theming with seamless
+              switching between brands and theme modes. Built with Next.js 15,
+              Material-UI, and Tailwind CSS.
+            </Typography>
+
+            {/* CTA Buttons */}
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              justifyContent="center"
+              sx={{ mb: 8 }}
+            >
+              <Button
+                variant="contained"
+                size="large"
+                endIcon={<ArrowIcon />}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1.125rem',
+                  fontWeight: 600,
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                  '&:hover': {
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.dark} 100%)`,
+                  },
+                }}
+              >
+                Get Started
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                startIcon={<GitHubIcon />}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontSize: '1.125rem',
+                  fontWeight: 600,
+                }}
+              >
+                View on GitHub
+              </Button>
+            </Stack>
+
+            {/* Stats */}
+            <Grid container spacing={4} justifyContent="center">
+              {stats.map((stat, index) => (
+                <Grid item xs={6} sm={3} key={index}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography
+                      variant="h3"
+                      sx={{
+                        fontWeight: 800,
+                        color: 'primary.main',
+                        mb: 1,
+                      }}
+                    >
+                      {stat.value}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'text.secondary' }}
+                    >
+                      {stat.label}
+                    </Typography>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </Container>
+      </Box>
+
+      {/* Features Section */}
+      <Container maxWidth="xl" sx={{ py: { xs: 8, md: 12 } }}>
+        <Box sx={{ textAlign: 'center', mb: 8 }}>
+          <Typography
+            variant="h2"
+            sx={{
+              fontWeight: 700,
+              mb: 2,
+              fontSize: { xs: '2rem', md: '3rem' },
+              fontFamily: brand.fonts.heading,
+            }}
+          >
+            Powerful Features
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{
+              color: 'text.secondary',
+              maxWidth: '600px',
+              mx: 'auto',
+            }}
+          >
+            Everything you need to build modern, scalable applications with
+            multi-brand support
+          </Typography>
+        </Box>
+
+        <Grid container spacing={4}>
+          {features.map((feature, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                    boxShadow: `0 12px 40px ${theme.palette.primary.main}40`,
+                  },
+                }}
+              >
+                <CardContent sx={{ flexGrow: 1, p: 4 }}>
+                  <Box
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: `${brand.borderRadius}px`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                      color: 'white',
+                      mb: 3,
+                    }}
+                  >
+                    {feature.icon}
+                  </Box>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 600,
+                      mb: 2,
+                      fontFamily: brand.fonts.heading,
+                    }}
+                  >
+                    {feature.title}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: 'text.secondary', lineHeight: 1.8 }}
+                  >
+                    {feature.description}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+
+      {/* Brand Showcase Section */}
+      <Box
+        sx={{
+          py: { xs: 8, md: 12 },
+          background: `linear-gradient(135deg, ${theme.palette.secondary.main}10 0%, ${theme.palette.primary.main}10 100%)`,
+        }}
+      >
+        <Container maxWidth="xl">
+          <Box sx={{ textAlign: 'center', mb: 8 }}>
+            <Typography
+              variant="h2"
+              sx={{
+                fontWeight: 700,
+                mb: 2,
+                fontSize: { xs: '2rem', md: '3rem' },
+                fontFamily: brand.fonts.heading,
+              }}
+            >
+              Multi-Brand Theming
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                color: 'text.secondary',
+                maxWidth: '600px',
+                mx: 'auto',
+              }}
+            >
+              Switch between brands instantly and see the entire application
+              adapt to the new brand identity
+            </Typography>
+          </Box>
+
+          <Card
+            sx={{
+              maxWidth: '800px',
+              mx: 'auto',
+              p: { xs: 3, md: 6 },
+              textAlign: 'center',
+            }}
+          >
+            <Typography variant="h4" sx={{ mb: 4, fontWeight: 600 }}>
+              Current Brand: <strong>{brand.name}</strong>
+            </Typography>
+
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} md={6}>
+                <Box
+                  sx={{
+                    p: 3,
+                    borderRadius: `${brand.borderRadius}px`,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                    color: 'white',
+                  }}
+                >
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Primary Gradient
+                  </Typography>
+                  <Typography variant="body2">
+                    {theme.palette.primary.main} →{' '}
+                    {theme.palette.secondary.main}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box
+                  sx={{
+                    p: 3,
+                    borderRadius: `${brand.borderRadius}px`,
+                    border: 2,
+                    borderColor: 'primary.main',
+                  }}
+                >
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Border Radius
+                  </Typography>
+                  <Typography variant="body2">
+                    {brand.borderRadius}px
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+
+            <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
+              To switch brands permanently, update your{' '}
+              <code
+                style={{
+                  background:
+                    theme.palette.mode === 'dark' ? '#333' : '#f5f5f5',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                }}
+              >
+                .env.local
+              </code>{' '}
+              file and restart the server.
+            </Typography>
+
+            {process.env.NODE_ENV === 'development' && (
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                💡 Use the Brand Switcher in the header to preview different
+                brands in development mode
+              </Typography>
+            )}
+          </Card>
+        </Container>
+      </Box>
+
+      {/* CTA Section */}
+      <Container maxWidth="xl" sx={{ py: { xs: 8, md: 12 } }}>
+        <Card
+          sx={{
+            p: { xs: 4, md: 8 },
+            textAlign: 'center',
+            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+            color: 'white',
+          }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          <Typography
+            variant="h3"
+            sx={{
+              fontWeight: 700,
+              mb: 3,
+              fontSize: { xs: '2rem', md: '3rem' },
+              fontFamily: brand.fonts.heading,
+            }}
+          >
+            Ready to Get Started?
+          </Typography>
+          <Typography
+            variant="h6"
+            sx={{ mb: 4, opacity: 0.9, maxWidth: '600px', mx: 'auto' }}
+          >
+            Join thousands of developers building amazing applications with our
+            multi-brand theming system
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            endIcon={<ArrowIcon />}
+            sx={{
+              px: 6,
+              py: 2,
+              fontSize: '1.25rem',
+              bgcolor: 'white',
+              color: theme.palette.primary.main,
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.9)',
+              },
+            }}
+          >
+            Start Building Now
+          </Button>
+        </Card>
+      </Container>
+
+      {/* Footer */}
+      <Box
+        component="footer"
+        sx={{
+          py: 6,
+          borderTop: 1,
+          borderColor: 'divider',
+          bgcolor: isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.02)',
+        }}
+      >
+        <Container maxWidth="xl">
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+            }}
+          >
+            <BrandLogo showText={true} size="small" />
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              © 2025 {brand.name}. All rights reserved.
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Built with Next.js, Material-UI & Tailwind CSS
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
+    </Box>
   );
 }

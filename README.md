@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FRAM3 Studio - Next.js Application
+
+Modern Next.js 15 application with full theming and branding support.
+
+## Features
+
+- ⚡ Next.js 15 with App Router
+- 🎨 Tailwind CSS + Material-UI
+- 🔥 Firebase Authentication
+- 🎭 Multi-brand/Multi-tenant Support
+- 📱 Fully Responsive
+- 🌗 Light/Dark Mode
+- 🔒 Type-safe with TypeScript
+- 🎯 React Query for Data Fetching
+- 🧩 Zustand for State Management
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js >= 18.0.0
+- npm or yarn
+
+### Installation
+
+1. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Set up environment variables:
+```bash
+cp .env.example .env.local
+# Edit .env.local with your values
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Run the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Open [http://localhost:3000](http://localhost:3000)
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/                 # Next.js App Router
+├── components/          # React Components
+│   ├── common/         # Shared components
+│   ├── layout/         # Layout components
+│   └── branding/       # Brand-specific components
+├── config/             # Configuration files
+│   └── brandConfig.ts  # Brand configurations
+├── lib/                # Library configurations
+│   └── firebase.ts     # Firebase setup
+├── hooks/              # Custom React hooks
+├── store/              # Zustand stores
+├── utils/              # Utility functions
+├── types/              # TypeScript types
+└── styles/             # Global styles
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Brand Configuration
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Change the brand by setting the environment variable:
 
-## Deploy on Vercel
+```bash
+NEXT_PUBLIC_BRAND_KEY=fram3  # or acme, or any custom brand
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+See `src/config/brandConfig.ts` for brand definitions.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript compiler
+
+## Environment Variables
+
+See `.env.example` for all required environment variables.
+
+## Documentation
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+- [Material-UI](https://mui.com/)
+- [Firebase](https://firebase.google.com/docs)
+
+## License
+
+ISC
