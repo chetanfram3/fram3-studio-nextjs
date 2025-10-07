@@ -30,18 +30,22 @@ export const components: Components<Theme> = {
   },
   MuiButton: {
     styleOverrides: {
-      root: {
+      root: ({ theme }) => ({
         borderRadius: brand.borderRadius,
         textTransform: 'none',
         fontWeight: 600,
-      },
+        fontFamily: brand.fonts.heading,
+      }),
       contained: ({ theme }) => ({
         boxShadow: 'none',
         '&:hover': {
           boxShadow: 'none',
-          backgroundColor: theme.palette.mode === 'light' 
-            ? theme.palette.grey[900] 
-            : theme.palette.grey[100],
+        },
+      }),
+      // Text variant for links (Register Now, etc.)
+      text: ({ theme }) => ({
+        '&:hover': {
+          backgroundColor: 'rgba(255, 215, 0, 0.08)', // Gold with transparency
         },
       }),
     },
@@ -49,7 +53,7 @@ export const components: Components<Theme> = {
   MuiCard: {
     styleOverrides: {
       root: {
-        borderRadius: brand.borderRadius * 1.5, // Slightly larger for cards
+        borderRadius: brand.borderRadius * 1.5,
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
       },
     },
@@ -57,7 +61,7 @@ export const components: Components<Theme> = {
   MuiPaper: {
     styleOverrides: {
       root: {
-        borderRadius: brand.borderRadius * 1.5, // Slightly larger for papers
+        borderRadius: brand.borderRadius * 1.5,
       },
     },
   },
@@ -74,6 +78,13 @@ export const components: Components<Theme> = {
     styleOverrides: {
       root: {
         borderRadius: brand.borderRadius,
+      },
+    },
+  },
+  MuiDialog: {
+    styleOverrides: {
+      paper: {
+        borderRadius: brand.borderRadius * 1.5,
       },
     },
   },

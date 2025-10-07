@@ -1,3 +1,4 @@
+// src/theme/palette.ts
 import { PaletteOptions, PaletteColor } from '@mui/material/styles';
 
 interface CommonPalette {
@@ -14,12 +15,16 @@ interface CommonPalette {
   };
 }
 
+/**
+ * Common palette colors shared across themes
+ * Yellow is FRAM3's signature color
+ */
 const commonPalette: CommonPalette = {
   yellow: {
-    main: '#FFD700',
-    light: '#FFE44D',
-    dark: '#FFC000',
-    contrastText: '#000000'
+    main: '#FFD700',      // Gold - FRAM3's primary color
+    light: '#FFE44D',     // Light Gold
+    dark: '#FFC000',      // Dark Gold
+    contrastText: '#000000' // Black text on gold
   },
   pastel: {
     pink: {
@@ -73,27 +78,31 @@ const commonPalette: CommonPalette = {
   },
 };
 
+/**
+ * FRAM3 Light Mode Palette
+ * Gold/Black color scheme for light backgrounds
+ */
 export const lightPalette: PaletteOptions & CommonPalette = {
   mode: 'light',
   primary: {
-    main: "#1E88E5",
-    light: "#64B5F6",
-    dark: "#1565C0",
-    contrastText: '#FFFFFF'
+    main: '#FFD700',           // Gold - Primary brand color
+    light: '#FFE44D',          // Light Gold
+    dark: '#FFC000',           // Dark Gold - for borders
+    contrastText: '#000000'    // Black text on gold
   },
   secondary: {
-    main: "#FFA000",
-    light: "#FFB74D",
-    dark: "#FF8F00",
-    contrastText: "#000000",
+    main: '#000000',           // Black - Secondary brand color
+    light: '#424242',          // Dark Gray
+    dark: '#000000',           // Pure Black
+    contrastText: '#FFFFFF',   // White text on black
   },
   background: {
-    default: '#FFFFFF',
-    paper: '#F5F5F5'
+    default: '#FFFFFF',        // White background
+    paper: '#F5F5F5'          // Light gray surface
   },
   text: {
-    primary: '#000000',
-    secondary: '#424242'
+    primary: '#000000',        // Black text
+    secondary: '#424242'       // Dark gray text
   },
   divider: 'rgba(0, 0, 0, 0.12)',
   error: {
@@ -119,24 +128,33 @@ export const lightPalette: PaletteOptions & CommonPalette = {
   ...commonPalette,
 };
 
+/**
+ * FRAM3 Dark Mode Palette
+ * Gold/White color scheme for dark backgrounds
+ */
 export const darkPalette: PaletteOptions & CommonPalette = {
   mode: 'dark',
   primary: {
-    main: '#FFFFFF',
-    light: '#FFFFFF',
-    dark: '#E0E0E0',
-    contrastText: '#000000'
+    main: '#FFD700',           // Gold - buttons, borders, links
+    light: '#FFE44D',          // Light Gold - hover effects, glow
+    dark: '#FFC000',           // Dark Gold - darker borders
+    contrastText: '#000000'    // Black text on gold button
   },
-  secondary: commonPalette.yellow,
+  secondary: {
+    main: '#FFFFFF',           // White - secondary text, inverse colors
+    light: '#FFFFFF',          // Pure White
+    dark: '#E0E0E0',           // Light Gray
+    contrastText: '#000000',   // Black text on white
+  },
   background: {
-    default: '#000000',
-    paper: '#121212'
+    default: '#000000',        // Pure black background
+    paper: '#121212'          // Very dark gray for cards/surfaces
   },
   text: {
-    primary: '#FFFFFF',
-    secondary: '#B3B3B3'
+    primary: '#FFFFFF',        // White text
+    secondary: '#B3B3B3'       // Light gray secondary text
   },
-  divider: 'rgba(255, 255, 255, 0.12)',
+  divider: 'rgba(255, 215, 0, 0.2)', // Subtle gold divider
   error: {
     main: '#F44336',
     light: '#E57373',
@@ -160,6 +178,9 @@ export const darkPalette: PaletteOptions & CommonPalette = {
   ...commonPalette,
 };
 
+/**
+ * Pastel colors for light mode
+ */
 interface PastelColors {
   pink: string;
   peach: string;
@@ -182,6 +203,9 @@ export const pastelLight: PastelColors = {
   sky: "#C4E3FF",
 };
 
+/**
+ * Pastel colors for dark mode
+ */
 export const pastelDark: PastelColors = {
   pink: "#8C6F75",
   peach: "#8C7A66",

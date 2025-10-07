@@ -47,7 +47,7 @@ export default function LogoHeader() {
           fontSize: { xs: "2.5rem", sm: "3rem", md: "4rem" },
           fontWeight: "normal",
           textTransform: "uppercase",
-          color: "primary.main",
+          color: "secondary.main",
           textAlign: "center",
           letterSpacing: "0.05em",
         }}
@@ -61,7 +61,7 @@ export default function LogoHeader() {
           variant="subtitle1"
           sx={{
             mt: 1,
-            color: "text.secondary",
+            color: "primary.main",
             textAlign: "center",
             fontFamily: brand.fonts.body,
           }}

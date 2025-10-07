@@ -61,44 +61,44 @@ export interface BrandConfig {
 export const brands: Record<string, BrandConfig> = {
   /**
    * FRAM3 Studio - Default Brand
-   * Futuristic tech aesthetic with blue/gold palette
+   * Futuristic tech aesthetic with gold/black palette
    */
   fram3: {
     id: 'fram3',
     name: 'FRAM3 STUDIO',
     tagline: 'From Words to Worlds',
     logo: {
-      light: '/logos/fram3/signin.png',  // Updated to use signin.png
-      dark: '/logos/fram3/signin.png',   // Using same image for both modes
+      light: '/logos/fram3/signin.png',
+      dark: '/logos/fram3/signin.png',
       favicon: '/logos/fram3/favicon.ico',
-      signin: '/logos/fram3/signin.png', // Specific signin page logo
+      signin: '/logos/fram3/signin.png',
     },
     colors: {
       light: {
-        primary: '#1E88E5',           // Blue 600
-        primaryLight: '#64B5F6',      // Blue 400
-        primaryDark: '#1565C0',       // Blue 800
-        secondary: '#FFA000',         // Amber 700
-        secondaryLight: '#FFCA28',    // Amber 400
-        secondaryDark: '#FF8F00',     // Amber 800
+        primary: '#FFD700',           // Gold
+        primaryLight: '#FFE44D',      // Light Gold
+        primaryDark: '#FFC000',       // Dark Gold
+        secondary: '#000000',         // Black
+        secondaryLight: '#424242',    // Dark Gray
+        secondaryDark: '#000000',     // Pure Black
         background: '#FFFFFF',        // White
         surface: '#F5F5F5',           // Light Gray
         text: '#000000',              // Black
         textSecondary: '#424242',     // Dark Gray
-        accent: '#D4AF37',            // Gold
+        accent: '#FFC000',            // Dark Gold
       },
       dark: {
-        primary: '#FFFFFF',           // White
-        primaryLight: '#FFFFFF',      // White
-        primaryDark: '#E0E0E0',       // Light Gray
-        secondary: '#FFD700',         // Gold
-        secondaryLight: '#FFE44D',    // Light Gold
-        secondaryDark: '#FFC000',     // Dark Gold
+        primary: '#FFD700',           // Gold
+        primaryLight: '#FFE44D',      // Light Gold
+        primaryDark: '#FFC000',       // Dark Gold
+        secondary: '#FFFFFF',         // White
+        secondaryLight: '#FFFFFF',    // Pure White
+        secondaryDark: '#E0E0E0',     // Light Gray
         background: '#000000',        // Black
         surface: '#121212',           // Dark Surface
         text: '#FFFFFF',              // White
         textSecondary: '#B3B3B3',     // Light Gray
-        accent: '#FFCB05',            // Bright Gold
+        accent: '#FFD700',            // Gold
       },
     },
     fonts: {
