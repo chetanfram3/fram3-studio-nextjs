@@ -1,7 +1,7 @@
 // src/components/profile/GSTINDetails.tsx
 "use client";
 
-import { TextField, Box, Grid, Typography, Alert } from "@mui/material";
+import { TextField, Box, Typography, Alert } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useState, useEffect } from "react";
 import { getCurrentBrand } from "@/config/brandConfig";
@@ -114,8 +114,15 @@ export default function GSTINDetails({
         </Alert>
       )}
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6}>
+      {/* Using Box with grid display instead of Grid component */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+          gap: 3,
+        }}
+      >
+        <Box>
           <TextField
             fullWidth
             label="GSTIN (Optional)"
@@ -134,8 +141,8 @@ export default function GSTINDetails({
               },
             }}
           />
-        </Grid>
-        <Grid item xs={12} sm={6}>
+        </Box>
+        <Box>
           <TextField
             fullWidth
             label={`Company Name${gstin ? " *" : " (Optional)"}`}
@@ -153,8 +160,8 @@ export default function GSTINDetails({
               },
             }}
           />
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* GSTIN Info Box */}
       {!gstin && (
