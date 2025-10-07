@@ -1,5 +1,5 @@
 // src/components/profile/ProfileForm.tsx
-'use client';
+"use client";
 
 import React, { useEffect, useRef } from "react";
 import {
@@ -20,9 +20,9 @@ import {
   ListItemIcon,
   ListItemText,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { Error as ErrorIcon, Save as SaveIcon } from "@mui/icons-material";
-import { useTheme } from '@mui/material/styles';
-import { getCurrentBrand } from '@/config/brandConfig';
+import { getCurrentBrand } from "@/config/brandConfig";
 import { useProfileForm } from "@/hooks/useProfileForm";
 import ProfileBanner from "./ProfileBanner";
 import BasicInfoSection from "./BasicInfoSection";
@@ -69,7 +69,7 @@ export default function ProfileForm() {
     const errors = validateProfile(profile);
     if (errors.length > 0) {
       setValidationErrors(errors);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -94,7 +94,7 @@ export default function ProfileForm() {
         alignItems="center"
         minHeight="400px"
       >
-        <CircularProgress sx={{ color: 'primary.main' }} size={60} />
+        <CircularProgress sx={{ color: "primary.main" }} size={60} />
       </Box>
     );
   }
@@ -122,20 +122,20 @@ export default function ProfileForm() {
           sx={{
             p: { xs: 2, md: 4 },
             mt: 8,
-            backgroundColor: 'background.default',
+            backgroundColor: "background.default",
             borderRadius: `${brand.borderRadius * 1.5}px`,
             border: 2,
-            borderColor: 'primary.dark',
+            borderColor: "primary.dark",
           }}
         >
           <Box component="form" ref={formRef} onSubmit={handleFormSubmit}>
             {error && (
-              <Alert 
-                severity="error" 
-                sx={{ 
-                  mb: 3, 
-                  position: "sticky", 
-                  top: 0, 
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  position: "sticky",
+                  top: 0,
                   zIndex: 1000,
                   borderRadius: `${brand.borderRadius}px`,
                 }}
@@ -224,40 +224,43 @@ export default function ProfileForm() {
 
             {/* Sticky Save Button */}
             <Box
-              sx={{ 
-                mt: 3, 
-                mb: 2, 
-                display: "flex", 
+              sx={{
+                mt: 3,
+                mb: 2,
+                display: "flex",
                 justifyContent: "flex-end",
                 position: "sticky",
                 bottom: 16,
-                backgroundColor: 'background.default',
+                backgroundColor: "background.default",
                 padding: 2,
                 borderRadius: `${brand.borderRadius}px`,
                 boxShadow: theme.shadows[4],
                 zIndex: 10,
                 border: 1,
-                borderColor: 'divider',
+                borderColor: "divider",
               }}
             >
               <Button
                 type="submit"
                 variant="contained"
                 disabled={isUpdating}
-                startIcon={isUpdating ? <CircularProgress size={20} /> : <SaveIcon />}
+                startIcon={
+                  isUpdating ? <CircularProgress size={20} /> : <SaveIcon />
+                }
                 sx={{
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
                   fontWeight: 600,
                   px: 4,
                   py: 1.5,
                   borderRadius: `${brand.borderRadius}px`,
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
+                  fontFamily: brand.fonts.heading,
+                  "&:hover": {
+                    bgcolor: "primary.dark",
                   },
-                  '&:disabled': {
-                    bgcolor: 'action.disabledBackground',
-                    color: 'action.disabled',
+                  "&:disabled": {
+                    bgcolor: "action.disabledBackground",
+                    color: "action.disabled",
                   },
                 }}
               >
@@ -273,29 +276,31 @@ export default function ProfileForm() {
         </Paper>
 
         {/* Error Dialog */}
-        <Dialog 
-          open={showErrorDialog} 
+        <Dialog
+          open={showErrorDialog}
           onClose={handleCloseErrorDialog}
           maxWidth="sm"
           fullWidth
           PaperProps={{
-            sx: { 
-              bgcolor: 'background.paper',
+            sx: {
+              bgcolor: "background.paper",
               borderRadius: `${brand.borderRadius * 1.5}px`,
               border: 2,
-              borderColor: 'error.main',
-            }
+              borderColor: "error.main",
+            },
           }}
         >
-          <DialogTitle sx={{ 
-            bgcolor: 'error.main', 
-            color: 'error.contrastText',
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            fontFamily: brand.fonts.heading,
-            fontWeight: 600,
-          }}>
+          <DialogTitle
+            sx={{
+              bgcolor: "error.main",
+              color: "error.contrastText",
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              fontFamily: brand.fonts.heading,
+              fontWeight: 600,
+            }}
+          >
             <ErrorIcon />
             Form Validation Errors
           </DialogTitle>
@@ -303,16 +308,18 @@ export default function ProfileForm() {
             <Typography variant="body2" sx={{ mb: 2 }}>
               Please correct the following issues before saving:
             </Typography>
-            <List sx={{ 
-              bgcolor: 'background.default', 
-              borderRadius: `${brand.borderRadius}px`,
-              border: 1,
-              borderColor: 'error.light'
-            }}>
+            <List
+              sx={{
+                bgcolor: "background.default",
+                borderRadius: `${brand.borderRadius}px`,
+                border: 1,
+                borderColor: "error.light",
+              }}
+            >
               {validationErrors.map((err, index) => (
                 <ListItem key={index}>
                   <ListItemIcon sx={{ minWidth: 36 }}>
-                    <ErrorIcon sx={{ color: 'error.main' }} fontSize="small" />
+                    <ErrorIcon sx={{ color: "error.main" }} fontSize="small" />
                   </ListItemIcon>
                   <ListItemText primary={err} />
                 </ListItem>
@@ -320,14 +327,14 @@ export default function ProfileForm() {
             </List>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button 
-              onClick={handleCloseErrorDialog} 
+            <Button
+              onClick={handleCloseErrorDialog}
               variant="contained"
-              sx={{ 
-                bgcolor: 'error.main',
-                '&:hover': {
-                  bgcolor: 'error.dark',
-                }
+              sx={{
+                bgcolor: "error.main",
+                "&:hover": {
+                  bgcolor: "error.dark",
+                },
               }}
             >
               OK
@@ -340,21 +347,21 @@ export default function ProfileForm() {
           open={showSuccess}
           autoHideDuration={6000}
           onClose={() => setShowSuccess(false)}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
-          <Alert 
-            onClose={() => setShowSuccess(false)} 
+          <Alert
+            onClose={() => setShowSuccess(false)}
             severity="success"
             sx={{
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
+              bgcolor: "primary.main",
+              color: "primary.contrastText",
               fontWeight: 600,
-              fontSize: '1rem',
+              fontSize: "1rem",
               borderRadius: `${brand.borderRadius}px`,
               boxShadow: theme.shadows[4],
-              '& .MuiAlert-icon': {
-                color: 'primary.contrastText',
-              }
+              "& .MuiAlert-icon": {
+                color: "primary.contrastText",
+              },
             }}
           >
             Profile updated successfully!

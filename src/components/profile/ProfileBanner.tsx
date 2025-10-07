@@ -1,8 +1,8 @@
 // src/components/profile/ProfileBanner.tsx
-'use client';
+"use client";
 
 import { Box, Avatar, Paper } from "@mui/material";
-import { getCurrentBrand } from '@/config/brandConfig';
+import { getCurrentBrand } from "@/config/brandConfig";
 
 interface ProfileBannerProps {
   banner?: string;
@@ -27,7 +27,7 @@ export default function ProfileBanner({
           overflow: "hidden",
           height: { xs: 150, md: 200 },
           border: 2,
-          borderColor: 'primary.dark',
+          borderColor: "primary.dark",
         }}
       >
         <Box
@@ -46,13 +46,16 @@ export default function ProfileBanner({
       </Paper>
 
       <Avatar
-        src={photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=FFD700&color=000`}
+        src={
+          photoURL ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=FFD700&color=000`
+        }
         alt={displayName}
         sx={{
           width: { xs: 100, md: 120 },
           height: { xs: 100, md: 120 },
           border: 4,
-          borderColor: 'primary.main',
+          borderColor: "primary.main",
           position: "absolute",
           bottom: { xs: -50, md: -60 },
           left: { xs: "50%", sm: 40 },

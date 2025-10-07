@@ -1,9 +1,9 @@
 // src/components/profile/BasicInfoSection.tsx
-'use client';
+"use client";
 
 import { TextField, Typography, Box } from "@mui/material";
 import { UserProfile } from "@/types/profile";
-import { getCurrentBrand } from '@/config/brandConfig';
+import { getCurrentBrand } from "@/config/brandConfig";
 import EmailVerificationStatus from "./EmailVerificationStatus";
 
 interface BasicInfoSectionProps {
@@ -19,22 +19,24 @@ export default function BasicInfoSection({
 
   return (
     <Box sx={{ mb: 4 }}>
-      <Typography 
-        variant="h6" 
+      <Typography
+        variant="h6"
         gutterBottom
         sx={{
           fontFamily: brand.fonts.heading,
-          color: 'primary.main',
+          color: "primary.main",
           fontWeight: 600,
         }}
       >
         Basic Information
       </Typography>
-      <Box sx={{ 
-        display: 'grid', 
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-        gap: 3
-      }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+          gap: 3,
+        }}
+      >
         <Box>
           <TextField
             fullWidth
@@ -44,9 +46,9 @@ export default function BasicInfoSection({
               onUpdate(["extendedInfo", "details", "firstName"], e.target.value)
             }
             sx={{
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: `${brand.borderRadius}px`,
-              }
+              },
             }}
           />
         </Box>
@@ -59,9 +61,9 @@ export default function BasicInfoSection({
               onUpdate(["extendedInfo", "details", "lastName"], e.target.value)
             }
             sx={{
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: `${brand.borderRadius}px`,
-              }
+              },
             }}
           />
         </Box>
@@ -72,23 +74,23 @@ export default function BasicInfoSection({
             value={profile.displayName}
             onChange={(e) => onUpdate(["displayName"], e.target.value)}
             sx={{
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: `${brand.borderRadius}px`,
-              }
+              },
             }}
           />
         </Box>
-        <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
+        <Box sx={{ gridColumn: { xs: "span 1", sm: "span 2" } }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <TextField 
-              fullWidth 
-              label="Email" 
-              value={profile.email} 
-              disabled 
+            <TextField
+              fullWidth
+              label="Email"
+              value={profile.email}
+              disabled
               sx={{
-                '& .MuiOutlinedInput-root': {
+                "& .MuiOutlinedInput-root": {
                   borderRadius: `${brand.borderRadius}px`,
-                }
+                },
               }}
             />
             <EmailVerificationStatus isVerified={profile.emailVerified} />
@@ -98,25 +100,25 @@ export default function BasicInfoSection({
           <TextField
             fullWidth
             label="Phone"
-            value={profile.phoneNumber || ''}
+            value={profile.phoneNumber || ""}
             onChange={(e) => onUpdate(["phoneNumber"], e.target.value)}
             sx={{
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: `${brand.borderRadius}px`,
-              }
+              },
             }}
           />
         </Box>
-        <Box sx={{ gridColumn: { xs: 'span 1', sm: 'span 2' } }}>
+        <Box sx={{ gridColumn: { xs: "span 1", sm: "span 2" } }}>
           <TextField
             fullWidth
             label="Profile Picture URL"
             value={profile.photoURL}
             onChange={(e) => onUpdate(["photoURL"], e.target.value)}
             sx={{
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: `${brand.borderRadius}px`,
-              }
+              },
             }}
           />
         </Box>
