@@ -1,36 +1,60 @@
-'use client';
-
 import { create } from 'zustand';
-import { AuthState } from '@/types/auth';
-import { User as FirebaseUser } from 'firebase/auth';
+import { persist } from 'zustand/middleware';
+import { User } from 'firebase/auth';
 
-/**
- * Global authentication store
- * Manages user authentication state across the application
- */
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  loading: true,
-  error: null,
-  profileLoaded: false,
-  
-  setUser: (user: FirebaseUser | null) => 
-    set({ user }),
-  
-  setLoading: (loading: boolean) => 
-    set({ loading }),
-  
-  setError: (error: string | null) => 
-    set({ error }),
-  
-  setProfileLoaded: (loaded: boolean) => 
-    set({ profileLoaded: loaded }),
-  
-  reset: () => 
-    set({
+interface TokenClaims {
+  access_level: string;
+  subscription: string;
+  is_enabled: boolean;
+}
+
+interface AuthState {
+  // Auth state
+  user: User | null;
+  claims: TokenClaims | null;
+  loading: boolean;
+  error: string | null;
+  profileLoaded: boolean;
+
+  // Actions
+  setUser: (user: User | null) => void;
+  setClaims: (claims: TokenClaims | null) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  setProfileLoaded: (loaded: boolean) => void;
+  logout: () => void;
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      // Initial state
       user: null,
-      loading: false,
+      claims: null,
+      loading: true,
       error: null,
       profileLoaded: false,
+
+      // Actions
+      setUser: (user) => set({ user }),
+      setClaims: (claims) => set({ claims }),
+      setLoading: (loading) => set({ loading }),
+      setError: (error) => set({ error }),
+      setProfileLoaded: (loaded) => set({ profileLoaded: loaded }),
+      logout: () => set({
+        user: null,
+        claims: null,
+        profileLoaded: false,
+        error: null
+      }),
     }),
-}));
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        // Only persist user and claims, not loading/error states
+        user: state.user,
+        claims: state.claims,
+      }),
+    }
+  )
+);

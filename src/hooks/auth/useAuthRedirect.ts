@@ -1,18 +1,21 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from './useAuth';
+import { useTokenClaims } from './useTokenClaims';
 import logger from '@/utils/logger';
 
-/**
- * Hook to handle authentication-based redirects
- */
-export function useAuthRedirect(options?: {
+interface UseAuthRedirectOptions {
   requireAuth?: boolean;
   redirectTo?: string;
   redirectIfAuthenticated?: string;
-}) {
+}
+
+/**
+ * Hook to handle authentication-based redirects with token claims support
+ */
+export function useAuthRedirect(options?: UseAuthRedirectOptions) {
   const {
     requireAuth = false,
     redirectTo = '/signin',
@@ -23,16 +26,22 @@ export function useAuthRedirect(options?: {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  // Automatically extract and store token claims
+  useTokenClaims();
 
   useEffect(() => {
     // Wait for initialization
     if (!initialized || loading) {
+      setIsRedirecting(false);
       return;
     }
 
     // Redirect unauthenticated users to sign in
     if (requireAuth && !user) {
       logger.debug('User not authenticated, redirecting to:', redirectTo);
+      setIsRedirecting(true);
       const returnUrl = `${redirectTo}?from=${encodeURIComponent(pathname)}`;
       router.push(returnUrl);
       return;
@@ -40,11 +49,17 @@ export function useAuthRedirect(options?: {
 
     // Redirect authenticated users away from auth pages
     if (!requireAuth && user && profileLoaded) {
-      const from = searchParams?.get('from');
+      logger.debug('User authenticated, redirecting from auth page');
+      setIsRedirecting(true);
+      const from = searchParams?.get('from') || searchParams?.get('returnUrl');
       const destination = from || redirectIfAuthenticated;
-      logger.debug('User authenticated, redirecting to:', destination);
+      logger.debug('Redirecting to:', destination);
       router.push(destination);
+      return;
     }
+
+    // No redirect needed
+    setIsRedirecting(false);
   }, [
     user,
     loading,
@@ -59,28 +74,10 @@ export function useAuthRedirect(options?: {
   ]);
 
   return {
-    isRedirecting: (requireAuth && !user) || (!requireAuth && !!user && profileLoaded),
+    isRedirecting,
     user,
     loading,
+    initialized,
+    profileLoaded,
   };
-}
-
-/**
- * Hook specifically for protected routes
- */
-export function useProtectedRoute(redirectTo = '/signin') {
-  return useAuthRedirect({
-    requireAuth: true,
-    redirectTo,
-  });
-}
-
-/**
- * Hook specifically for auth pages (signin, register, etc.)
- */
-export function useAuthPage(redirectIfAuthenticated = '/dashboard') {
-  return useAuthRedirect({
-    requireAuth: false,
-    redirectIfAuthenticated,
-  });
 }

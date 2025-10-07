@@ -5,6 +5,21 @@
  */
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
+export const SubscriptionLevels = {
+  STARTER: 'starter',
+  PRO: 'pro',
+  PREMIUM: 'premium',
+  ULTRA: 'ultra',
+  ENTERPRISE: 'enterprise',
+} as const;
+
+export const AccessLevels = {
+  USER: 'user',
+  ADMIN: 'admin',
+  TEAM_ADMIN: 'team_admin',
+  SUPER_ADMIN: 'super_admin',
+} as const;
+
 /**
  * Firebase configuration
  */

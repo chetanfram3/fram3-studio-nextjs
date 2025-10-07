@@ -13,41 +13,41 @@ import logger from '@/utils/logger';
  * Checks backend profile existence
  */
 export function useAuth() {
-  const { 
-    user, 
-    loading, 
-    error, 
-    profileLoaded, 
-    setUser, 
-    setLoading, 
-    setProfileLoaded, 
-    setError 
+  const {
+    user,
+    loading,
+    error,
+    profileLoaded,
+    setUser,
+    setLoading,
+    setProfileLoaded,
+    setError
   } = useAuthStore();
 
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     logger.debug('Setting up auth state listener');
-    
+
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser: User | null) => {
         try {
           logger.debug('Auth state changed:', firebaseUser?.email || 'null');
-          
+
           setUser(firebaseUser);
-          
+
           if (firebaseUser) {
             // User is signed in
             logger.debug('User authenticated, checking profile...');
-            
+
             try {
               // Get fresh token
               const idToken = await firebaseUser.getIdToken(true);
-              
+
               // Check if profile exists in backend
               const profileExists = await checkUserProfile(idToken);
-              
+
               if (profileExists) {
                 logger.debug('Profile loaded successfully');
                 setProfileLoaded(true);
@@ -68,7 +68,7 @@ export function useAuth() {
             setProfileLoaded(false);
             setError(null);
           }
-          
+
           setLoading(false);
           setInitialized(true);
         } catch (error) {
@@ -93,10 +93,10 @@ export function useAuth() {
     };
   }, [setUser, setLoading, setProfileLoaded, setError]);
 
-  return { 
-    user, 
-    loading, 
-    error, 
+  return {
+    user,
+    loading,
+    error,
     profileLoaded,
     initialized,
   };
