@@ -26,8 +26,6 @@ export default function ProfileBanner({
           borderRadius: `${brand.borderRadius * 1.5}px`,
           overflow: "hidden",
           height: { xs: 150, md: 200 },
-          border: 2,
-          borderColor: "primary.dark",
         }}
       >
         <Box
@@ -54,7 +52,7 @@ export default function ProfileBanner({
         sx={{
           width: { xs: 100, md: 120 },
           height: { xs: 100, md: 120 },
-          border: 4,
+          border: 2,
           borderColor: "primary.main",
           position: "absolute",
           bottom: { xs: -50, md: -60 },

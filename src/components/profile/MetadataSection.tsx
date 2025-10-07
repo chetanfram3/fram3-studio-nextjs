@@ -32,11 +32,8 @@ export default function MetadataSection({
     <Box
       sx={{
         mb: 4,
-        border: 2,
         borderRadius: `${brand.borderRadius * 1.5}px`,
         p: 3,
-        borderColor: "primary.main",
-        bgcolor: "background.paper",
       }}
     >
       <Typography

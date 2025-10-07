@@ -127,7 +127,7 @@ export default function ProfileForm() {
             mt: 8,
             backgroundColor: "background.default",
             borderRadius: `${brand.borderRadius * 1.5}px`,
-            border: 2,
+            border: 1,
             borderColor: "primary.dark",
           }}
         >
