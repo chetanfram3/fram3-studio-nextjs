@@ -66,7 +66,7 @@ export const brands: Record<string, BrandConfig> = {
   fram3: {
     id: 'fram3',
     name: 'FRAM3 STUDIO',
-    tagline: 'Building the Future of Digital Innovation',
+    tagline: 'From Words to Worlds',
     logo: {
       light: '/logos/fram3/signin.png',  // Updated to use signin.png
       dark: '/logos/fram3/signin.png',   // Using same image for both modes
