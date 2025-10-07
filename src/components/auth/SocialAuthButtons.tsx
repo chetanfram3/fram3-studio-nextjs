@@ -1,19 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { IconButton, Stack, Tooltip } from '@mui/material';
+import { useState } from "react";
+import { IconButton, Stack, Tooltip } from "@mui/material";
 import {
   Google as GoogleIcon,
   Facebook as FacebookIcon,
   X as TwitterIcon,
-} from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
+} from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
 import {
   handleGoogleSignIn,
   handleFacebookSignIn,
   handleTwitterSignIn,
-} from '@/services';
-import logger from '@/utils/logger';
+} from "@/services";
+import { getCurrentBrand } from "@/config/brandConfig";
+import logger from "@/utils/logger";
 
 interface SocialAuthButtonsProps {
   onSuccess?: () => void;
@@ -40,26 +41,27 @@ export default function SocialAuthButtons({
   disabled = false,
 }: SocialAuthButtonsProps) {
   const theme = useTheme();
+  const brand = getCurrentBrand();
   const [loading, setLoading] = useState<string | null>(null);
 
   const socialProviders: SocialProvider[] = [
     {
-      name: 'Google',
+      name: "Google",
       icon: GoogleIcon,
       handler: handleGoogleSignIn,
-      hoverColor: '#DB4437',
+      hoverColor: "#DB4437",
     },
     {
-      name: 'Facebook',
+      name: "Facebook",
       icon: FacebookIcon,
       handler: handleFacebookSignIn,
-      hoverColor: '#4267B2',
+      hoverColor: "#4267B2",
     },
     {
-      name: 'Twitter',
+      name: "Twitter",
       icon: TwitterIcon,
       handler: handleTwitterSignIn,
-      hoverColor: '#1DA1F2',
+      hoverColor: theme.palette.primary.light, // Use theme's primary.light (gold)
     },
   ];
 
@@ -77,14 +79,14 @@ export default function SocialAuthButtons({
       logger.error(`${provider.name} sign in error:`, error);
 
       // Check multiple ways the error code might be present
-      const errorCode = error?.code || error?.error?.code || '';
+      const errorCode = error?.code || error?.error?.code || "";
 
       // Check if MFA is required
       if (
-        errorCode === 'auth/multi-factor-auth-required' ||
-        error?.message?.includes('multi-factor-auth-required')
+        errorCode === "auth/multi-factor-auth-required" ||
+        error?.message?.includes("multi-factor-auth-required")
       ) {
-        logger.debug('MFA required for social sign-in, passing to handler');
+        logger.debug("MFA required for social sign-in, passing to handler");
 
         if (onMFARequired) {
           // Pass the raw error to the parent to handle MFA
@@ -92,7 +94,7 @@ export default function SocialAuthButtons({
         } else {
           // Fallback if no MFA handler provided
           onError?.(
-            'Multi-factor authentication is required. Please complete MFA setup.'
+            "Multi-factor authentication is required. Please complete MFA setup."
           );
         }
       } else {
@@ -120,24 +122,24 @@ export default function SocialAuthButtons({
                 disabled={disabled || !!loading}
                 sx={{
                   border: 1,
-                  borderColor: 'divider',
-                  borderRadius: `${theme.shape.borderRadius}px`,
+                  borderColor: "divider",
+                  borderRadius: 2, // Larger radius (16px with default spacing)
                   p: 1.5,
-                  transition: theme.transitions.create(['all']),
+                  transition: theme.transitions.create(["all"]),
                   opacity: isLoading ? 0.6 : 1,
-                  '& svg': {
-                    transition: theme.transitions.create(['color']),
-                    fontSize: '1.5rem',
+                  "& svg": {
+                    transition: theme.transitions.create(["color"]),
+                    fontSize: "1.5rem",
                   },
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
+                  "&:hover": {
+                    backgroundColor: "action.hover",
                     borderColor: provider.hoverColor,
-                    '& svg': {
+                    "& svg": {
                       color: provider.hoverColor,
                     },
                   },
-                  '&:disabled': {
-                    borderColor: 'action.disabled',
+                  "&:disabled": {
+                    borderColor: "action.disabled",
                     opacity: 0.4,
                   },
                 }}
