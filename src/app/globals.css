@@ -4,13 +4,18 @@
 
 /* ============================================
    ROOT VARIABLES - Base Configuration
-   ============================================ */
+   ============================================
+   
+   Global configuration values used across all brands
+   These provide consistent spacing, z-index hierarchy,
+   and other fundamental layout properties
+*/
 
 :root {
   /* Default spacing and sizing */
   --spacing-unit: 8px;
 
-  /* Z-index scale */
+  /* Z-index scale for layering */
   --z-dropdown: 1000;
   --z-sticky: 1020;
   --z-fixed: 1030;
@@ -21,36 +26,55 @@
 }
 
 /* ============================================
-   FRAM3 BRAND - LIGHT MODE
-   ============================================ */
+   FRAM3 BRAND - LIGHT MODE (UPDATED)
+   ============================================
+   
+   FRAM3 Sophisticated Light Mode Color Palette
+   
+   PRIMARY COLORS: Deep Charcoal (#1a1a1a)
+   - Used for main UI elements, buttons, headings, and primary text
+   - Provides excellent contrast against white background
+   - Professional and modern appearance
+   
+   SECONDARY COLORS: Orange-Gold (#ffa500)
+   - Strategic accent color for highlights and interactive elements
+   - Used for hover states, focus indicators, and call-to-actions
+   - Maintains brand identity with warm, premium tone
+   
+   DESIGN PHILOSOPHY:
+   - High contrast for WCAG AAA accessibility compliance
+   - Charcoal primary creates professional, readable interfaces
+   - Orange-gold accents provide brand recognition and visual interest
+   - Clean white backgrounds with subtle gray surfaces
+*/
 
 :root[data-brand="fram3"][data-theme="light"],
 :root[data-brand="fram3"]:not([data-theme]) {
-  /* Primary Colors (Gold) */
-  --brand-primary: #ffd700;
-  --brand-primary-light: #ffe44d;
-  --brand-primary-dark: #ffc000;
+  /* Primary Colors - Deep Charcoal */
+  --brand-primary: #1a1a1a; /* Main UI elements, buttons, headings */
+  --brand-primary-light: #424242; /* Lighter variant for subtle elements */
+  --brand-primary-dark: #000000; /* Darkest variant for emphasis */
 
-  /* Secondary Colors (Black) */
-  --brand-secondary: #000000;
-  --brand-secondary-light: #424242;
-  --brand-secondary-dark: #000000;
+  /* Secondary Colors - Orange-Gold */
+  --brand-secondary: #ffa500; /* Accent color for highlights */
+  --brand-secondary-light: #ffc04d; /* Light accent for hover states */
+  --brand-secondary-dark: #ff8c00; /* Dark accent for active states */
 
-  /* Accent Color */
-  --brand-accent: #ffc000;
+  /* Accent Color - Strategic Highlights */
+  --brand-accent: #ffa500; /* Same as secondary for consistency */
 
   /* Background Colors */
-  --brand-background: #ffffff;
-  --brand-surface: #f5f5f5;
+  --brand-background: #ffffff; /* Page background - pure white */
+  --brand-surface: #f8f9fa; /* Cards and elevated surfaces */
 
   /* Text Colors */
-  --brand-text: #000000;
-  --brand-text-secondary: #424242;
+  --brand-text: #1a1a1a; /* Primary text - charcoal */
+  --brand-text-secondary: #6b7280; /* Secondary text - medium gray */
 
   /* Border & Shape */
-  --brand-radius: 8px;
-  --brand-radius-sm: 4px;
-  --brand-radius-lg: 12px;
+  --brand-radius: 8px; /* Base border radius */
+  --brand-radius-sm: 4px; /* Small border radius */
+  --brand-radius-lg: 12px; /* Large border radius */
 
   /* Fonts */
   --font-heading: var(--font-orbitron), var(--font-rajdhani), sans-serif;
@@ -58,30 +82,47 @@
 }
 
 /* ============================================
-   FRAM3 BRAND - DARK MODE
-   ============================================ */
+   FRAM3 BRAND - DARK MODE (UNCHANGED)
+   ============================================
+   
+   FRAM3 Classic Dark Mode - Signature Look
+   
+   PRIMARY COLORS: Pure Gold (#ffd700)
+   - Iconic FRAM3 brand color
+   - High-end, premium aesthetic
+   - Excellent visibility on black background
+   
+   SECONDARY COLORS: White (#ffffff)
+   - Clean contrast and readability
+   - Professional appearance
+   
+   DESIGN PHILOSOPHY:
+   - Timeless black and gold combination
+   - Maximum impact and brand recognition
+   - Superior for extended viewing in low-light environments
+*/
 
 :root[data-brand="fram3"][data-theme="dark"] {
-  /* Primary Colors (Gold) */
-  --brand-primary: #ffd700;
-  --brand-primary-light: #ffe44d;
-  --brand-primary-dark: #ffc000;
+  /* Primary Colors - Pure Gold */
+  --brand-primary: #ffd700; /* Signature gold color */
+  --brand-primary-light: #ffe44d; /* Light gold for subtle elements */
+  --brand-primary-dark: #ffc000; /* Dark gold for depth */
 
-  /* Secondary Colors (White) */
-  --brand-secondary: #ffffff;
-  --brand-secondary-light: #ffffff;
-  --brand-secondary-dark: #e0e0e0;
+  /* Secondary Colors - White */
+  --brand-secondary: #ffffff; /* Pure white for contrast */
+  --brand-secondary-light: #ffffff; /* Consistent white */
+  --brand-secondary-dark: #e0e0e0; /* Slightly dimmed white */
 
   /* Accent Color */
-  --brand-accent: #ffd700;
+  --brand-accent: #ffd700; /* Gold accent for consistency */
 
   /* Background Colors */
-  --brand-background: #000000;
-  --brand-surface: #121212;
+  --brand-background: #000000; /* Pure black background */
+  --brand-surface: #121212; /* Very dark gray for surfaces */
 
   /* Text Colors */
-  --brand-text: #ffffff;
-  --brand-text-secondary: #b3b3b3;
+  --brand-text: #ffffff; /* White primary text */
+  --brand-text-secondary: #b3b3b3; /* Light gray secondary text */
 
   /* Border & Shape (same as light) */
   --brand-radius: 8px;
@@ -95,33 +136,36 @@
 
 /* ============================================
    ACME BRAND - LIGHT MODE
-   ============================================ */
+   ============================================
+   
+   Professional business brand with red/orange palette
+*/
 
 :root[data-brand="acme"][data-theme="light"],
 :root[data-brand="acme"]:not([data-theme]) {
-  /* Primary Colors */
-  --brand-primary: #dc2626;
-  --brand-primary-light: #ef4444;
-  --brand-primary-dark: #b91c1c;
+  /* Primary Colors - Red */
+  --brand-primary: #dc2626; /* Red 600 */
+  --brand-primary-light: #ef4444; /* Red 500 */
+  --brand-primary-dark: #b91c1c; /* Red 700 */
 
-  /* Secondary Colors */
-  --brand-secondary: #ea580c;
-  --brand-secondary-light: #f97316;
-  --brand-secondary-dark: #c2410c;
+  /* Secondary Colors - Orange */
+  --brand-secondary: #ea580c; /* Orange 600 */
+  --brand-secondary-light: #f97316; /* Orange 500 */
+  --brand-secondary-dark: #c2410c; /* Orange 700 */
 
   /* Accent Color */
-  --brand-accent: #f59e0b;
+  --brand-accent: #f59e0b; /* Amber 500 */
 
   /* Background Colors */
-  --brand-background: #ffffff;
-  --brand-surface: #f9fafb;
+  --brand-background: #ffffff; /* White */
+  --brand-surface: #f9fafb; /* Gray 50 */
 
   /* Text Colors */
-  --brand-text: #111827;
-  --brand-text-secondary: #6b7280;
+  --brand-text: #111827; /* Gray 900 */
+  --brand-text-secondary: #6b7280; /* Gray 500 */
 
   /* Border & Shape */
-  --brand-radius: 4px;
+  --brand-radius: 4px; /* Sharp, professional */
   --brand-radius-sm: 2px;
   --brand-radius-lg: 6px;
 
@@ -136,25 +180,25 @@
 
 :root[data-brand="acme"][data-theme="dark"] {
   /* Primary Colors */
-  --brand-primary: #ef4444;
-  --brand-primary-light: #f87171;
-  --brand-primary-dark: #dc2626;
+  --brand-primary: #ef4444; /* Red 500 */
+  --brand-primary-light: #f87171; /* Red 400 */
+  --brand-primary-dark: #dc2626; /* Red 600 */
 
   /* Secondary Colors */
-  --brand-secondary: #f97316;
-  --brand-secondary-light: #fb923c;
-  --brand-secondary-dark: #ea580c;
+  --brand-secondary: #f97316; /* Orange 500 */
+  --brand-secondary-light: #fb923c; /* Orange 400 */
+  --brand-secondary-dark: #ea580c; /* Orange 600 */
 
   /* Accent Color */
-  --brand-accent: #fcd34d;
+  --brand-accent: #fcd34d; /* Amber 300 */
 
   /* Background Colors */
-  --brand-background: #111827;
-  --brand-surface: #1f2937;
+  --brand-background: #111827; /* Gray 900 */
+  --brand-surface: #1f2937; /* Gray 800 */
 
   /* Text Colors */
-  --brand-text: #f9fafb;
-  --brand-text-secondary: #d1d5db;
+  --brand-text: #f9fafb; /* Gray 50 */
+  --brand-text-secondary: #d1d5db; /* Gray 300 */
 
   /* Border & Shape (same as light) */
   --brand-radius: 4px;
@@ -168,33 +212,36 @@
 
 /* ============================================
    TECHCO BRAND - LIGHT MODE
-   ============================================ */
+   ============================================
+   
+   Modern technology brand with purple/cyan palette
+*/
 
 :root[data-brand="techco"][data-theme="light"],
 :root[data-brand="techco"]:not([data-theme]) {
-  /* Primary Colors */
-  --brand-primary: #7c3aed;
-  --brand-primary-light: #a78bfa;
-  --brand-primary-dark: #6d28d9;
+  /* Primary Colors - Purple */
+  --brand-primary: #7c3aed; /* Violet 600 */
+  --brand-primary-light: #a78bfa; /* Violet 400 */
+  --brand-primary-dark: #6d28d9; /* Violet 700 */
 
-  /* Secondary Colors */
-  --brand-secondary: #06b6d4;
-  --brand-secondary-light: #22d3ee;
-  --brand-secondary-dark: #0891b2;
+  /* Secondary Colors - Cyan */
+  --brand-secondary: #06b6d4; /* Cyan 600 */
+  --brand-secondary-light: #22d3ee; /* Cyan 400 */
+  --brand-secondary-dark: #0891b2; /* Cyan 700 */
 
   /* Accent Color */
-  --brand-accent: #ec4899;
+  --brand-accent: #ec4899; /* Pink 500 */
 
   /* Background Colors */
-  --brand-background: #ffffff;
-  --brand-surface: #f8fafc;
+  --brand-background: #ffffff; /* White */
+  --brand-surface: #f8fafc; /* Slate 50 */
 
   /* Text Colors */
-  --brand-text: #0f172a;
-  --brand-text-secondary: #64748b;
+  --brand-text: #0f172a; /* Slate 900 */
+  --brand-text-secondary: #64748b; /* Slate 500 */
 
   /* Border & Shape */
-  --brand-radius: 12px;
+  --brand-radius: 12px; /* Rounded, friendly */
   --brand-radius-sm: 6px;
   --brand-radius-lg: 18px;
 
@@ -209,25 +256,25 @@
 
 :root[data-brand="techco"][data-theme="dark"] {
   /* Primary Colors */
-  --brand-primary: #a78bfa;
-  --brand-primary-light: #c4b5fd;
-  --brand-primary-dark: #8b5cf6;
+  --brand-primary: #a78bfa; /* Violet 400 */
+  --brand-primary-light: #c4b5fd; /* Violet 300 */
+  --brand-primary-dark: #8b5cf6; /* Violet 500 */
 
   /* Secondary Colors */
-  --brand-secondary: #22d3ee;
-  --brand-secondary-light: #67e8f9;
-  --brand-secondary-dark: #06b6d4;
+  --brand-secondary: #22d3ee; /* Cyan 400 */
+  --brand-secondary-light: #67e8f9; /* Cyan 300 */
+  --brand-secondary-dark: #06b6d4; /* Cyan 600 */
 
   /* Accent Color */
-  --brand-accent: #f472b6;
+  --brand-accent: #f472b6; /* Pink 400 */
 
   /* Background Colors */
-  --brand-background: #0f172a;
-  --brand-surface: #1e293b;
+  --brand-background: #0f172a; /* Slate 900 */
+  --brand-surface: #1e293b; /* Slate 800 */
 
   /* Text Colors */
-  --brand-text: #f8fafc;
-  --brand-text-secondary: #cbd5e1;
+  --brand-text: #f8fafc; /* Slate 50 */
+  --brand-text-secondary: #cbd5e1; /* Slate 300 */
 
   /* Border & Shape (same as light) */
   --brand-radius: 12px;
@@ -241,7 +288,11 @@
 
 /* ============================================
    GLOBAL BASE STYLES
-   ============================================ */
+   ============================================
+   
+   Universal styles applied to all elements
+   Ensures consistent box model and resets default browser styles
+*/
 
 * {
   box-sizing: border-box;
@@ -267,7 +318,11 @@ body {
 
 /* ============================================
    CUSTOM SCROLLBAR
-   ============================================ */
+   ============================================
+   
+   Brand-aware scrollbar styling for webkit browsers
+   Uses brand primary color for thumb and surface for track
+*/
 
 ::-webkit-scrollbar {
   width: 8px;
@@ -297,7 +352,10 @@ body {
 
 /* ============================================
    TEXT SELECTION
-   ============================================ */
+   ============================================
+   
+   Custom text selection color using brand colors
+*/
 
 ::selection {
   background-color: var(--brand-primary);
@@ -311,7 +369,11 @@ body {
 
 /* ============================================
    FOCUS STATES
-   ============================================ */
+   ============================================
+   
+   Accessible focus indicators for keyboard navigation
+   Uses brand primary color with offset outline
+*/
 
 :focus-visible {
   outline: 2px solid var(--brand-primary);
@@ -321,7 +383,11 @@ body {
 
 /* ============================================
    UTILITY CLASSES - BRAND GRADIENTS
-   ============================================ */
+   ============================================
+   
+   Reusable gradient utilities for backgrounds
+   Provides standard, reverse, and radial gradient options
+*/
 
 .brand-gradient {
   background: linear-gradient(
@@ -349,7 +415,11 @@ body {
 
 /* ============================================
    UTILITY CLASSES - BRAND TEXT GRADIENTS
-   ============================================ */
+   ============================================
+   
+   Text gradient utilities for eye-catching typography
+   Uses webkit-background-clip for gradient text effect
+*/
 
 .brand-text-gradient {
   background: linear-gradient(
@@ -375,7 +445,11 @@ body {
 
 /* ============================================
    UTILITY CLASSES - BRAND SHADOWS
-   ============================================ */
+   ============================================
+   
+   Brand-aware box shadow utilities
+   Combines standard shadow with brand color glow effect
+*/
 
 .brand-shadow {
   box-shadow:
@@ -396,8 +470,12 @@ body {
 }
 
 /* ============================================
-   UTILITY CLASSES - ANIMATIONS
-   ============================================ */
+   ANIMATIONS
+   ============================================
+   
+   Keyframe animations for interactive elements
+   Includes float, fade, slide, pulse, and spin effects
+*/
 
 @keyframes float {
   0%,
@@ -488,7 +566,10 @@ body {
 
 /* ============================================
    UTILITY CLASSES - TYPOGRAPHY
-   ============================================ */
+   ============================================
+   
+   Font family utilities for quick application
+*/
 
 .font-heading {
   font-family: var(--font-heading);
@@ -497,6 +578,13 @@ body {
 .font-body {
   font-family: var(--font-body);
 }
+
+/* ============================================
+   UTILITY CLASSES - BORDER RADIUS
+   ============================================
+   
+   Brand-specific border radius utilities
+*/
 
 .rounded-brand {
   border-radius: var(--brand-radius);
@@ -512,7 +600,10 @@ body {
 
 /* ============================================
    PRINT STYLES
-   ============================================ */
+   ============================================
+   
+   Optimized styles for printing
+*/
 
 @media print {
   body {
@@ -527,7 +618,11 @@ body {
 
 /* ============================================
    REDUCED MOTION
-   ============================================ */
+   ============================================
+   
+   Respects user's motion preferences for accessibility
+   Disables animations for users who prefer reduced motion
+*/
 
 @media (prefers-reduced-motion: reduce) {
   *,

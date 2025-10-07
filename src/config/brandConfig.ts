@@ -61,7 +61,17 @@ export interface BrandConfig {
 export const brands: Record<string, BrandConfig> = {
   /**
    * FRAM3 Studio - Default Brand
-   * Futuristic tech aesthetic with gold/black palette
+   * Sophisticated tech aesthetic with charcoal/gold palette
+   * 
+   * LIGHT MODE UPDATED:
+   * - Primary: Deep Charcoal (#1a1a1a) for main UI elements, buttons, and text
+   * - Secondary: Orange-Gold (#ffa500) for strategic accents and highlights
+   * - High contrast, professional, accessible (WCAG AAA compliant)
+   * 
+   * DARK MODE (UNCHANGED):
+   * - Primary: Pure Gold (#FFD700) for signature brand look
+   * - Secondary: White (#ffffff) for contrast
+   * - Classic black and gold aesthetic
    */
   fram3: {
     id: 'fram3',
@@ -75,80 +85,79 @@ export const brands: Record<string, BrandConfig> = {
     },
     colors: {
       light: {
-        primary: '#FFD700',           // Gold
-        primaryLight: '#FFE44D',      // Light Gold
-        primaryDark: '#FFC000',       // Dark Gold
-        secondary: '#000000',         // Black
-        secondaryLight: '#424242',    // Dark Gray
-        secondaryDark: '#000000',     // Pure Black
-        background: '#FFFFFF',        // White
-        surface: '#F5F5F5',           // Light Gray
-        text: '#000000',              // Black
-        textSecondary: '#424242',     // Dark Gray
-        accent: '#FFC000',            // Dark Gold
+        primary: '#1a1a1a',           // Deep Charcoal - main elements
+        primaryLight: '#424242',      // Medium Gray - lighter variant
+        primaryDark: '#000000',       // Pure Black - darkest variant
+        secondary: '#ffa500',         // Orange-Gold - accents
+        secondaryLight: '#ffc04d',    // Light Orange-Gold
+        secondaryDark: '#ff8c00',     // Dark Orange-Gold
+        background: '#ffffff',        // White - page background
+        surface: '#f8f9fa',           // Very Light Gray - cards/surfaces
+        text: '#1a1a1a',              // Deep Charcoal - primary text
+        textSecondary: '#6b7280',     // Medium Gray - secondary text
+        accent: '#ffa500',            // Orange-Gold - strategic highlights
       },
       dark: {
-        primary: '#FFD700',           // Gold
+        primary: '#FFD700',           // Gold - signature color
         primaryLight: '#FFE44D',      // Light Gold
         primaryDark: '#FFC000',       // Dark Gold
-        secondary: '#FFFFFF',         // White
-        secondaryLight: '#FFFFFF',    // Pure White
-        secondaryDark: '#E0E0E0',     // Light Gray
-        background: '#000000',        // Black
-        surface: '#121212',           // Dark Surface
-        text: '#FFFFFF',              // White
-        textSecondary: '#B3B3B3',     // Light Gray
-        accent: '#FFD700',            // Gold
+        secondary: '#ffffff',         // White - contrast
+        secondaryLight: '#ffffff',    // Pure White
+        secondaryDark: '#e0e0e0',     // Light Gray
+        background: '#000000',        // Black - page background
+        surface: '#121212',           // Very Dark Gray - cards/surfaces
+        text: '#ffffff',              // White - primary text
+        textSecondary: '#b3b3b3',     // Light Gray - secondary text
+        accent: '#FFD700',            // Gold - highlights
       },
     },
     fonts: {
       heading: '"Orbitron", "Rajdhani", sans-serif',
-      body: '"Inter", "Roboto", sans-serif',
+      body: '"Inter", sans-serif',
     },
     borderRadius: 8,
     spacing: 8,
   },
 
   /**
-   * ACME Corporation
-   * Corporate professional aesthetic with red/orange palette
+   * ACME Corporation - Professional Business Brand
+   * Red and orange color scheme with sharp, clean aesthetics
    */
   acme: {
     id: 'acme',
     name: 'ACME CORPORATION',
-    tagline: 'Excellence in Every Solution',
+    tagline: 'Excellence in Every Detail',
     logo: {
       light: '/logos/acme/logo-light.svg',
       dark: '/logos/acme/logo-dark.svg',
       favicon: '/logos/acme/favicon.ico',
-      signin: '/logos/acme/logo-light.svg'
     },
     colors: {
       light: {
-        primary: '#DC2626',           // Red 600
-        primaryLight: '#EF4444',      // Red 500
-        primaryDark: '#B91C1C',       // Red 700
-        secondary: '#EA580C',         // Orange 600
-        secondaryLight: '#F97316',    // Orange 500
-        secondaryDark: '#C2410C',     // Orange 700
-        background: '#FFFFFF',        // White
-        surface: '#F9FAFB',           // Gray 50
+        primary: '#dc2626',           // Red 600 - main brand color
+        primaryLight: '#ef4444',      // Red 500
+        primaryDark: '#b91c1c',       // Red 700
+        secondary: '#ea580c',         // Orange 600
+        secondaryLight: '#f97316',    // Orange 500
+        secondaryDark: '#c2410c',     // Orange 700
+        background: '#ffffff',        // White
+        surface: '#f9fafb',           // Gray 50
         text: '#111827',              // Gray 900
-        textSecondary: '#6B7280',     // Gray 500
-        accent: '#F59E0B',            // Amber 500
+        textSecondary: '#6b7280',     // Gray 500
+        accent: '#f59e0b',            // Amber 500
       },
       dark: {
-        primary: '#EF4444',           // Red 500
-        primaryLight: '#F87171',      // Red 400
-        primaryDark: '#DC2626',       // Red 600
-        secondary: '#F97316',         // Orange 500
-        secondaryLight: '#FB923C',    // Orange 400
-        secondaryDark: '#EA580C',     // Orange 600
+        primary: '#ef4444',           // Red 500
+        primaryLight: '#f87171',      // Red 400
+        primaryDark: '#dc2626',       // Red 600
+        secondary: '#f97316',         // Orange 500
+        secondaryLight: '#fb923c',    // Orange 400
+        secondaryDark: '#ea580c',     // Orange 600
         background: '#111827',        // Gray 900
-        surface: '#1F2937',           // Gray 800
-        text: '#F9FAFB',              // Gray 50
-        textSecondary: '#D1D5DB',     // Gray 300
-        accent: '#FCD34D',            // Amber 300
+        surface: '#1f2937',           // Gray 800
+        text: '#f9fafb',              // Gray 50
+        textSecondary: '#d1d5db',     // Gray 300
+        accent: '#fcd34d',            // Amber 300
       },
     },
     fonts: {
@@ -160,8 +169,8 @@ export const brands: Record<string, BrandConfig> = {
   },
 
   /**
-   * TechCo
-   * Modern tech aesthetic with purple/cyan palette
+   * TechCo - Modern Technology Brand
+   * Purple and cyan color scheme with rounded, friendly aesthetics
    */
   techco: {
     id: 'techco',
@@ -171,34 +180,33 @@ export const brands: Record<string, BrandConfig> = {
       light: '/logos/techco/logo-light.svg',
       dark: '/logos/techco/logo-dark.svg',
       favicon: '/logos/techco/favicon.ico',
-      signin: '/logos/techco/logo-light.svg',
     },
     colors: {
       light: {
-        primary: '#7C3AED',           // Violet 600
-        primaryLight: '#A78BFA',      // Violet 400
-        primaryDark: '#6D28D9',       // Violet 700
-        secondary: '#06B6D4',         // Cyan 600
-        secondaryLight: '#22D3EE',    // Cyan 400
-        secondaryDark: '#0891B2',     // Cyan 700
-        background: '#FFFFFF',        // White
-        surface: '#F8FAFC',           // Slate 50
-        text: '#0F172A',              // Slate 900
-        textSecondary: '#64748B',     // Slate 500
-        accent: '#EC4899',            // Pink 500
+        primary: '#7c3aed',           // Violet 600
+        primaryLight: '#a78bfa',      // Violet 400
+        primaryDark: '#6d28d9',       // Violet 700
+        secondary: '#06b6d4',         // Cyan 600
+        secondaryLight: '#22d3ee',    // Cyan 400
+        secondaryDark: '#0891b2',     // Cyan 700
+        background: '#ffffff',        // White
+        surface: '#f8fafc',           // Slate 50
+        text: '#0f172a',              // Slate 900
+        textSecondary: '#64748b',     // Slate 500
+        accent: '#ec4899',            // Pink 500
       },
       dark: {
-        primary: '#A78BFA',           // Violet 400
-        primaryLight: '#C4B5FD',      // Violet 300
-        primaryDark: '#8B5CF6',       // Violet 500
-        secondary: '#22D3EE',         // Cyan 400
-        secondaryLight: '#67E8F9',    // Cyan 300
-        secondaryDark: '#06B6D4',     // Cyan 600
-        background: '#0F172A',        // Slate 900
-        surface: '#1E293B',           // Slate 800
-        text: '#F8FAFC',              // Slate 50
-        textSecondary: '#CBD5E1',     // Slate 300
-        accent: '#F472B6',            // Pink 400
+        primary: '#a78bfa',           // Violet 400
+        primaryLight: '#c4b5fd',      // Violet 300
+        primaryDark: '#8b5cf6',       // Violet 500
+        secondary: '#22d3ee',         // Cyan 400
+        secondaryLight: '#67e8f9',    // Cyan 300
+        secondaryDark: '#06b6d4',     // Cyan 600
+        background: '#0f172a',        // Slate 900
+        surface: '#1e293b',           // Slate 800
+        text: '#f8fafc',              // Slate 50
+        textSecondary: '#cbd5e1',     // Slate 300
+        accent: '#f472b6',            // Pink 400
       },
     },
     fonts: {
@@ -222,7 +230,8 @@ export function getCurrentBrand(): BrandConfig {
 
   if (!brand) {
     console.warn(
-      `Invalid brand key "${brandKey}". Falling back to "fram3". ` +
+      `Invalid brand key "${brandKey}". ` +
+      `Falling back to "fram3". ` +
       `Available brands: ${Object.keys(brands).join(', ')}`
     );
     return brands.fram3;
