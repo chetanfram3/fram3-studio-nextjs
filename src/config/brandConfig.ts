@@ -41,6 +41,7 @@ export interface BrandConfig {
     light: string;               // Light mode logo path
     dark: string;                // Dark mode logo path
     favicon: string;             // Favicon path
+    signin?: string;             // Optional signin page specific logo
   };
   colors: {
     light: BrandColors;          // Light mode color palette
@@ -67,9 +68,10 @@ export const brands: Record<string, BrandConfig> = {
     name: 'FRAM3 STUDIO',
     tagline: 'Building the Future of Digital Innovation',
     logo: {
-      light: '/logos/fram3/logo-light.svg',
-      dark: '/logos/fram3/logo-dark.svg',
+      light: '/logos/fram3/signin.png',  // Updated to use signin.png
+      dark: '/logos/fram3/signin.png',   // Using same image for both modes
       favicon: '/logos/fram3/favicon.ico',
+      signin: '/logos/fram3/signin.png', // Specific signin page logo
     },
     colors: {
       light: {
@@ -77,7 +79,7 @@ export const brands: Record<string, BrandConfig> = {
         primaryLight: '#64B5F6',      // Blue 400
         primaryDark: '#1565C0',       // Blue 800
         secondary: '#FFA000',         // Amber 700
-        secondaryLight: '#FFB74D',    // Amber 400
+        secondaryLight: '#FFCA28',    // Amber 400
         secondaryDark: '#FF8F00',     // Amber 800
         background: '#FFFFFF',        // White
         surface: '#F5F5F5',           // Light Gray
@@ -119,6 +121,7 @@ export const brands: Record<string, BrandConfig> = {
       light: '/logos/acme/logo-light.svg',
       dark: '/logos/acme/logo-dark.svg',
       favicon: '/logos/acme/favicon.ico',
+      signin: '/logos/acme/logo-light.svg'
     },
     colors: {
       light: {
@@ -168,6 +171,7 @@ export const brands: Record<string, BrandConfig> = {
       light: '/logos/techco/logo-light.svg',
       dark: '/logos/techco/logo-dark.svg',
       favicon: '/logos/techco/favicon.ico',
+      signin: '/logos/techco/logo-light.svg',
     },
     colors: {
       light: {
@@ -215,7 +219,7 @@ export const brands: Record<string, BrandConfig> = {
 export function getCurrentBrand(): BrandConfig {
   const brandKey = process.env.NEXT_PUBLIC_BRAND_KEY || 'fram3';
   const brand = brands[brandKey.toLowerCase()];
-  
+
   if (!brand) {
     console.warn(
       `Invalid brand key "${brandKey}". Falling back to "fram3". ` +
@@ -223,7 +227,7 @@ export function getCurrentBrand(): BrandConfig {
     );
     return brands.fram3;
   }
-  
+
   return brand;
 }
 
