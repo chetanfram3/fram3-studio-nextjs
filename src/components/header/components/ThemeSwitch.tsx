@@ -15,10 +15,10 @@ export function ThemeSwitch() {
       <IconButton
         onClick={toggleTheme}
         sx={{
-          bgcolor: 'secondary.main',
-          color: 'secondary.contrastText',
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
           '&:hover': {
-            bgcolor: 'secondary.dark',
+            bgcolor: 'primary.dark',
           },
           width: 40,
           height: 40,
