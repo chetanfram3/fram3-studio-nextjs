@@ -112,7 +112,7 @@ export function ProfileMenu({
         </ListItemButton>
 
         <ListItemButton
-          onClick={() => handleMenuItemClick('/dashboard/profile')}
+          onClick={() => handleMenuItemClick('/profile')}
           sx={menuItemStyles}
         >
           <ListItemIcon>
