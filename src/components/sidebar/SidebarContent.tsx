@@ -23,7 +23,7 @@ export function SidebarContent() {
         ))}
       </List>
 
-      {/* Bottom divider - Theme aware */}ß
+      {/* Bottom divider - Theme aware */}
       <Divider
         sx={{
           borderColor: alpha(theme.palette.divider, 0.6),
