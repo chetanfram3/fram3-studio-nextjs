@@ -76,8 +76,6 @@ export default function SocialAuthButtons({
       logger.debug(`${provider.name} sign in successful`);
       onSuccess?.();
     } catch (error: any) {
-      logger.error(`${provider.name} sign in error:`, error);
-
       // Check multiple ways the error code might be present
       const errorCode = error?.code || error?.error?.code || "";
 
@@ -98,6 +96,7 @@ export default function SocialAuthButtons({
           );
         }
       } else {
+        logger.error(`${provider.name} sign in error:`, error);
         // Other errors
         const errorMessage =
           error?.message || `Failed to sign in with ${provider.name}`;

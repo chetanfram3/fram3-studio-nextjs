@@ -96,16 +96,14 @@ export async function handleSocialSignIn(
 
         return { user, isNewUser };
     } catch (error: any) {
-        logger.error('Social sign in error:', error);
-
         // CRITICAL: If it's an MFA error, re-throw it as-is so the UI can handle it
         if (error.code === 'auth/multi-factor-auth-required') {
             logger.debug('MFA required - re-throwing error for UI handling');
             authStore.setLoading(false);
             throw error; // Re-throw the original Firebase error with code intact
         }
-
         // For other errors, handle normally
+        logger.error('Social sign in error:', error);
         authStore.setError(error instanceof Error ? error.message : 'Social sign in failed');
         authStore.setUser(null);
         authStore.setProfileLoaded(false);
