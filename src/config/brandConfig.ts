@@ -42,6 +42,7 @@ export interface BrandConfig {
     dark: string;                // Dark mode logo path
     favicon: string;             // Favicon path
     signin?: string;             // Optional signin page specific logo
+    headerLogo?: string;
   };
   colors: {
     light: BrandColors;          // Light mode color palette
@@ -83,6 +84,7 @@ export const brands: Record<string, BrandConfig> = {
       dark: '/logos/fram3/signin.png',
       favicon: '/logos/fram3/favicon.ico',
       signin: '/logos/fram3/signin.png',
+      headerLogo: 'https://storage.googleapis.com/fram3-ext/Web2/logoFavicons/new256.ico'
     },
     colors: {
       light: {
@@ -93,7 +95,7 @@ export const brands: Record<string, BrandConfig> = {
         secondaryLight: '#ffc04d',    // Light Orange-Gold
         secondaryDark: '#ff8c00',     // Dark Orange-Gold
         background: '#8d600d15',      // Very subtle bronze tint (15% opacity)
-        surface: '#ffffff',           // White - cards/surfaces
+        surface: '#8d600d14',           // White - cards/surfaces
         text: '#1a1a1a',              // Deep Charcoal - primary text
         textSecondary: '#6b7280',     // Medium Gray - secondary text
         accent: '#ffa500',            // Orange-Gold - strategic highlights
