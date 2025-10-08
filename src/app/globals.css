@@ -572,3 +572,54 @@ body {
 .animate-spin {
   animation: spin 1s linear infinite;
 }
+
+/* ============================================
+   AUTOFILL STYLES
+   ============================================
+   
+   Override browser default autofill styles
+   Ensures autofilled inputs match theme colors
+*/
+
+/* Webkit browsers (Chrome, Safari, Edge) - Light Mode */
+:root[data-theme="light"] input:-webkit-autofill,
+:root[data-theme="light"] input:-webkit-autofill:hover,
+:root[data-theme="light"] input:-webkit-autofill:focus,
+:root[data-theme="light"] input:-webkit-autofill:active,
+:root[data-theme="light"] textarea:-webkit-autofill,
+:root[data-theme="light"] textarea:-webkit-autofill:hover,
+:root[data-theme="light"] textarea:-webkit-autofill:focus,
+:root[data-theme="light"] select:-webkit-autofill,
+:root[data-theme="light"] select:-webkit-autofill:hover,
+:root[data-theme="light"] select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--brand-text) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--brand-surface) inset !important;
+  box-shadow: 0 0 0 1000px var(--brand-surface) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: var(--brand-text);
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) - Dark Mode */
+:root[data-theme="dark"] input:-webkit-autofill,
+:root[data-theme="dark"] input:-webkit-autofill:hover,
+:root[data-theme="dark"] input:-webkit-autofill:focus,
+:root[data-theme="dark"] input:-webkit-autofill:active,
+:root[data-theme="dark"] textarea:-webkit-autofill,
+:root[data-theme="dark"] textarea:-webkit-autofill:hover,
+:root[data-theme="dark"] textarea:-webkit-autofill:focus,
+:root[data-theme="dark"] select:-webkit-autofill,
+:root[data-theme="dark"] select:-webkit-autofill:hover,
+:root[data-theme="dark"] select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--brand-text) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--brand-surface) inset !important;
+  box-shadow: 0 0 0 1000px var(--brand-surface) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: var(--brand-text);
+}
+
+/* Firefox */
+input:-moz-autofill,
+textarea:-moz-autofill,
+select:-moz-autofill {
+  filter: none;
+}
