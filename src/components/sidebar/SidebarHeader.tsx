@@ -5,23 +5,16 @@ import { Box, useTheme, alpha } from "@mui/material";
 import { useSidebar } from "./SidebarContext";
 import { useThemeMode } from "@/theme";
 import { COLLAPSED_WIDTH } from "./constants";
+import { getCurrentBrand } from "@/config/brandConfig";
 
-/**
- * SidebarHeader Component
- * 
- * Displays the application logo in the sidebar header
- * - Logo size adjusts based on sidebar expanded/collapsed state
- * - Includes hover effects and transitions
- * - Optional decorative gradient underline
- */
 export function SidebarHeader() {
   const { isExpanded } = useSidebar();
   const { isDarkMode } = useThemeMode();
   const theme = useTheme();
+  const brand = getCurrentBrand();
 
-  // Use the same logo for both dark and light mode
-  // Update paths based on your actual logo files
-  const logo = isDarkMode ? "/logo512.png" : "/logo512.png";
+  // Use brand logos if available, fallback to default
+  const logo = isDarkMode ? brand.logo.dark : brand.logo.light;
 
   return (
     <Box
@@ -33,11 +26,11 @@ export function SidebarHeader() {
         gap: 0,
         p: 2,
         minHeight: 64,
-        borderBottom: "1px solid",
+        borderBottom: 1,
         borderColor: alpha(theme.palette.divider, 0.6),
         mt: 1,
         position: "relative",
-        // Decorative gradient underline
+        // Decorative gradient underline - Theme aware
         "&::after": {
           content: '""',
           position: "absolute",
@@ -46,7 +39,7 @@ export function SidebarHeader() {
           width: isExpanded ? "80%" : "60%",
           height: "2px",
           background: `linear-gradient(90deg, transparent, ${alpha(
-            theme.palette.secondary.main,
+            theme.palette.primary.main,
             0.7
           )}, transparent)`,
           transition: theme.transitions.create(["width", "left"], {
@@ -58,7 +51,7 @@ export function SidebarHeader() {
       <Box
         component="img"
         src={logo}
-        alt="Fram3 Studio"
+        alt={brand.name}
         sx={{
           height: isExpanded ? 60 : 40,
           width: "auto",
@@ -72,16 +65,15 @@ export function SidebarHeader() {
           mx: "auto",
           display: "block",
           objectFit: "contain",
-          filter: `drop-shadow(0 2px 5px ${alpha(
-            theme.palette.common.black,
-            0.2
-          )})`,
+          // Theme-aware shadow
+          filter: isDarkMode
+            ? `drop-shadow(0 2px 5px ${alpha(theme.palette.primary.main, 0.3)})`
+            : `drop-shadow(0 2px 5px ${alpha(theme.palette.common.black, 0.2)})`,
           "&:hover": {
             transform: "scale(1.05)",
-            filter: `drop-shadow(0 4px 8px ${alpha(
-              theme.palette.common.black,
-              0.3
-            )})`,
+            filter: isDarkMode
+              ? `drop-shadow(0 4px 8px ${alpha(theme.palette.primary.main, 0.4)})`
+              : `drop-shadow(0 4px 8px ${alpha(theme.palette.common.black, 0.3)})`,
           },
         }}
       />

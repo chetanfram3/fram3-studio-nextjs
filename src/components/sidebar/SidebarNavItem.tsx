@@ -40,10 +40,19 @@ export function SidebarNavItem({ item }: SidebarNavItemProps) {
       : item.label
     : "";
 
-  // Active item colors
-  const activeColor = theme.palette.secondary.main;
-  const activeBgColor = alpha(theme.palette.secondary.main, 0.08);
-  const hoverBgColor = alpha(theme.palette.secondary.main, 0.15);
+  // Theme-aware colors using primary instead of secondary
+  const isDarkMode = theme.palette.mode === "dark";
+
+  // Active state colors
+  const activeColor = theme.palette.primary.main;
+  const activeBgColor = isDarkMode
+    ? alpha(theme.palette.primary.main, 0.2) // Gold 20% in dark
+    : alpha(theme.palette.primary.main, 0.12); // Bronze 12% in light
+
+  // Hover state colors
+  const hoverBgColor = isDarkMode
+    ? alpha(theme.palette.primary.main, 0.15) // Gold 15% in dark
+    : alpha(theme.palette.primary.main, 0.08); // Bronze 8% in light
 
   return (
     <Tooltip title={tooltipTitle} placement="right">
@@ -64,13 +73,11 @@ export function SidebarNavItem({ item }: SidebarNavItemProps) {
               { duration: theme.transitions.duration.shorter }
             ),
             "&:hover": {
-              bgcolor: isActive
-                ? hoverBgColor
-                : alpha(theme.palette.secondary.main, 0.1),
+              bgcolor: isActive ? hoverBgColor : hoverBgColor,
               transform: "translateX(5px)",
               boxShadow: isActive
-                ? `0 0 10px ${alpha(activeColor, 0.2)}`
-                : "none",
+                ? `0 0 12px ${alpha(activeColor, 0.3)}`
+                : `0 0 8px ${alpha(activeColor, 0.2)}`,
             },
           }}
         >
@@ -92,7 +99,7 @@ export function SidebarNavItem({ item }: SidebarNavItemProps) {
                 }),
               },
               "&:hover svg": {
-                color: isActive ? activeColor : theme.palette.secondary.main,
+                color: activeColor,
                 transform: "scale(1.1)",
               },
             }}
