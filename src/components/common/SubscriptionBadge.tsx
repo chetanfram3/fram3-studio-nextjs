@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Tooltip, Chip } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, alpha } from "@mui/material/styles";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useAuthStore } from "@/store/authStore";
 import { SubscriptionLevels, AccessLevels } from "@/config/constants";
@@ -56,7 +56,7 @@ export const SubscriptionBadge = () => {
         </Box>
       </Tooltip>
 
-      {/* Admin Badge - Now fully theme-aware */}
+      {/* Admin Badge - Fully Theme-Aware */}
       {isAdmin && (
         <Chip
           icon={<AdminPanelSettingsIcon />}
@@ -66,30 +66,59 @@ export const SubscriptionBadge = () => {
             .join(" ")}
           size="small"
           sx={{
-            bgcolor: "background.paper",
+            // Use subtle background based on theme mode
+            bgcolor:
+              theme.palette.mode === "dark"
+                ? alpha(theme.palette.primary.main, 0.15)
+                : alpha(theme.palette.primary.main, 0.08),
+
+            // Primary color for text
             color: "primary.main",
+
+            // Subtle border with primary color
             border: 1,
-            borderColor: "divider",
+            borderColor:
+              theme.palette.mode === "dark"
+                ? alpha(theme.palette.primary.main, 0.3)
+                : alpha(theme.palette.primary.main, 0.2),
+
+            // Smooth transitions
             transition: theme.transitions.create(
-              ["background-color", "border-color", "transform"],
+              ["background-color", "border-color", "transform", "box-shadow"],
               { duration: theme.transitions.duration.short }
             ),
+
+            // Hover effects
             "&:hover": {
               bgcolor:
                 theme.palette.mode === "dark"
-                  ? "rgba(255, 255, 255, 0.08)"
-                  : "rgba(0, 0, 0, 0.04)",
-              borderColor: "primary.main",
+                  ? alpha(theme.palette.primary.main, 0.25)
+                  : alpha(theme.palette.primary.main, 0.15),
+
+              borderColor:
+                theme.palette.mode === "dark"
+                  ? alpha(theme.palette.primary.main, 0.5)
+                  : alpha(theme.palette.primary.main, 0.4),
+
               transform: "translateY(-1px)",
+
+              boxShadow:
+                theme.palette.mode === "dark"
+                  ? `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`
+                  : `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
             },
+
+            // Icon styling
             "& .MuiChip-icon": {
               color: "primary.main",
               fontSize: "1rem",
             },
+
+            // Label styling
             "& .MuiChip-label": {
               fontSize: "0.75rem",
               fontWeight: 600,
-              color: "text.primary",
+              color: "primary.main",
             },
           }}
         />
