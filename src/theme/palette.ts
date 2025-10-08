@@ -80,29 +80,34 @@ const commonPalette: CommonPalette = {
 
 /**
  * FRAM3 Light Mode Palette
- * Gold/Black color scheme for light backgrounds
+ * Deep Charcoal/Orange-Gold color scheme for light backgrounds
+ *
+ * DESIGN PHILOSOPHY:
+ * - Primary: Deep Charcoal (#1a1a1a) for main UI, buttons, headings
+ * - Secondary: Orange-Gold (#ffa500) for accents and highlights
+ * - High contrast, professional, accessible (WCAG AAA compliant)
  */
 export const lightPalette: PaletteOptions & CommonPalette = {
   mode: 'light',
   primary: {
-    main: '#FFD700',           // Gold - Primary brand color
-    light: '#FFE44D',          // Light Gold
-    dark: '#FFC000',           // Dark Gold - for borders
-    contrastText: '#000000'    // Black text on gold
+    main: '#1a1a1a',           // Deep Charcoal - main UI elements
+    light: '#424242',          // Medium Gray - lighter variant
+    dark: '#000000',           // Pure Black - darkest variant
+    contrastText: '#FFFFFF'    // White text on charcoal buttons
   },
   secondary: {
-    main: '#000000',           // Black - Secondary brand color
-    light: '#424242',          // Dark Gray
-    dark: '#000000',           // Pure Black
-    contrastText: '#FFFFFF',   // White text on black
+    main: '#ffa500',           // Orange-Gold - accents
+    light: '#ffc04d',          // Light Orange-Gold
+    dark: '#ff8c00',           // Dark Orange-Gold
+    contrastText: '#000000',   // Black text on orange-gold
   },
   background: {
     default: '#FFFFFF',        // White background
-    paper: '#F5F5F5'          // Light gray surface
+    paper: '#f8f9fa'          // Very light gray surface
   },
   text: {
-    primary: '#000000',        // Black text
-    secondary: '#424242'       // Dark gray text
+    primary: '#1a1a1a',        // Deep Charcoal text
+    secondary: '#6b7280'       // Medium Gray secondary text
   },
   divider: 'rgba(0, 0, 0, 0.12)',
   error: {
