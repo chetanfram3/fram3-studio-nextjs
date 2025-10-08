@@ -149,11 +149,9 @@ function createBrandPalette(mode: 'light' | 'dark') {
     /**
      * Primary color configuration
      * Used for main brand identity, primary actions, and key UI elements
-     * 
-     * FRAM3 Light Mode: Deep Charcoal (#1a1a1a)
-     * FRAM3 Dark Mode: Gold (#FFD700)
-     * 
-     * UPDATED: contrastText is now white in light mode for proper button text contrast
+     *
+     * FRAM3 Light Mode: Deep Charcoal (#1a1a1a) - white text
+     * FRAM3 Dark Mode: Gold (#FFD700) - black text
      */
     primary: {
       main: brandColors.primary,
@@ -165,11 +163,9 @@ function createBrandPalette(mode: 'light' | 'dark') {
     /**
      * Secondary color configuration
      * Used for accents, secondary actions, and complementary UI elements
-     * 
-     * FRAM3 Light Mode: Orange-Gold (#ffa500)
-     * FRAM3 Dark Mode: White (#ffffff)
-     * 
-     * contrastText is black for both modes (works for orange-gold and white)
+     *
+     * FRAM3 Light Mode: Orange-Gold (#ffa500) - black text
+     * FRAM3 Dark Mode: White (#ffffff) - black text
      */
     secondary: {
       main: brandColors.secondary,
