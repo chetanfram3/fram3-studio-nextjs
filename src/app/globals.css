@@ -29,31 +29,34 @@
    FRAM3 BRAND - LIGHT MODE (UPDATED)
    ============================================
    
-   FRAM3 Sophisticated Light Mode Color Palette
+   FRAM3 Updated Light Mode Color Palette
+   Based on page.tsx gradient and background
    
-   PRIMARY COLORS: Deep Charcoal (#1a1a1a)
-   - Used for main UI elements, buttons, headings, and primary text
-   - Provides excellent contrast against white background
-   - Professional and modern appearance
+   PRIMARY COLORS: Bronze-Brown (#8d600d)
+   - Midpoint of #1a1a1a → #ffa500 gradient
+   - Warm, sophisticated brand color
+   - Excellent contrast on light backgrounds
    
    SECONDARY COLORS: Orange-Gold (#ffa500)
-   - Strategic accent color for highlights and interactive elements
-   - Used for hover states, focus indicators, and call-to-actions
-   - Maintains brand identity with warm, premium tone
+   - Accent color from gradient endpoint
+   - Used for highlights and interactive elements
+   
+   BACKGROUND COLORS: Light Gray (#f8f9fa)
+   - Matches page.tsx paper background
+   - Softer than pure white for reduced eye strain
    
    DESIGN PHILOSOPHY:
-   - High contrast for WCAG AAA accessibility compliance
-   - Charcoal primary creates professional, readable interfaces
-   - Orange-gold accents provide brand recognition and visual interest
-   - Clean white backgrounds with subtle gray surfaces
+   - Colors derived from page.tsx gradient
+   - Warm, cohesive color scheme
+   - Maintains accessibility standards
 */
 
 :root[data-brand="fram3"][data-theme="light"],
 :root[data-brand="fram3"]:not([data-theme]) {
-  /* Primary Colors - Deep Charcoal */
-  --brand-primary: #1a1a1a; /* Main UI elements, buttons, headings */
-  --brand-primary-light: #424242; /* Lighter variant for subtle elements */
-  --brand-primary-dark: #000000; /* Darkest variant for emphasis */
+  /* Primary Colors - Bronze-Brown (gradient midpoint) */
+  --brand-primary: #8d600d; /* Main UI elements, buttons, headings */
+  --brand-primary-light: #b77d11; /* Lighter variant for subtle elements */
+  --brand-primary-dark: #634309; /* Darkest variant for emphasis */
 
   /* Secondary Colors - Orange-Gold */
   --brand-secondary: #ffa500; /* Accent color for highlights */
@@ -63,12 +66,12 @@
   /* Accent Color - Strategic Highlights */
   --brand-accent: #ffa500; /* Same as secondary for consistency */
 
-  /* Background Colors */
-  --brand-background: #ffffff; /* Page background - pure white */
-  --brand-surface: #f8f9fa; /* Cards and elevated surfaces */
+  /* Background Colors - Light Gray Theme */
+  --brand-background: #f8f9fa; /* Page background - soft light gray */
+  --brand-surface: #ffffff; /* Cards and elevated surfaces - pure white */
 
   /* Text Colors */
-  --brand-text: #1a1a1a; /* Primary text - charcoal */
+  --brand-text: #1a1a1a; /* Primary text - deep charcoal */
   --brand-text-secondary: #6b7280; /* Secondary text - medium gray */
 
   /* Border & Shape */
@@ -520,13 +523,13 @@ body {
   }
 }
 
-@keyframes pulse-glow {
+@keyframes pulse {
   0%,
   100% {
-    box-shadow: 0 0 20px var(--brand-primary);
+    opacity: 1;
   }
   50% {
-    box-shadow: 0 0 40px var(--brand-primary);
+    opacity: 0.5;
   }
 }
 
@@ -539,97 +542,33 @@ body {
   }
 }
 
-/* Animation utility classes */
+/* ============================================
+   ANIMATION UTILITY CLASSES
+   ============================================
+   
+   Apply animations to elements with these classes
+*/
+
 .animate-float {
   animation: float 3s ease-in-out infinite;
 }
 
 .animate-fade-in {
-  animation: fade-in 0.6s ease-out;
+  animation: fade-in 0.5s ease-out;
 }
 
 .animate-slide-in-right {
-  animation: slide-in-right 0.6s ease-out;
+  animation: slide-in-right 0.5s ease-out;
 }
 
 .animate-slide-in-left {
-  animation: slide-in-left 0.6s ease-out;
+  animation: slide-in-left 0.5s ease-out;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .animate-spin {
   animation: spin 1s linear infinite;
-}
-
-/* ============================================
-   UTILITY CLASSES - TYPOGRAPHY
-   ============================================
-   
-   Font family utilities for quick application
-*/
-
-.font-heading {
-  font-family: var(--font-heading);
-}
-
-.font-body {
-  font-family: var(--font-body);
-}
-
-/* ============================================
-   UTILITY CLASSES - BORDER RADIUS
-   ============================================
-   
-   Brand-specific border radius utilities
-*/
-
-.rounded-brand {
-  border-radius: var(--brand-radius);
-}
-
-.rounded-brand-sm {
-  border-radius: var(--brand-radius-sm);
-}
-
-.rounded-brand-lg {
-  border-radius: var(--brand-radius-lg);
-}
-
-/* ============================================
-   PRINT STYLES
-   ============================================
-   
-   Optimized styles for printing
-*/
-
-@media print {
-  body {
-    background: white;
-    color: black;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-}
-
-/* ============================================
-   REDUCED MOTION
-   ============================================
-   
-   Respects user's motion preferences for accessibility
-   Disables animations for users who prefer reduced motion
-*/
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
 }

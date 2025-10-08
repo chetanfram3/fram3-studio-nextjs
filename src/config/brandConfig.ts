@@ -61,12 +61,13 @@ export interface BrandConfig {
 export const brands: Record<string, BrandConfig> = {
   /**
    * FRAM3 Studio - Default Brand
-   * Sophisticated tech aesthetic with charcoal/gold palette
+   * Sophisticated tech aesthetic with bronze/orange-gold palette
    * 
-   * LIGHT MODE UPDATED:
-   * - Primary: Deep Charcoal (#1a1a1a) for main UI elements, buttons, and text
+   * LIGHT MODE (UPDATED):
+   * - Primary: Bronze-Brown (#8d600d) - midpoint of #1a1a1a → #ffa500 gradient
    * - Secondary: Orange-Gold (#ffa500) for strategic accents and highlights
-   * - High contrast, professional, accessible (WCAG AAA compliant)
+   * - Background: Gradient with 15% opacity (#8d600d15 → #ffa50015)
+   * - Warm, cohesive, accessible (WCAG AAA compliant)
    * 
    * DARK MODE (UNCHANGED):
    * - Primary: Pure Gold (#FFD700) for signature brand look
@@ -85,14 +86,14 @@ export const brands: Record<string, BrandConfig> = {
     },
     colors: {
       light: {
-        primary: '#1a1a1a',           // Deep Charcoal - main elements
-        primaryLight: '#424242',      // Medium Gray - lighter variant
-        primaryDark: '#000000',       // Pure Black - darkest variant
+        primary: '#8d600d',           // Bronze-Brown - gradient midpoint
+        primaryLight: '#b77d11',      // Lighter bronze
+        primaryDark: '#634309',       // Darker bronze
         secondary: '#ffa500',         // Orange-Gold - accents
         secondaryLight: '#ffc04d',    // Light Orange-Gold
         secondaryDark: '#ff8c00',     // Dark Orange-Gold
-        background: '#ffffff',        // White - page background
-        surface: '#f8f9fa',           // Very Light Gray - cards/surfaces
+        background: '#8d600d15',      // Very subtle bronze tint (15% opacity)
+        surface: '#ffffff',           // White - cards/surfaces
         text: '#1a1a1a',              // Deep Charcoal - primary text
         textSecondary: '#6b7280',     // Medium Gray - secondary text
         accent: '#ffa500',            // Orange-Gold - strategic highlights
@@ -134,7 +135,7 @@ export const brands: Record<string, BrandConfig> = {
     },
     colors: {
       light: {
-        primary: '#dc2626',           // Red 600 - main brand color
+        primary: '#dc2626',           // Red 600
         primaryLight: '#ef4444',      // Red 500
         primaryDark: '#b91c1c',       // Red 700
         secondary: '#ea580c',         // Orange 600
@@ -170,12 +171,12 @@ export const brands: Record<string, BrandConfig> = {
 
   /**
    * TechCo - Modern Technology Brand
-   * Purple and cyan color scheme with rounded, friendly aesthetics
+   * Purple and cyan color scheme with rounded, friendly design
    */
   techco: {
     id: 'techco',
     name: 'TECHCO',
-    tagline: 'Innovation Through Technology',
+    tagline: 'Innovation Simplified',
     logo: {
       light: '/logos/techco/logo-light.svg',
       dark: '/logos/techco/logo-dark.svg',
@@ -219,18 +220,18 @@ export const brands: Record<string, BrandConfig> = {
 };
 
 /**
- * Get the current active brand based on environment variable
- * Falls back to 'fram3' if not set or invalid
+ * Get the current brand configuration from environment variable
+ * Falls back to FRAM3 if not set or invalid
  * 
- * @returns {BrandConfig} The active brand configuration
+ * @returns {BrandConfig} The current brand configuration
  */
 export function getCurrentBrand(): BrandConfig {
-  const brandKey = process.env.NEXT_PUBLIC_BRAND_KEY || 'fram3';
-  const brand = brands[brandKey.toLowerCase()];
+  const brandKey = process.env.NEXT_PUBLIC_BRAND_KEY?.toLowerCase() || 'fram3';
+  const brand = brands[brandKey];
 
   if (!brand) {
     console.warn(
-      `Invalid brand key "${brandKey}". ` +
+      `Invalid brand key "${brandKey}" in NEXT_PUBLIC_BRAND_KEY. ` +
       `Falling back to "fram3". ` +
       `Available brands: ${Object.keys(brands).join(', ')}`
     );

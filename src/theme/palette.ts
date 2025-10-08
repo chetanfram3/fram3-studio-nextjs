@@ -79,21 +79,22 @@ const commonPalette: CommonPalette = {
 };
 
 /**
- * FRAM3 Light Mode Palette
- * Deep Charcoal/Orange-Gold color scheme for light backgrounds
+ * FRAM3 Light Mode Palette - UPDATED
+ * Based on page.tsx gradient and background colors
  *
  * DESIGN PHILOSOPHY:
- * - Primary: Deep Charcoal (#1a1a1a) for main UI, buttons, headings
+ * - Primary: Bronze-Brown (#8d600d) - midpoint of #1a1a1a → #ffa500 gradient
  * - Secondary: Orange-Gold (#ffa500) for accents and highlights
- * - High contrast, professional, accessible (WCAG AAA compliant)
+ * - Background: Light Gray (#f8f9fa) from page.tsx
+ * - High contrast, warm, accessible (WCAG AAA compliant)
  */
 export const lightPalette: PaletteOptions & CommonPalette = {
   mode: 'light',
   primary: {
-    main: '#1a1a1a',           // Deep Charcoal - main UI elements
-    light: '#424242',          // Medium Gray - lighter variant
-    dark: '#000000',           // Pure Black - darkest variant
-    contrastText: '#FFFFFF'    // White text on charcoal buttons
+    main: '#8d600d',           // Bronze-Brown - midpoint of gradient
+    light: '#b77d11',          // Lighter bronze for hover states
+    dark: '#634309',           // Darker bronze for emphasis
+    contrastText: '#FFFFFF'    // White text on bronze buttons
   },
   secondary: {
     main: '#ffa500',           // Orange-Gold - accents
@@ -102,8 +103,8 @@ export const lightPalette: PaletteOptions & CommonPalette = {
     contrastText: '#000000',   // Black text on orange-gold
   },
   background: {
-    default: '#FFFFFF',        // White background
-    paper: '#f8f9fa'          // Very light gray surface
+    default: '#f8f9fa',        // Light gray background (from page.tsx)
+    paper: '#ffffff'           // White for cards/elevated surfaces
   },
   text: {
     primary: '#1a1a1a',        // Deep Charcoal text
