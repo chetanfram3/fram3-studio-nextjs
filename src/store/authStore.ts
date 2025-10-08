@@ -1,3 +1,4 @@
+// authStore.ts
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from 'firebase/auth';
@@ -23,6 +24,7 @@ interface AuthState {
   setError: (error: string | null) => void;
   setProfileLoaded: (loaded: boolean) => void;
   logout: () => void;
+  reset: () => void; // Add reset action to interface
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -46,6 +48,13 @@ export const useAuthStore = create<AuthState>()(
         claims: null,
         profileLoaded: false,
         error: null
+      }),
+      reset: () => set({ // Add reset implementation
+        user: null,
+        claims: null,
+        loading: true,
+        error: null,
+        profileLoaded: false
       }),
     }),
     {
