@@ -48,7 +48,6 @@ export function Sidebar({ children }: SidebarProps) {
         flexDirection: "column",
         overflow: "hidden",
         background: theme.palette.background.default,
-        borderRadius: isMobile ? 0 : "0 20px 20px 0",
       }}
     >
       <SidebarContent />
