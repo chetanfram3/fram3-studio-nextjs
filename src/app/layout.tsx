@@ -1,14 +1,15 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
-import { 
-  Inter, 
-  Rajdhani, 
-  Orbitron, 
-  Montserrat, 
-  Open_Sans, 
-  Space_Grotesk 
+import {
+  Inter,
+  Rajdhani,
+  Orbitron,
+  Montserrat,
+  Open_Sans,
+  Space_Grotesk,
 } from "next/font/google";
-import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
+import EmotionRegistry from "@/lib/EmotionRegistry";
 import "./globals.css";
 import { ThemeProvider } from "@/theme";
 import { getCurrentBrand } from "@/config/brandConfig";
@@ -18,14 +19,14 @@ const brand = getCurrentBrand();
 
 // Load all fonts for all brands
 // Inter - Used by FRAM3 (body) and TechCo (body)
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
 // Rajdhani - Used by FRAM3 (heading - secondary)
-const rajdhani = Rajdhani({ 
+const rajdhani = Rajdhani({
   weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   variable: "--font-rajdhani",
@@ -33,28 +34,28 @@ const rajdhani = Rajdhani({
 });
 
 // Orbitron - Used by FRAM3 (heading - primary)
-const orbitron = Orbitron({ 
+const orbitron = Orbitron({
   subsets: ["latin"],
   variable: "--font-orbitron",
   display: "swap",
 });
 
 // Montserrat - Used by ACME (heading)
-const montserrat = Montserrat({ 
+const montserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-montserrat",
   display: "swap",
 });
 
 // Open Sans - Used by ACME (body)
-const openSans = Open_Sans({ 
+const openSans = Open_Sans({
   subsets: ["latin"],
   variable: "--font-open-sans",
   display: "swap",
 });
 
 // Space Grotesk - Used by TechCo (heading)
-const spaceGrotesk = Space_Grotesk({ 
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
   display: "swap",
@@ -75,7 +76,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html 
+    <html
       lang="en"
       data-brand={brand.id}
       className={`
@@ -92,11 +93,11 @@ export default function RootLayout({
         <link rel="icon" href={brand.logo.favicon} />
       </head>
       <body className={inter.className}>
-        <AppRouterCacheProvider>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
-        </AppRouterCacheProvider>
+        <EmotionRegistry options={{ key: "mui" }}>
+          <AppRouterCacheProvider>
+            <ThemeProvider>{children}</ThemeProvider>
+          </AppRouterCacheProvider>
+        </EmotionRegistry>
       </body>
     </html>
   );
