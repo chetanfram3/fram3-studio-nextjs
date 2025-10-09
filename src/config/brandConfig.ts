@@ -118,7 +118,7 @@ export const brands: Record<string, BrandConfig> = {
       heading: '"Orbitron", "Rajdhani", sans-serif',
       body: '"Inter", sans-serif',
     },
-    borderRadius: 8,
+    borderRadius: 4,
     spacing: 8,
   },
 
