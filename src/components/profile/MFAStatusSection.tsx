@@ -335,6 +335,7 @@ export default function MFAStatusSection() {
               sx={{
                 mt: 2,
                 borderRadius: `${brand.borderRadius}px`,
+                backgroundColor: "background.paper",
               }}
             >
               <Typography variant="body2">
