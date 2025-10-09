@@ -231,8 +231,12 @@ export async function unenrollMFA(factorUid: string): Promise<void> {
         await multiFactor(user).unenroll(factor);
 
         logger.debug('MFA factor unenrolled successfully');
-    } catch (error) {
-        logger.error('Error unenrolling MFA:', error);
+    } catch (error: any) {
+        if (error?.code === 'auth/requires-recent-login') {
+            logger.debug('Reauthentication required for MFA removal');
+        } else {
+            logger.error('Error unenrolling MFA:', error);
+        }
         throw handleAuthError(error);
     }
 }
