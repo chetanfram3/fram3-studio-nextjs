@@ -7,7 +7,6 @@ import {
     sendEmailVerification
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { RegisterData } from '@/types/auth';
 import { registerUser } from './registerService';
 import { handleAuthError } from '@/utils/errorHandlers';
 import logger from '@/utils/logger';
@@ -23,7 +22,10 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
         logger.debug('Sign in successful:', userCredential.user.uid);
         return userCredential.user;
-    } catch (error) {
+    } catch (error: any) {
+        if (error?.code === 'auth/multi-factor-auth-required') {
+            throw error;
+        }
         logger.error('Email sign-in error:', error);
         throw handleAuthError(error);
     }
