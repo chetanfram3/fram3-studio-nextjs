@@ -1,5 +1,7 @@
 // src/types/profile.ts
 
+import { ConsentPreferences } from "./consent";
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -33,6 +35,7 @@ export interface UserProfile {
       preferences: Preferences;
       genre: string[];
       expertise: string[];
+      consentPreferences?: ConsentPreferences;
     };
   };
 }
