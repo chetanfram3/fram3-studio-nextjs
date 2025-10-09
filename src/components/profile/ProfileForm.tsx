@@ -20,9 +20,16 @@ import {
   ListItemText,
   CircularProgress,
   Divider,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { Error as ErrorIcon, Save as SaveIcon } from "@mui/icons-material";
+import {
+  Error as ErrorIcon,
+  Save as SaveIcon,
+  Person as PersonIcon,
+  Security as SecurityIcon,
+} from "@mui/icons-material";
 import { getCurrentBrand } from "@/config/brandConfig";
 import {
   useProfileQuery,
@@ -40,6 +47,35 @@ import MFAStatusSection from "./MFAStatusSection";
 import { validateProfile } from "@/utils/profileHelpers";
 import { UserProfile } from "@/types/profile";
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`profile-tabpanel-${index}`}
+      aria-labelledby={`profile-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box>{children}</Box>}
+    </div>
+  );
+}
+
+function a11yProps(index: number) {
+  return {
+    id: `profile-tab-${index}`,
+    "aria-controls": `profile-tabpanel-${index}`,
+  };
+}
+
 export default function ProfileForm() {
   const theme = useTheme();
   const brand = getCurrentBrand();
@@ -54,63 +90,42 @@ export default function ProfileForm() {
 
   const updateProfile = useUpdateProfileMutation();
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState(0);
+
   // Local state for form editing
   const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
 
-  // Sync profile data to local state when loaded
+  // Initialize edited profile when data loads
   useEffect(() => {
-    if (profile && !editedProfile) {
+    if (profile) {
       setEditedProfile(profile);
     }
-  }, [profile, editedProfile]);
+  }, [profile]);
 
-  // Show error dialog when validation errors exist
-  useEffect(() => {
-    if (validationErrors.length > 0) {
-      setShowErrorDialog(true);
-    }
-  }, [validationErrors]);
-
-  // Show success message when mutation succeeds
-  useEffect(() => {
-    if (updateProfile.isSuccess) {
-      setShowSuccess(true);
-    }
-  }, [updateProfile.isSuccess]);
-
-  /**
-   * Update a field in the edited profile
-   * Supports nested paths like ['extendedInfo', 'details', 'firstName']
-   */
-  const updateField = (path: string[], value: any) => {
-    setEditedProfile((currentProfile) => {
-      if (!currentProfile) return null;
-
-      const newProfile = { ...currentProfile };
-      let current: any = newProfile;
-
-      // Navigate to the nested object, creating objects if they don't exist
-      for (let i = 0; i < path.length - 1; i++) {
-        if (!current[path[i]]) {
-          current[path[i]] = {};
-        }
-        // Create a new object reference for immutability
-        current[path[i]] = { ...current[path[i]] };
-        current = current[path[i]];
-      }
-
-      // Update the value
-      current[path[path.length - 1]] = value;
-      return newProfile;
-    });
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
   };
 
-  /**
-   * Handle form submission
-   */
+  // Helper to update nested fields
+  const updateField = (path: string[], value: any) => {
+    if (!editedProfile) return;
+
+    const newProfile = { ...editedProfile };
+    let current: any = newProfile;
+
+    for (let i = 0; i < path.length - 1; i++) {
+      current[path[i]] = { ...current[path[i]] };
+      current = current[path[i]];
+    }
+
+    current[path[path.length - 1]] = value;
+    setEditedProfile(newProfile);
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editedProfile) return;
@@ -119,124 +134,145 @@ export default function ProfileForm() {
     const errors = validateProfile(editedProfile);
     if (errors.length > 0) {
       setValidationErrors(errors);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      setShowErrorDialog(true);
       return;
     }
 
+    // Clear validation errors
     setValidationErrors([]);
 
     try {
-      // Prepare update data - only send fields that can be updated
-      const updateData = {
-        displayName: editedProfile.displayName,
-        photoURL: editedProfile.photoURL,
-        phoneNumber: editedProfile.phoneNumber,
-        extendedInfo: {
-          details: {
-            firstName: editedProfile.extendedInfo.details.firstName,
-            lastName: editedProfile.extendedInfo.details.lastName,
-            dob: editedProfile.extendedInfo.details.dob,
-            address: editedProfile.extendedInfo.details.address,
-            gstin: editedProfile.extendedInfo.details.gstin,
-            preferences: editedProfile.extendedInfo.details.preferences,
-            genre: editedProfile.extendedInfo.details.genre,
-            expertise: editedProfile.extendedInfo.details.expertise,
-          },
-        },
-      };
-
-      await updateProfile.mutateAsync(updateData);
-    } catch (err) {
-      console.error("Profile update failed:", err);
+      await updateProfile.mutateAsync(editedProfile);
+      setShowSuccess(true);
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      setValidationErrors([
+        error instanceof Error ? error.message : "Failed to update profile",
+      ]);
+      setShowErrorDialog(true);
     }
-  };
-
-  const handleCloseErrorDialog = () => {
-    setShowErrorDialog(false);
   };
 
   const handleCloseSuccess = () => {
     setShowSuccess(false);
   };
 
-  // Show loading animation only on initial load (when there's no cached data)
-  if (isLoading && !editedProfile) {
+  const handleCloseErrorDialog = () => {
+    setShowErrorDialog(false);
+  };
+
+  if (isLoading) {
     return (
-      <Container maxWidth="lg">
-        <LoadingAnimation message="Loading your profile..." minHeight="80vh" />
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <LoadingAnimation message="Loading your profile..." />
       </Container>
     );
   }
 
-  // Show error if profile failed to load
-  if (isError || !editedProfile) {
+  if (isError || !profile || !editedProfile) {
     return (
-      <Container maxWidth="lg">
-        <Box sx={{ py: 4 }}>
-          <Alert
-            severity="error"
-            sx={{ borderRadius: `${brand.borderRadius}px` }}
-          >
-            {queryError?.message ||
-              "Failed to load profile. Please refresh the page or contact support."}
-          </Alert>
-        </Box>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Alert
+          severity="error"
+          sx={{ borderRadius: `${brand.borderRadius}px` }}
+        >
+          <Typography variant="h6" gutterBottom>
+            Failed to Load Profile
+          </Typography>
+          <Typography variant="body2">
+            {queryError instanceof Error
+              ? queryError.message
+              : "An error occurred while loading your profile. Please try again."}
+          </Typography>
+        </Alert>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ py: 4 }}>
-        {/* Validation Errors */}
-        {validationErrors.length > 0 && (
-          <Alert
-            severity="error"
-            sx={{ mb: 3, borderRadius: `${brand.borderRadius}px` }}
-          >
-            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-              Please fix the following errors:
-            </Typography>
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
-              {validationErrors.map((error, index) => (
-                <li key={index}>{error}</li>
-              ))}
-            </ul>
-          </Alert>
-        )}
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Profile Banner - Outside the tabs */}
+      <ProfileBanner
+        banner=""
+        photoURL={editedProfile.photoURL}
+        displayName={editedProfile.displayName}
+      />
 
-        {/* Mutation Error */}
-        {updateProfile.isError && (
-          <Alert
-            severity="error"
-            sx={{ mb: 3, borderRadius: `${brand.borderRadius}px` }}
-          >
-            {updateProfile.error?.message ||
-              "Failed to update profile. Please try again."}
-          </Alert>
-        )}
-
-        {/* Profile Banner - Outside Paper */}
-        <ProfileBanner
-          banner=""
-          photoURL={editedProfile.photoURL}
-          displayName={editedProfile.displayName}
-        />
-
-        {/* Profile Form */}
-        <Paper
-          elevation={0}
+      {/* Main Paper with Tabs */}
+      <Paper
+        elevation={0}
+        sx={{
+          mt: 8,
+          borderRadius: `${brand.borderRadius * 1.5}px`,
+          bgcolor: "background.paper",
+          border: 1,
+          borderColor: "primary.dark",
+        }}
+      >
+        {/* Tabs Header */}
+        <Box
           sx={{
-            p: { xs: 2, md: 4 },
-            mt: 8,
-            backgroundColor: "background.default",
-            borderRadius: `${brand.borderRadius * 1.5}px`,
-            border: 1,
-            borderColor: "primary.dark",
+            borderBottom: 1,
+            borderColor: "divider",
+            display: "flex",
+            justifyContent: "center",
           }}
         >
-          <Box component="form" onSubmit={handleFormSubmit}>
-            {/* BasicInfoSection - expects profile and onUpdate */}
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="profile tabs"
+            centered
+            sx={{
+              "& .MuiTabs-indicator": {
+                backgroundColor: "primary.main",
+                height: 3,
+                borderRadius: `${brand.borderRadius}px ${brand.borderRadius}px 0 0`,
+              },
+              "& .MuiTab-root": {
+                textTransform: "none",
+                fontFamily: brand.fonts.heading,
+                fontSize: "1rem",
+                fontWeight: 600,
+                minHeight: 64,
+                color: "text.secondary",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  color: "primary.main",
+                  bgcolor:
+                    theme.palette.mode === "dark"
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(0, 0, 0, 0.02)",
+                },
+                "&.Mui-selected": {
+                  color: "primary.main",
+                },
+              },
+            }}
+          >
+            <Tab
+              icon={<PersonIcon />}
+              iconPosition="start"
+              label="Profile"
+              {...a11yProps(0)}
+            />
+            <Tab
+              icon={<SecurityIcon />}
+              iconPosition="start"
+              label="Security"
+              {...a11yProps(1)}
+            />
+          </Tabs>
+        </Box>
+
+        {/* Profile Tab Panel */}
+        <TabPanel value={activeTab} index={0}>
+          <Box
+            component="form"
+            onSubmit={handleFormSubmit}
+            sx={{ p: { xs: 2, md: 4 } }}
+          >
+            {/* BasicInfoSection */}
             <BasicInfoSection
               profile={editedProfile}
               onUpdate={(field, value) => updateField(field, value)}
@@ -244,7 +280,7 @@ export default function ProfileForm() {
 
             <Divider sx={{ my: 4 }} />
 
-            {/* AddressSection - expects address and onUpdate */}
+            {/* AddressSection */}
             <AddressSection
               address={editedProfile.extendedInfo.details.address}
               onUpdate={(field, value) =>
@@ -257,7 +293,7 @@ export default function ProfileForm() {
 
             <Divider sx={{ my: 4 }} />
 
-            {/* GSTINDetails - expects gstin, companyName, and onChange */}
+            {/* GSTINDetails */}
             <GSTINDetails
               gstin={editedProfile.extendedInfo.details.gstin?.number || ""}
               companyName={
@@ -277,7 +313,7 @@ export default function ProfileForm() {
 
             <Divider sx={{ my: 4 }} />
 
-            {/* PreferencesSection - expects preferences and onUpdate */}
+            {/* PreferencesSection */}
             <PreferencesSection
               preferences={editedProfile.extendedInfo.details.preferences}
               onUpdate={(field, value) =>
@@ -332,28 +368,12 @@ export default function ProfileForm() {
               }
             />
 
-            {/* Sticky Save Button */}
-            <Box
-              sx={{
-                mt: 3,
-                mb: 2,
-                display: "flex",
-                justifyContent: "flex-end",
-                position: "sticky",
-                bottom: 16,
-                backgroundColor: "background.default",
-                padding: 2,
-                borderRadius: `${brand.borderRadius}px`,
-                boxShadow: theme.shadows[4],
-                zIndex: 10,
-                border: 1,
-                borderColor: "divider",
-              }}
-            >
+            {/* Save Button */}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 4 }}>
               <Button
                 type="submit"
                 variant="contained"
-                disabled={updateProfile.isPending}
+                size="large"
                 startIcon={
                   updateProfile.isPending ? (
                     <CircularProgress size={20} color="inherit" />
@@ -361,131 +381,113 @@ export default function ProfileForm() {
                     <SaveIcon />
                   )
                 }
+                disabled={updateProfile.isPending}
                 sx={{
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  fontWeight: 600,
+                  borderRadius: `${brand.borderRadius}px`,
                   px: 4,
                   py: 1.5,
-                  borderRadius: `${brand.borderRadius}px`,
-                  fontFamily: brand.fonts.heading,
-                  "&:hover": {
-                    bgcolor: "primary.dark",
-                  },
-                  "&:disabled": {
-                    bgcolor: "action.disabledBackground",
-                    color: "action.disabled",
-                  },
+                  fontWeight: 600,
+                  textTransform: "none",
+                  fontSize: "1rem",
                 }}
               >
                 {updateProfile.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </Box>
+          </Box>
+        </TabPanel>
 
-            <Divider sx={{ my: 4 }} />
+        {/* Security Tab Panel */}
+        <TabPanel value={activeTab} index={1}>
+          <Box sx={{ p: { xs: 2, md: 4 } }}>
+            {/* MFA Status Section */}
             <MFAStatusSection />
 
-            {/* MetadataSection - expects metadata and providerData */}
+            <Divider sx={{ my: 4 }} />
+
+            {/* Metadata Section - Read-only account info */}
             <MetadataSection
               metadata={editedProfile.metadata}
               providerData={editedProfile.providerData}
             />
           </Box>
-        </Paper>
+        </TabPanel>
+      </Paper>
 
-        {/* Error Dialog */}
-        <Dialog
-          open={showErrorDialog}
-          onClose={handleCloseErrorDialog}
-          maxWidth="sm"
-          fullWidth
-          PaperProps={{
-            sx: {
-              bgcolor: "background.paper",
-              borderRadius: `${brand.borderRadius * 1.5}px`,
-              border: 2,
-              borderColor: "error.main",
-            },
+      {/* Success Snackbar */}
+      <Snackbar
+        open={showSuccess}
+        autoHideDuration={4000}
+        onClose={handleCloseSuccess}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSuccess}
+          severity="success"
+          sx={{
+            width: "100%",
+            borderRadius: `${brand.borderRadius}px`,
+            boxShadow: theme.shadows[8],
           }}
         >
-          <DialogTitle
-            sx={{
-              bgcolor: "error.main",
-              color: "error.contrastText",
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              fontFamily: brand.fonts.heading,
-              fontWeight: 600,
-            }}
-          >
-            <ErrorIcon />
-            Form Validation Errors
-          </DialogTitle>
-          <DialogContent sx={{ mt: 2 }}>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              Please correct the following issues before saving:
-            </Typography>
-            <List
-              sx={{
-                bgcolor: "background.default",
-                borderRadius: `${brand.borderRadius}px`,
-                border: 1,
-                borderColor: "error.light",
-              }}
-            >
-              {validationErrors.map((err, index) => (
-                <ListItem key={index}>
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    <ErrorIcon sx={{ color: "error.main" }} fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText primary={err} />
-                </ListItem>
-              ))}
-            </List>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button
-              onClick={handleCloseErrorDialog}
-              variant="contained"
-              sx={{
-                bgcolor: "error.main",
-                "&:hover": {
-                  bgcolor: "error.dark",
-                },
-              }}
-            >
-              OK
-            </Button>
-          </DialogActions>
-        </Dialog>
+          Profile updated successfully!
+        </Alert>
+      </Snackbar>
 
-        {/* Success Snackbar */}
-        <Snackbar
-          open={showSuccess}
-          autoHideDuration={6000}
-          onClose={handleCloseSuccess}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      {/* Error Dialog */}
+      <Dialog
+        open={showErrorDialog}
+        onClose={handleCloseErrorDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: `${brand.borderRadius * 1.5}px`,
+            backgroundImage: "none !important",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            color: "error.main",
+            fontFamily: brand.fonts.heading,
+          }}
         >
-          <Alert
-            onClose={handleCloseSuccess}
-            severity="success"
+          <ErrorIcon />
+          Validation Errors
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Please fix the following errors before saving:
+          </Typography>
+          <List dense>
+            {validationErrors.map((error, index) => (
+              <ListItem key={index}>
+                <ListItemIcon>
+                  <ErrorIcon color="error" fontSize="small" />
+                </ListItemIcon>
+                <ListItemText primary={error} />
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={handleCloseErrorDialog}
+            variant="contained"
             sx={{
-              bgcolor: "primary.main",
-              color: "primary.contrastText",
-              fontWeight: 600,
-              fontSize: "1rem",
               borderRadius: `${brand.borderRadius}px`,
-              boxShadow: theme.shadows[4],
-              "& .MuiAlert-icon": {
-                color: "primary.contrastText",
-              },
+              textTransform: "none",
+              fontWeight: 600,
             }}
           >
-            Profile updated successfully!
-          </Alert>
-        </Snackbar>
-      </Box>
+            Got It
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }
