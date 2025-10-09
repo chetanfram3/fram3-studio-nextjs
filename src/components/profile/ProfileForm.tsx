@@ -36,6 +36,7 @@ import PreferencesSection from "./PreferencesSection";
 import TagsSection from "./TagsSection";
 import MetadataSection from "./MetadataSection";
 import GSTINDetails from "./GSTINDetails";
+import MFAStatusSection from "./MFAStatusSection";
 import { validateProfile } from "@/utils/profileHelpers";
 import { UserProfile } from "@/types/profile";
 
@@ -382,6 +383,7 @@ export default function ProfileForm() {
             </Box>
 
             <Divider sx={{ my: 4 }} />
+            <MFAStatusSection />
 
             {/* MetadataSection - expects metadata and providerData */}
             <MetadataSection

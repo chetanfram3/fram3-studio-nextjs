@@ -1,4 +1,3 @@
-// src/components/profile/index.ts
 export { default as ProfileForm } from './ProfileForm';
 export { default as ProfileBanner } from './ProfileBanner';
 export { default as BasicInfoSection } from './BasicInfoSection';
@@ -8,3 +7,5 @@ export { default as TagsSection } from './TagsSection';
 export { default as MetadataSection } from './MetadataSection';
 export { default as GSTINDetails } from './GSTINDetails';
 export { default as EmailVerificationStatus } from './EmailVerificationStatus';
+export { default as MFAStatusSection } from './MFAStatusSection';
+export { default as MFAEnrollmentDialog } from './MFAEnrollmentDialog';
