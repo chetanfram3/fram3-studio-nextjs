@@ -6,6 +6,6 @@ export { default as PreferencesSection } from './PreferencesSection';
 export { default as TagsSection } from './TagsSection';
 export { default as MetadataSection } from './MetadataSection';
 export { default as GSTINDetails } from './GSTINDetails';
-export { default as EmailVerificationStatus } from './EmailVerificationStatus';
+export { default as VerificationStatus } from './VerificationStatus';
 export { default as MFAStatusSection } from './MFAStatusSection';
 export { default as MFAEnrollmentDialog } from './MFAEnrollmentDialog';
