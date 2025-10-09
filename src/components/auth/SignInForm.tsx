@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Typography,
@@ -11,22 +11,22 @@ import {
   Alert,
   Container,
   CircularProgress,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Login as LoginIcon,
   PersonAdd as PersonAddIcon,
   Email as EmailIcon,
   Lock as LockIcon,
-} from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
-import { getCurrentBrand } from '@/config/brandConfig';
-import { signInWithEmail } from '@/services';
-import { useMFA } from '@/hooks/auth/useMFA';
-import LogoHeader from './LogoHeader';
-import SocialAuthButtons from './SocialAuthButtons';
-import MFADialog from './MFADialog';
-import LoadingDots from '../common/LoadingDots';
-import logger from '@/utils/logger';
+} from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
+import { signInWithEmail } from "@/services";
+import { useMFA } from "@/hooks/auth/useMFA";
+import LogoHeader from "./LogoHeader";
+import SocialAuthButtons from "./SocialAuthButtons";
+import MFADialog from "./MFADialog";
+import LoadingDots from "../common/LoadingDots";
+import logger from "@/utils/logger";
 
 /**
  * Sign In Form Component
@@ -38,36 +38,35 @@ export default function SignInForm() {
   const router = useRouter();
   const mfa = useMFA();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
-    logger.debug('Attempting email sign in');
+    logger.debug("Attempting email sign in");
 
     try {
       const user = await signInWithEmail(email, password);
 
       if (user) {
-        logger.debug('Sign in successful');
-        router.push('/dashboard');
+        logger.debug("Sign in successful");
+        router.push("/dashboard");
       }
     } catch (err: any) {
-      logger.error('Sign in error:', err);
-
       // Check if MFA is required
-      if (err.code === 'auth/multi-factor-auth-required') {
-        logger.debug('MFA required, initiating challenge');
+      if (err.code === "auth/multi-factor-auth-required") {
+        logger.debug("MFA required, initiating challenge");
         await mfa.handleMFAChallenge(err);
         setIsLoading(false);
       } else {
+        logger.error("Sign in error:", err);
         setError(
-          err.message || 'Failed to sign in. Please check your credentials.'
+          err.message || "Failed to sign in. Please check your credentials."
         );
         setIsLoading(false);
       }
@@ -78,24 +77,24 @@ export default function SignInForm() {
     const user = await mfa.handleMFAVerification();
 
     if (user) {
-      logger.debug('MFA verification successful');
-      router.push('/dashboard');
+      logger.debug("MFA verification successful");
+      router.push("/dashboard");
     }
   };
 
   const handleSocialSuccess = () => {
-    logger.debug('Social auth successful');
-    router.push('/dashboard');
+    logger.debug("Social auth successful");
+    router.push("/dashboard");
   };
 
   const handleSocialError = (error: string) => {
-    logger.error('Social auth error:', error);
+    logger.error("Social auth error:", error);
     setError(error);
   };
 
   const handleSocialMFA = async (mfaError: any) => {
-    logger.debug('Social auth requires MFA, initiating challenge');
-    setError('');
+    logger.debug("Social auth requires MFA, initiating challenge");
+    setError("");
     setIsLoading(false);
     await mfa.handleMFAChallenge(mfaError);
   };
@@ -114,8 +113,8 @@ export default function SignInForm() {
             p: { xs: 3, md: 4 },
             borderRadius: `${brand.borderRadius * 1.5}px`,
             border: 2,
-            borderColor: 'primary.main',
-            bgcolor: 'background.paper',
+            borderColor: "primary.main",
+            bgcolor: "background.paper",
           }}
         >
           <Typography
@@ -126,7 +125,7 @@ export default function SignInForm() {
             sx={{
               fontFamily: brand.fonts.heading,
               fontWeight: 600,
-              color: 'text.primary',
+              color: "text.primary",
             }}
           >
             Welcome Back
@@ -175,7 +174,7 @@ export default function SignInForm() {
               sx={{ mb: 2 }}
               InputProps={{
                 startAdornment: (
-                  <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <EmailIcon sx={{ mr: 1, color: "text.secondary" }} />
                 ),
               }}
             />
@@ -193,12 +192,12 @@ export default function SignInForm() {
               sx={{ mb: 3 }}
               InputProps={{
                 startAdornment: (
-                  <LockIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  <LockIcon sx={{ mr: 1, color: "text.secondary" }} />
                 ),
               }}
             />
 
-            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Box sx={{ display: "flex", justifyContent: "center" }}>
               <Button
                 type="submit"
                 variant="contained"
@@ -209,32 +208,32 @@ export default function SignInForm() {
                 sx={{
                   py: 1.5,
                   px: 4,
-                  textTransform: 'none',
+                  textTransform: "none",
                   fontWeight: 600,
                   borderRadius: `${brand.borderRadius / 2}px`,
-                  transition: theme.transitions.create(['all']),
-                  '&:disabled': {
-                    bgcolor: 'action.disabledBackground',
-                    color: 'action.disabled',
+                  transition: theme.transitions.create(["all"]),
+                  "&:disabled": {
+                    bgcolor: "action.disabledBackground",
+                    color: "action.disabled",
                   },
                 }}
               >
-                {isLoading ? 'Signing In...' : 'Sign In'}
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </Box>
 
             {/* Register Link */}
-            <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Box sx={{ mt: 3, textAlign: "center" }}>
               <Typography variant="body2" color="text.secondary">
                 Don't have an account yet?
               </Typography>
               <Button
-                onClick={() => router.push('/register')}
+                onClick={() => router.push("/register")}
                 variant="text"
                 startIcon={<PersonAddIcon />}
                 sx={{
                   mt: 1,
-                  textTransform: 'none',
+                  textTransform: "none",
                   fontWeight: 600,
                 }}
               >
@@ -246,12 +245,12 @@ export default function SignInForm() {
             <Button
               fullWidth
               variant="text"
-              onClick={() => router.push('/forgot-password')}
+              onClick={() => router.push("/forgot-password")}
               sx={{
                 mt: 2,
-                textTransform: 'none',
+                textTransform: "none",
                 fontWeight: 500,
-                color: 'text.secondary',
+                color: "text.secondary",
               }}
             >
               Forgot password?
