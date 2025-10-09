@@ -413,8 +413,6 @@ export default function ProfileForm() {
               metadata={editedProfile.metadata}
               providerData={editedProfile.providerData}
             />
-          </Box>
-          <Box sx={{ p: { xs: 2, md: 4 } }}>
             <Alert severity="warning" sx={{ mb: 2 }}>
               Deleting your account is permanent and cannot be undone after 30
               days.
