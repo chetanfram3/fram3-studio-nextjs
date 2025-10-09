@@ -276,6 +276,8 @@ export function useMFAEnrollment() {
 
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const pendingPhoneNumberRef = useRef<string>('');
+  // ✅ Add a flag to track if we're retrying after reauth
+  const isRetryingAfterReauth = useRef(false);
 
   /**
    * Start enrollment process
@@ -304,25 +306,16 @@ export function useMFAEnrollment() {
 
       logger.debug('Enrollment initiated, verification code sent');
     } catch (err: any) {
-      logger.error('MFA enrollment error:', err);
 
-      // Check multiple ways the error might indicate reauthentication needed
+      // ✅ Now we can check err.code because AuthError preserves it
       const errorCode = err?.code || '';
-      const errorMessage = err?.message || '';
-      const firebaseMessage = err?.error?.message || '';
 
-      // Check for reauthentication needed (multiple possible indicators)
-      const needsReauthCheck =
-        errorCode === 'auth/requires-recent-login' ||
-        errorMessage.includes('requires-recent-login') ||
-        errorMessage.includes('CREDENTIAL_TOO_OLD') ||
-        firebaseMessage.includes('CREDENTIAL_TOO_OLD_LOGIN_AGAIN');
-
-      if (needsReauthCheck) {
-        logger.debug('Reauthentication required - detected from error');
+      if (errorCode === 'auth/requires-recent-login') {
+        logger.debug('Reauthentication required - detected from error code');
         setNeedsReauth(true);
         setError('Please verify your identity to continue.');
       } else {
+        logger.error('MFA enrollment error:', err);
         setError(err instanceof Error ? err.message : 'Failed to start enrollment');
       }
     } finally {
@@ -357,6 +350,7 @@ export function useMFAEnrollment() {
           recaptchaVerifierRef.current = null;
         }
         pendingPhoneNumberRef.current = '';
+        isRetryingAfterReauth.current = false;
       } catch (err) {
         logger.error('MFA enrollment completion error:', err);
         setError(err instanceof Error ? err.message : 'Failed to complete enrollment');
@@ -371,15 +365,25 @@ export function useMFAEnrollment() {
    * Clear reauthentication flag and retry enrollment
    */
   const clearReauthFlag = useCallback(() => {
+    logger.debug('Clearing reauth flag and retrying enrollment');
+
+    // ✅ Set flag to indicate we're retrying after reauth
+    isRetryingAfterReauth.current = true;
+
     setNeedsReauth(false);
     setError('');
 
-    // Retry enrollment with stored phone number if available
-    const phoneNumber = pendingPhoneNumberRef.current;
-    if (phoneNumber) {
-      logger.debug('Retrying enrollment after reauthentication');
-      startEnrollment(phoneNumber);
-    }
+    // ✅ Use setTimeout to ensure state updates have completed
+    setTimeout(() => {
+      const phoneNumber = pendingPhoneNumberRef.current;
+      if (phoneNumber) {
+        logger.debug('Retrying enrollment after successful reauthentication');
+        startEnrollment(phoneNumber);
+      } else {
+        logger.warn('No phone number stored for retry after reauth');
+        isRetryingAfterReauth.current = false;
+      }
+    }, 100);
   }, [startEnrollment]);
 
   /**
@@ -392,10 +396,15 @@ export function useMFAEnrollment() {
     setSuccess(false);
     setNeedsReauth(false);
     pendingPhoneNumberRef.current = '';
+    isRetryingAfterReauth.current = false;
 
     if (recaptchaVerifierRef.current) {
-      recaptchaVerifierRef.current.clear();
-      recaptchaVerifierRef.current = null;
+      try {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      } catch (e) {
+        logger.warn('Failed to clear recaptcha verifier:', e);
+      }
     }
   }, []);
 

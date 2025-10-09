@@ -83,8 +83,12 @@ export async function enrollPhoneMFA(
         logger.debug('Verification code sent to phone');
 
         return verificationId;
-    } catch (error) {
-        logger.error('Error enrolling phone MFA:', error);
+    } catch (error: any) {
+        if (error?.code === 'auth/requires-recent-login') {
+            logger.debug('Reauthentication required for MFA enrollment');
+        } else {
+            logger.error('Error enrolling phone MFA:', error);
+        }
         throw handleAuthError(error);
     }
 }

@@ -1,91 +1,131 @@
+// src/utils/errorHandlers.ts
 import { FirebaseError } from 'firebase/app';
+
+// ✅ Custom error class that preserves Firebase error codes
+export class AuthError extends Error {
+  code?: string;
+  originalError?: unknown;
+
+  constructor(message: string, code?: string, originalError?: unknown) {
+    super(message);
+    this.name = 'AuthError';
+    this.code = code;
+    this.originalError = originalError;
+  }
+}
 
 /**
  * Convert Firebase authentication errors to user-friendly messages
+ * ✅ Now preserves the original error code
  */
-export function handleAuthError(error: unknown): Error {
+export function handleAuthError(error: unknown): AuthError {
   if (error instanceof FirebaseError) {
+    let message: string;
+
     switch (error.code) {
       // Email/Password errors
       case 'auth/email-already-in-use':
-        return new Error('This email is already registered. Please sign in or use a different email.');
+        message = 'This email is already registered. Please sign in or use a different email.';
+        break;
 
       case 'auth/invalid-email':
-        return new Error('Invalid email address. Please check and try again.');
+        message = 'Invalid email address. Please check and try again.';
+        break;
 
       case 'auth/operation-not-allowed':
-        return new Error('This operation is not allowed. Please contact support.');
+        message = 'This operation is not allowed. Please contact support.';
+        break;
 
       case 'auth/weak-password':
-        return new Error('Password is too weak. Please use a stronger password.');
+        message = 'Password is too weak. Please use a stronger password.';
+        break;
 
       case 'auth/user-disabled':
-        return new Error('This account has been disabled. Please contact support.');
+        message = 'This account has been disabled. Please contact support.';
+        break;
 
       case 'auth/user-not-found':
       case 'auth/wrong-password':
-        return new Error('Invalid email or password. Please try again.');
+        message = 'Invalid email or password. Please try again.';
+        break;
 
       case 'auth/invalid-credential':
-        return new Error('Invalid credentials. Please check your email and password.');
+        message = 'Invalid credentials. Please check your email and password.';
+        break;
 
       // Rate limiting
       case 'auth/too-many-requests':
-        return new Error('Too many failed attempts. Please try again later or reset your password.');
+        message = 'Too many failed attempts. Please try again later or reset your password.';
+        break;
 
       // Popup errors
       case 'auth/popup-closed-by-user':
-        return new Error('Sign-in cancelled. Please try again.');
+        message = 'Sign-in cancelled. Please try again.';
+        break;
 
       case 'auth/popup-blocked':
-        return new Error('Popup blocked by browser. Please allow popups and try again.');
+        message = 'Popup blocked by browser. Please allow popups and try again.';
+        break;
 
       case 'auth/cancelled-popup-request':
-        return new Error('Only one popup allowed at a time. Please close other popups.');
+        message = 'Only one popup allowed at a time. Please close other popups.';
+        break;
 
       // MFA errors
       case 'auth/multi-factor-auth-required':
-        return new Error('Multi-factor authentication required');
+        message = 'Multi-factor authentication required';
+        break;
 
       case 'auth/invalid-verification-code':
-        return new Error('Invalid verification code. Please try again.');
+        message = 'Invalid verification code. Please try again.';
+        break;
 
       case 'auth/code-expired':
-        return new Error('Verification code expired. Please request a new one.');
+        message = 'Verification code expired. Please request a new one.';
+        break;
 
       case 'auth/invalid-verification-id':
-        return new Error('Invalid verification ID. Please try again.');
+        message = 'Invalid verification ID. Please try again.';
+        break;
 
-      // Reauthentication error - NEW
+      // ✅ Reauthentication error - PRESERVE CODE
       case 'auth/requires-recent-login':
-        return new Error('For security, please verify your identity to continue.');
+        message = 'For security, please verify your identity to continue.';
+        break;
 
       // Network errors
       case 'auth/network-request-failed':
-        return new Error('Network error. Please check your connection and try again.');
+        message = 'Network error. Please check your connection and try again.';
+        break;
 
       case 'auth/timeout':
-        return new Error('Request timed out. Please try again.');
+        message = 'Request timed out. Please try again.';
+        break;
 
       // Token errors
       case 'auth/invalid-user-token':
       case 'auth/user-token-expired':
-        return new Error('Session expired. Please sign in again.');
+        message = 'Session expired. Please sign in again.';
+        break;
 
       // Account errors
       case 'auth/account-exists-with-different-credential':
-        return new Error('An account already exists with this email using a different sign-in method.');
+        message = 'An account already exists with this email using a different sign-in method.';
+        break;
 
       default:
-        return new Error(error.message || 'An authentication error occurred. Please try again.');
+        message = error.message || 'An authentication error occurred. Please try again.';
     }
+
+    // ✅ Return AuthError with preserved code
+    return new AuthError(message, error.code, error);
   }
 
   if (error instanceof Error) {
-    return error;
+    return new AuthError(error.message, undefined, error);
   }
 
-  return new Error('An unexpected error occurred. Please try again.');
+  return new AuthError('An unexpected error occurred. Please try again.', undefined, error);
 }
 
 /**
@@ -134,6 +174,11 @@ export function requiresReauth(error: unknown): boolean {
     return error.code === 'auth/invalid-user-token' ||
       error.code === 'auth/user-token-expired' ||
       error.code === 'auth/requires-recent-login';
+  }
+
+  // ✅ Also check AuthError instances
+  if (error instanceof AuthError) {
+    return error.code === 'auth/requires-recent-login';
   }
 
   return false;
