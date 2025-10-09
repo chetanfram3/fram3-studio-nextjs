@@ -42,6 +42,7 @@ export default function SignInForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,8 +100,11 @@ export default function SignInForm() {
     await mfa.handleMFAChallenge(mfaError);
   };
 
-  if (isLoading && !mfa.isOpen) {
-    return <LoadingDots isLoading={isLoading} text="Signing you in..." />;
+  const handleSocialLoadingChange = (loading: boolean) => {
+    setSocialLoading(loading);
+  };
+  if ((isLoading || socialLoading) && !mfa.isOpen) {
+    return <LoadingDots isLoading={true} text="Signing you in..." />;
   }
 
   return (
@@ -149,7 +153,8 @@ export default function SignInForm() {
               onSuccess={handleSocialSuccess}
               onError={handleSocialError}
               onMFARequired={handleSocialMFA}
-              disabled={isLoading}
+              onLoadingChange={handleSocialLoadingChange}
+              disabled={isLoading || socialLoading}
             />
           </Box>
 

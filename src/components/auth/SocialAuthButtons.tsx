@@ -20,6 +20,7 @@ interface SocialAuthButtonsProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
   onMFARequired?: (error: any) => void;
+  onLoadingChange?: (isLoading: boolean) => void;
   disabled?: boolean;
 }
 
@@ -38,6 +39,7 @@ export default function SocialAuthButtons({
   onSuccess,
   onError,
   onMFARequired,
+  onLoadingChange,
   disabled = false,
 }: SocialAuthButtonsProps) {
   const theme = useTheme();
@@ -69,6 +71,7 @@ export default function SocialAuthButtons({
     if (disabled || loading) return;
 
     setLoading(provider.name);
+    onLoadingChange?.(true);
     logger.debug(`Initiating ${provider.name} sign in`);
 
     try {
@@ -104,6 +107,7 @@ export default function SocialAuthButtons({
       }
     } finally {
       setLoading(null);
+      onLoadingChange?.(false);
     }
   };
 
