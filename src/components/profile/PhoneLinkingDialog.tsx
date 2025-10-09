@@ -32,7 +32,10 @@ import {
   cleanupPhoneLinkingRecaptcha,
 } from "@/services/auth/phoneLinkingService";
 import { ConfirmationResult, RecaptchaVerifier } from "firebase/auth";
-import { isValidPhoneNumber, formatPhoneNumber } from "@/services/auth/phoneAuthService";
+import {
+  isValidPhoneNumber,
+  formatPhoneNumber,
+} from "@/services/auth/phoneAuthService";
 import logger from "@/utils/logger";
 
 interface PhoneLinkingDialogProps {
@@ -288,6 +291,7 @@ export default function PhoneLinkingDialog({
                 sx={{
                   mt: 3,
                   borderRadius: `${brand.borderRadius}px`,
+                  backgroundColor: "background.default"
                 }}
               >
                 <Typography variant="body2">
@@ -350,8 +354,21 @@ export default function PhoneLinkingDialog({
                 Phone Number Verified!
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Your phone number has been successfully linked to your account.
+                Your phone number has been successfully linked to your account
+                and is now available for authentication.
               </Typography>
+              <Alert
+                severity="success"
+                sx={{
+                  mt: 2,
+                  borderRadius: `${brand.borderRadius}px`,
+                  borderColor: "background.paper",
+                }}
+              >
+                <Typography variant="body2" fontWeight={600}>
+                  No need to save - your profile has been updated automatically!
+                </Typography>
+              </Alert>
             </Box>
           )}
         </DialogContent>

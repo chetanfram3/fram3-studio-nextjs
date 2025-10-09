@@ -7,6 +7,8 @@ import { UserProfile } from "@/types/profile";
 import { getCurrentBrand } from "@/config/brandConfig";
 import VerificationStatus from "./VerificationStatus";
 import PhoneLinkingDialog from "./PhoneLinkingDialog";
+import { PROFILE_QUERY_KEY } from "@/hooks/useProfileQuery";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 interface BasicInfoSectionProps {
@@ -36,6 +38,15 @@ export default function BasicInfoSection({
   const brand = getCurrentBrand();
   const phoneVerified = isPhoneVerified(profile);
   const [phoneLinkingOpen, setPhoneLinkingOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handlePhoneLinked = async (phoneNumber: string) => {
+    await queryClient.refetchQueries({
+      queryKey: PROFILE_QUERY_KEY,
+      type: "active",
+    });
+    setPhoneLinkingOpen(false);
+  };
 
   return (
     <Box sx={{ mb: 4 }}>
@@ -172,10 +183,7 @@ export default function BasicInfoSection({
       <PhoneLinkingDialog
         open={phoneLinkingOpen}
         onClose={() => setPhoneLinkingOpen(false)}
-        onSuccess={(phoneNumber) => {
-          onUpdate(["phoneNumber"], phoneNumber);
-          setPhoneLinkingOpen(false);
-        }}
+        onSuccess={handlePhoneLinked}
         currentPhone={profile.phoneNumber}
       />
     </Box>
