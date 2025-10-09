@@ -14,7 +14,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/theme";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { getCurrentBrand } from "@/config/brandConfig";
-import CookieConsentBanner from "@/components/legal/CookieConsentBanner";
+import { ClientLayoutWrapper } from "@/components/layout/ClientLayoutWrapper";
 
 // Get current brand for metadata and HTML attributes
 const brand = getCurrentBrand();
@@ -98,8 +98,9 @@ export default function RootLayout({
         <EmotionRegistry options={{ key: "mui" }}>
           <AppRouterCacheProvider>
             <ThemeProvider>
-              <CookieConsentBanner />
-              <QueryProvider>{children}</QueryProvider>
+              <QueryProvider>
+                <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+              </QueryProvider>
             </ThemeProvider>
           </AppRouterCacheProvider>
         </EmotionRegistry>
