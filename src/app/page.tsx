@@ -533,37 +533,6 @@ export default function Home() {
           </Button>
         </Card>
       </Container>
-
-      {/* Footer */}
-      <Box
-        component="footer"
-        sx={{
-          py: 6,
-          borderTop: 1,
-          borderColor: "divider",
-          bgcolor: isDarkMode ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.02)",
-        }}
-      >
-        <Container maxWidth="xl">
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 2,
-            }}
-          >
-            <BrandLogo showText={true} size="small" />
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              © 2025 {brand.name}. All rights reserved.
-            </Typography>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Built with Next.js, Material-UI & Tailwind CSS
-            </Typography>
-          </Box>
-        </Container>
-      </Box>
     </Box>
   );
 }
