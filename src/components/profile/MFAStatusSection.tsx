@@ -1,7 +1,7 @@
 // src/components/profile/MFAStatusSection.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -22,22 +22,54 @@ import {
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { getCurrentBrand } from "@/config/brandConfig";
-import { useIsMFAEnabled } from "@/hooks/auth/useMFA";
-import {
-  formatPhoneNumberMasked,
-  unenrollMFA,
-} from "@/services/auth/mfaService";
+import { useIsMFAEnabled, useMFARemoval } from "@/hooks/auth/useMFA";
+import { formatPhoneNumberMasked } from "@/services/auth/mfaService";
 import MFAEnrollmentDialog from "./MFAEnrollmentDialog";
+import ReauthDialog from "@/components/auth/ReauthDialog";
 import logger from "@/utils/logger";
 
 export default function MFAStatusSection() {
   const theme = useTheme();
   const brand = getCurrentBrand();
   const { isEnabled, factors, loading } = useIsMFAEnabled();
+  const {
+    loading: removing,
+    error: removeError,
+    success: removeSuccess,
+    needsReauth,
+    startRemoval,
+    clearReauthFlag,
+    reset: resetRemoval,
+  } = useMFARemoval();
+
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
-  const [removing, setRemoving] = useState<string | null>(null);
+  const [reauthDialogOpen, setReauthDialogOpen] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  // ✅ FIX: Show reauth dialog when needed
+  useEffect(() => {
+    if (needsReauth) {
+      setReauthDialogOpen(true);
+    }
+  }, [needsReauth]);
+
+  // ✅ FIX: Handle removal success
+  useEffect(() => {
+    if (removeSuccess) {
+      setSuccessMessage("MFA factor has been removed from your account.");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    }
+  }, [removeSuccess]);
+
+  // ✅ FIX: Handle removal error
+  useEffect(() => {
+    if (removeError && !needsReauth) {
+      setError(removeError);
+    }
+  }, [removeError, needsReauth]);
 
   const handleEnrollClick = () => {
     setEnrollDialogOpen(true);
@@ -49,7 +81,6 @@ export default function MFAStatusSection() {
     setSuccessMessage(
       "MFA enabled successfully! Your account is now more secure."
     );
-    // Force re-render by reloading the page or using a state update
     setTimeout(() => {
       window.location.reload();
     }, 1500);
@@ -64,27 +95,21 @@ export default function MFAStatusSection() {
       return;
     }
 
-    setRemoving(factorUid);
     setError("");
+    setSuccessMessage("");
+    resetRemoval();
 
-    try {
-      logger.debug("Removing MFA factor:", factorUid);
-      await unenrollMFA(factorUid);
-      logger.debug("MFA factor removed successfully");
-      setSuccessMessage(`"${displayName}" has been removed from your account.`);
+    await startRemoval(factorUid, displayName);
+  };
 
-      // Reload to refresh factors list
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } catch (err) {
-      logger.error("Error removing MFA factor:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to remove MFA factor"
-      );
-    } finally {
-      setRemoving(null);
-    }
+  const handleReauthSuccess = () => {
+    setReauthDialogOpen(false);
+    clearReauthFlag(); // This will automatically retry removal
+  };
+
+  const handleReauthClose = () => {
+    setReauthDialogOpen(false);
+    resetRemoval();
   };
 
   if (loading) {
@@ -261,7 +286,7 @@ export default function MFAStatusSection() {
                         onClick={() =>
                           handleRemoveFactor(factor.uid, factor.displayName)
                         }
-                        disabled={removing === factor.uid}
+                        disabled={removing}
                         sx={{
                           "&:hover": {
                             bgcolor: "error.light",
@@ -327,6 +352,15 @@ export default function MFAStatusSection() {
         open={enrollDialogOpen}
         onClose={() => setEnrollDialogOpen(false)}
         onSuccess={handleEnrollSuccess}
+      />
+
+      {/* Reauthentication Dialog for Removal */}
+      <ReauthDialog
+        open={reauthDialogOpen}
+        onClose={handleReauthClose}
+        onSuccess={handleReauthSuccess}
+        title="Verify Your Identity"
+        message="For security reasons, please verify your identity before removing MFA."
       />
     </>
   );

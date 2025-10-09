@@ -31,6 +31,8 @@ import {
   reauthenticateWithProvider,
   getUserSignInMethod,
 } from "@/services/auth/reauthService";
+import { useMFA } from "@/hooks/auth/useMFA";
+import MFADialog from "@/components/auth/MFADialog";
 import logger from "@/utils/logger";
 
 interface ReauthDialogProps {
@@ -54,6 +56,9 @@ export default function ReauthDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // ✅ Add MFA support
+  const mfa = useMFA();
+
   const signInMethod = getUserSignInMethod();
 
   const handlePasswordReauth = async () => {
@@ -72,13 +77,20 @@ export default function ReauthDialog({
 
       setPassword("");
       onSuccess();
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Reauthentication error:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to verify password. Please try again."
-      );
+
+      // ✅ Check if MFA is required
+      if (err?.code === "auth/multi-factor-auth-required") {
+        logger.debug("MFA required during reauthentication");
+        await mfa.handleMFAChallenge(err);
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to verify password. Please try again."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -94,22 +106,31 @@ export default function ReauthDialog({
       logger.debug("Reauthentication successful");
 
       onSuccess();
-    } catch (err) {
+    } catch (err: any) {
       logger.error("Reauthentication error:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to verify identity. Please try again."
-      );
+
+      // ✅ Check if MFA is required
+      if (err?.code === "auth/multi-factor-auth-required") {
+        logger.debug("MFA required during reauthentication");
+        await mfa.handleMFAChallenge(err);
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to verify identity. Please try again."
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && password && !loading) {
-      handlePasswordReauth();
-    }
+  // ✅ Handle successful MFA verification
+  const handleMFASuccess = async () => {
+    logger.debug("MFA verification successful during reauthentication");
+    mfa.closeDialog();
+    // Call onSuccess to proceed with the original operation
+    onSuccess();
   };
 
   const getProviderIcon = (providerId: string) => {
@@ -139,128 +160,132 @@ export default function ReauthDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={loading ? undefined : onClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: `${brand.borderRadius * 1.5}px`,
-          border: 2,
-          backgroundImage: "none !important",
-          borderColor: "warning.main",
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          bgcolor: "warning.main",
-          color: "warning.contrastText",
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          fontFamily: brand.fonts.heading,
-          fontWeight: 600,
+    <>
+      {/* Main Reauthentication Dialog */}
+      <Dialog
+        open={open && !mfa.isOpen}
+        onClose={onClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: `${brand.borderRadius * 1.5}px`,
+            backgroundImage: "none !important",
+            border: 2,
+            borderColor: "warning.main",
+          },
         }}
       >
-        <LockIcon />
-        {title}
-      </DialogTitle>
-
-      <DialogContent sx={{ mt: 3 }}>
-        <Alert
-          severity="warning"
+        <DialogTitle
           sx={{
-            mb: 3,
-            borderRadius: `${brand.borderRadius}px`,
+            bgcolor: "warning.main",
+            color: "warning.contrastText",
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            fontFamily: brand.fonts.heading,
+            fontWeight: 600,
           }}
         >
-          {message}
-        </Alert>
+          <LockIcon />
+          {title}
+        </DialogTitle>
 
-        {error && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 3,
-              borderRadius: `${brand.borderRadius}px`,
-            }}
-          >
-            {error}
-          </Alert>
-        )}
+        <DialogContent sx={{ mt: 3 }}>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            {message}
+          </Typography>
 
-        {/* Password Reauthentication */}
-        {signInMethod.method === "password" && (
-          <Box>
-            <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
-              Please enter your password to continue:
-            </Typography>
-
-            <TextField
-              fullWidth
-              type={showPassword ? "text" : "password"}
-              label="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={loading}
-              autoFocus
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockIcon />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                      disabled={loading}
-                    >
-                      {showPassword ? (
-                        <VisibilityOffIcon />
-                      ) : (
-                        <VisibilityIcon />
-                      )}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
+          {/* Error Alert */}
+          {error && (
+            <Alert
+              severity="error"
               sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: `${brand.borderRadius}px`,
-                },
+                mb: 3,
+                borderRadius: `${brand.borderRadius}px`,
               }}
-            />
-          </Box>
-        )}
+            >
+              {error}
+            </Alert>
+          )}
 
-        {/* Social Provider Reauthentication */}
-        {signInMethod.method !== "password" &&
-          signInMethod.method !== "unknown" && (
+          {/* MFA Error Alert */}
+          {mfa.error && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: 3,
+                borderRadius: `${brand.borderRadius}px`,
+              }}
+            >
+              {mfa.error}
+            </Alert>
+          )}
+
+          {/* Password Method */}
+          {signInMethod.method === "password" && (
             <Box>
-              <Typography
-                variant="body2"
-                sx={{ mb: 2, color: "text.secondary" }}
-              >
-                You signed in with {getProviderName(signInMethod.providerId)}.
-                Please verify your identity:
-              </Typography>
+              <TextField
+                fullWidth
+                type={showPassword ? "text" : "password"}
+                label="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" && password) {
+                    handlePasswordReauth();
+                  }
+                }}
+                disabled={loading}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockIcon />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? (
+                          <VisibilityOffIcon />
+                        ) : (
+                          <VisibilityIcon />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: `${brand.borderRadius}px`,
+                  },
+                }}
+              />
+            </Box>
+          )}
 
+          {/* Social Provider Method */}
+          {(signInMethod.method === "google.com" ||
+            signInMethod.method === "facebook.com" ||
+            signInMethod.method === "twitter.com") && (
+            <Box>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                Please verify your identity by signing in with{" "}
+                {getProviderName(signInMethod.providerId)} again.
+              </Typography>
               <Button
                 fullWidth
                 variant="outlined"
-                size="large"
                 startIcon={getProviderIcon(signInMethod.providerId)}
                 onClick={() => handleProviderReauth(signInMethod.providerId)}
                 disabled={loading}
                 sx={{
                   borderRadius: `${brand.borderRadius}px`,
-                  textTransform: "none",
                   py: 1.5,
+                  fontWeight: 600,
                 }}
               >
                 {loading ? (
@@ -272,53 +297,74 @@ export default function ReauthDialog({
             </Box>
           )}
 
-        {/* Unknown Method */}
-        {signInMethod.method === "unknown" && (
-          <Alert severity="error">
-            Unable to determine your sign-in method. Please sign out and sign in
-            again.
-          </Alert>
-        )}
+          {/* Unknown Method */}
+          {signInMethod.method === "unknown" && (
+            <Alert severity="error">
+              Unable to determine your sign-in method. Please sign out and sign
+              in again.
+            </Alert>
+          )}
 
-        <Box sx={{ mt: 3 }}>
-          <Divider />
-          <Typography
-            variant="caption"
-            sx={{ mt: 2, display: "block", color: "text.secondary" }}
-          >
-            <strong>Why do I need to do this?</strong> For your security, we
-            require recent authentication before performing sensitive operations
-            like enabling MFA or changing account settings.
-          </Typography>
-        </Box>
-      </DialogContent>
+          <Box sx={{ mt: 3 }}>
+            <Divider />
+            <Typography
+              variant="caption"
+              sx={{ mt: 2, display: "block", color: "text.secondary" }}
+            >
+              <strong>Why do I need to do this?</strong> For your security, we
+              require recent authentication before performing sensitive
+              operations like enabling MFA or changing account settings.
+            </Typography>
+          </Box>
+        </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-        <Button
-          onClick={onClose}
-          disabled={loading}
-          sx={{
-            borderRadius: `${brand.borderRadius}px`,
-          }}
-        >
-          Cancel
-        </Button>
-
-        {signInMethod.method === "password" && (
+        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
           <Button
-            onClick={handlePasswordReauth}
-            variant="contained"
-            disabled={!password || loading}
-            startIcon={loading ? <CircularProgress size={20} /> : null}
+            onClick={onClose}
+            disabled={loading}
             sx={{
               borderRadius: `${brand.borderRadius}px`,
-              fontWeight: 600,
             }}
           >
-            {loading ? "Verifying..." : "Verify"}
+            Cancel
           </Button>
-        )}
-      </DialogActions>
-    </Dialog>
+
+          {signInMethod.method === "password" && (
+            <Button
+              onClick={handlePasswordReauth}
+              variant="contained"
+              disabled={!password || loading}
+              startIcon={loading ? <CircularProgress size={20} /> : null}
+              sx={{
+                borderRadius: `${brand.borderRadius}px`,
+                fontWeight: 600,
+              }}
+            >
+              {loading ? "Verifying..." : "Verify"}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* MFA Dialog - Shows when MFA is required during reauthentication */}
+      <MFADialog
+        open={mfa.isOpen}
+        phoneNumber={mfa.phoneNumber}
+        verificationCode={mfa.verificationCode}
+        onCodeChange={mfa.setVerificationCode}
+        onVerify={async () => {
+          const user = await mfa.handleMFAVerification();
+          if (user) {
+            handleMFASuccess();
+          }
+        }}
+        onClose={() => {
+          mfa.closeDialog();
+          onClose();
+        }}
+        loading={mfa.loading}
+        error={mfa.error}
+      />
+    </>
   );
 }

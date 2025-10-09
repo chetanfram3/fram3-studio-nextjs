@@ -13,6 +13,7 @@ import {
   enrollPhoneMFA,
   completePhoneMFAEnrollment,
   formatPhoneNumberMasked,
+  unenrollMFA
 } from '@/services/auth/mfaService';
 import logger from '@/utils/logger';
 
@@ -416,6 +417,90 @@ export function useMFAEnrollment() {
     needsReauth,
     startEnrollment,
     completeEnrollment,
+    reset,
+    clearReauthFlag,
+  };
+}
+
+/**
+ * Hook for MFA removal with reauthentication support
+ */
+export function useMFARemoval() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [needsReauth, setNeedsReauth] = useState(false);
+
+  const pendingFactorRef = useRef<{ uid: string; displayName: string } | null>(null);
+
+  /**
+   * Start removal process
+   */
+  const startRemoval = useCallback(async (factorUid: string, displayName: string) => {
+    setLoading(true);
+    setError('');
+    setSuccess(false);
+    setNeedsReauth(false);
+    pendingFactorRef.current = { uid: factorUid, displayName };
+
+    try {
+      logger.debug('Removing MFA factor:', factorUid);
+
+      await unenrollMFA(factorUid);
+
+      setSuccess(true);
+      logger.debug('MFA factor removed successfully');
+      pendingFactorRef.current = null;
+    } catch (err: any) {
+      // Only log as debug if it's the expected reauth error, otherwise log as error
+      if (err?.code === 'auth/requires-recent-login') {
+        logger.debug('Reauthentication required for MFA removal');
+        setNeedsReauth(true);
+        setError('Please verify your identity to continue.');
+      } else {
+        logger.error('MFA removal error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to remove MFA factor');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Clear reauthentication flag and retry removal
+   */
+  const clearReauthFlag = useCallback(() => {
+    setNeedsReauth(false);
+    setError('');
+
+    // Retry removal with stored factor if available
+    const factor = pendingFactorRef.current;
+    if (factor) {
+      logger.debug('Retrying MFA removal after reauthentication');
+      // Small delay to ensure reauthentication has propagated
+      setTimeout(() => {
+        startRemoval(factor.uid, factor.displayName);
+      }, 100);
+    }
+  }, [startRemoval]);
+
+  /**
+   * Reset removal state
+   */
+  const reset = useCallback(() => {
+    setLoading(false);
+    setError('');
+    setSuccess(false);
+    setNeedsReauth(false);
+    pendingFactorRef.current = null;
+  }, []);
+
+  return {
+    loading,
+    error,
+    success,
+    needsReauth,
+    startRemoval,
     reset,
     clearReauthFlag,
   };
