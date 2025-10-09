@@ -71,12 +71,13 @@ export default function SocialAuthButtons({
     if (disabled || loading) return;
 
     setLoading(provider.name);
-    onLoadingChange?.(true);
+    onLoadingChange?.(true); // ✅ Notify parent loading started
     logger.debug(`Initiating ${provider.name} sign in`);
 
     try {
       await provider.handler();
       logger.debug(`${provider.name} sign in successful`);
+      onLoadingChange?.(false); // ✅ Clear loading on success
       onSuccess?.();
     } catch (error: any) {
       // Check multiple ways the error code might be present
@@ -91,23 +92,26 @@ export default function SocialAuthButtons({
 
         if (onMFARequired) {
           // Pass the raw error to the parent to handle MFA
+          // DON'T clear loading here - let parent handle it
           onMFARequired(error);
         } else {
           // Fallback if no MFA handler provided
+          onLoadingChange?.(false); // ✅ Clear loading on error
           onError?.(
             "Multi-factor authentication is required. Please complete MFA setup."
           );
         }
       } else {
         logger.error(`${provider.name} sign in error:`, error);
-        // Other errors
+        // Other errors - clear loading
+        onLoadingChange?.(false); // ✅ Clear loading on error
         const errorMessage =
           error?.message || `Failed to sign in with ${provider.name}`;
         onError?.(errorMessage);
       }
     } finally {
-      setLoading(null);
-      onLoadingChange?.(false);
+      setLoading(null); // ✅ Only clear internal loading state
+      // DON'T call onLoadingChange here - it's already handled in try/catch
     }
   };
 
