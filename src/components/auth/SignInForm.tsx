@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -91,18 +91,30 @@ export default function SignInForm() {
   const handleSocialError = (error: string) => {
     logger.error("Social auth error:", error);
     setError(error);
+    setSocialLoading(false);
   };
 
   const handleSocialMFA = async (mfaError: any) => {
     logger.debug("Social auth requires MFA, initiating challenge");
     setError("");
-    setIsLoading(false);
+    // Keep socialLoading true - it will be cleared when MFA dialog opens
     await mfa.handleMFAChallenge(mfaError);
   };
 
   const handleSocialLoadingChange = (loading: boolean) => {
+    logger.debug("Social loading changed:", loading);
     setSocialLoading(loading);
   };
+
+  // Clear social loading when MFA dialog opens
+  useEffect(() => {
+    if (mfa.isOpen && socialLoading) {
+      logger.debug("MFA dialog opened, clearing social loading");
+      setSocialLoading(false);
+    }
+  }, [mfa.isOpen, socialLoading]);
+
+  // Show loading for both email and social auth, but not when MFA dialog is open
   if ((isLoading || socialLoading) && !mfa.isOpen) {
     return <LoadingDots isLoading={true} text="Signing you in..." />;
   }
@@ -174,7 +186,7 @@ export default function SignInForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
+              disabled={isLoading || socialLoading}
               autoComplete="email"
               sx={{ mb: 2 }}
               InputProps={{
@@ -192,7 +204,7 @@ export default function SignInForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
+              disabled={isLoading || socialLoading}
               autoComplete="current-password"
               sx={{ mb: 3 }}
               InputProps={{
@@ -206,7 +218,7 @@ export default function SignInForm() {
               <Button
                 type="submit"
                 variant="contained"
-                disabled={isLoading}
+                disabled={isLoading || socialLoading}
                 startIcon={
                   isLoading ? <CircularProgress size={20} /> : <LoginIcon />
                 }
@@ -236,6 +248,7 @@ export default function SignInForm() {
                 onClick={() => router.push("/register")}
                 variant="text"
                 startIcon={<PersonAddIcon />}
+                disabled={isLoading || socialLoading}
                 sx={{
                   mt: 1,
                   textTransform: "none",
@@ -251,6 +264,7 @@ export default function SignInForm() {
               fullWidth
               variant="text"
               onClick={() => router.push("/forgot-password")}
+              disabled={isLoading || socialLoading}
               sx={{
                 mt: 2,
                 textTransform: "none",
