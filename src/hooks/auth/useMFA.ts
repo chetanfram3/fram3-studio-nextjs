@@ -13,7 +13,8 @@ import {
   enrollPhoneMFA,
   completePhoneMFAEnrollment,
   formatPhoneNumberMasked,
-  unenrollMFA
+  unenrollMFA,
+  clearRecaptchaContainer
 } from '@/services/auth/mfaService';
 import logger from '@/utils/logger';
 
@@ -74,6 +75,8 @@ export function useMFA(): UseMFAReturn {
           logger.warn('Failed to clear reCAPTCHA verifier:', e);
         }
       }
+      // Clear container content
+      clearRecaptchaContainer('recaptcha-container');
     };
   }, []);
 
@@ -83,6 +86,17 @@ export function useMFA(): UseMFAReturn {
   const handleMFAChallenge = useCallback(async (mfaError: any) => {
     setLoading(true);
     setError('');
+
+    // ✅ Clean up any existing reCAPTCHA
+    if (recaptchaVerifierRef.current) {
+      try {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      } catch (e) {
+        logger.warn('Failed to clear existing reCAPTCHA:', e);
+      }
+    }
+    clearRecaptchaContainer('recaptcha-container');
 
     try {
       logger.debug('Handling MFA challenge');
@@ -131,9 +145,14 @@ export function useMFA(): UseMFAReturn {
 
       // Cleanup verifier on error
       if (recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current.clear();
-        recaptchaVerifierRef.current = null;
+        try {
+          recaptchaVerifierRef.current.clear();
+          recaptchaVerifierRef.current = null;
+        } catch (e) {
+          logger.warn('Failed to clear reCAPTCHA on error:', e);
+        }
       }
+      clearRecaptchaContainer('recaptcha-container');
     } finally {
       setLoading(false);
     }
@@ -160,9 +179,14 @@ export function useMFA(): UseMFAReturn {
 
       // Cleanup
       if (recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current.clear();
-        recaptchaVerifierRef.current = null;
+        try {
+          recaptchaVerifierRef.current.clear();
+          recaptchaVerifierRef.current = null;
+        } catch (e) {
+          logger.warn('Failed to clear reCAPTCHA after verification:', e);
+        }
       }
+      clearRecaptchaContainer('recaptcha-container');
 
       setIsOpen(false);
       setVerificationCode('');
@@ -192,9 +216,14 @@ export function useMFA(): UseMFAReturn {
     setError('');
 
     if (recaptchaVerifierRef.current) {
-      recaptchaVerifierRef.current.clear();
-      recaptchaVerifierRef.current = null;
+      try {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      } catch (e) {
+        logger.warn('Failed to clear reCAPTCHA on close:', e);
+      }
     }
+    clearRecaptchaContainer('recaptcha-container');
   }, []);
 
   /**
@@ -210,9 +239,14 @@ export function useMFA(): UseMFAReturn {
     setResolver(null);
 
     if (recaptchaVerifierRef.current) {
-      recaptchaVerifierRef.current.clear();
-      recaptchaVerifierRef.current = null;
+      try {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      } catch (e) {
+        logger.warn('Failed to clear reCAPTCHA on reset:', e);
+      }
     }
+    clearRecaptchaContainer('recaptcha-container');
   }, []);
 
   return {
@@ -277,8 +311,69 @@ export function useMFAEnrollment() {
 
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const pendingPhoneNumberRef = useRef<string>('');
-  // ✅ Add a flag to track if we're retrying after reauth
-  const isRetryingAfterReauth = useRef(false);
+  const containerIdRef = useRef<string>('recaptcha-container-enrollment'); // ✅ Unique base ID
+  const attemptCounterRef = useRef<number>(0); // ✅ Track attempts
+
+  /**
+   * Generate a unique container ID for each attempt
+   */
+  const getUniqueContainerId = useCallback(() => {
+    attemptCounterRef.current += 1;
+    return `${containerIdRef.current}-${Date.now()}-${attemptCounterRef.current}`;
+  }, []);
+
+  /**
+   * Clean up reCAPTCHA verifier and remove container
+   */
+  const cleanupRecaptcha = useCallback((containerId?: string) => {
+    // Clear verifier
+    if (recaptchaVerifierRef.current) {
+      try {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+        logger.debug('reCAPTCHA verifier cleaned up');
+      } catch (e) {
+        logger.warn('Failed to clear reCAPTCHA verifier:', e);
+      }
+    }
+
+    // Remove the specific container if provided
+    if (containerId) {
+      const container = document.getElementById(containerId);
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+        logger.debug('reCAPTCHA container removed:', containerId);
+      }
+    }
+
+    // Also clean up any orphaned containers
+    const orphanedContainers = document.querySelectorAll('[id^="recaptcha-container-enrollment"]');
+    orphanedContainers.forEach((container) => {
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    });
+  }, []);
+
+  /**
+   * Create a fresh container for reCAPTCHA
+   */
+  const createFreshContainer = useCallback((containerId: string): HTMLDivElement => {
+    // Remove existing container if it exists
+    const existing = document.getElementById(containerId);
+    if (existing && existing.parentNode) {
+      existing.parentNode.removeChild(existing);
+    }
+
+    // Create new container
+    const container = document.createElement('div');
+    container.id = containerId;
+    container.style.display = 'none';
+    document.body.appendChild(container);
+    logger.debug('Fresh reCAPTCHA container created:', containerId);
+
+    return container;
+  }, []);
 
   /**
    * Start enrollment process
@@ -290,15 +385,29 @@ export function useMFAEnrollment() {
     setNeedsReauth(false);
     pendingPhoneNumberRef.current = phoneNumber;
 
+    // ✅ Generate unique container ID for this attempt
+    const containerId = getUniqueContainerId();
+
+    // ✅ Clean up any previous attempts
+    cleanupRecaptcha();
+
+    // ✅ Create fresh container
+    const container = createFreshContainer(containerId);
+
     try {
       logger.debug('Starting MFA enrollment for phone:', phoneNumber);
 
-      // Initialize reCAPTCHA
-      const verifier = initializeRecaptchaVerifier('recaptcha-container', {
-        onError: () => setError('reCAPTCHA verification failed'),
+      // Initialize reCAPTCHA with the unique container
+      const verifier = initializeRecaptchaVerifier(containerId, {
+        onError: () => {
+          setError('reCAPTCHA verification failed');
+          cleanupRecaptcha(containerId);
+        },
       });
 
       recaptchaVerifierRef.current = verifier;
+
+      // Verify reCAPTCHA
       await verifier.verify();
 
       // Enroll phone
@@ -307,11 +416,11 @@ export function useMFAEnrollment() {
 
       logger.debug('Enrollment initiated, verification code sent');
     } catch (err: any) {
+      // Clean up reCAPTCHA on error
+      cleanupRecaptcha(containerId);
 
-      // ✅ Now we can check err.code because AuthError preserves it
-      const errorCode = err?.code || '';
-
-      if (errorCode === 'auth/requires-recent-login') {
+      // Only log as debug if it's the expected reauth error, otherwise log as error
+      if (err?.code === 'auth/requires-recent-login') {
         logger.debug('Reauthentication required - detected from error code');
         setNeedsReauth(true);
         setError('Please verify your identity to continue.');
@@ -322,7 +431,7 @@ export function useMFAEnrollment() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getUniqueContainerId, cleanupRecaptcha, createFreshContainer]);
 
   /**
    * Complete enrollment with verification code
@@ -346,12 +455,8 @@ export function useMFAEnrollment() {
         logger.debug('MFA enrollment completed successfully');
 
         // Cleanup
-        if (recaptchaVerifierRef.current) {
-          recaptchaVerifierRef.current.clear();
-          recaptchaVerifierRef.current = null;
-        }
+        cleanupRecaptcha();
         pendingPhoneNumberRef.current = '';
-        isRetryingAfterReauth.current = false;
       } catch (err) {
         logger.error('MFA enrollment completion error:', err);
         setError(err instanceof Error ? err.message : 'Failed to complete enrollment');
@@ -359,32 +464,25 @@ export function useMFAEnrollment() {
         setLoading(false);
       }
     },
-    [verificationId]
+    [verificationId, cleanupRecaptcha]
   );
 
   /**
    * Clear reauthentication flag and retry enrollment
    */
   const clearReauthFlag = useCallback(() => {
-    logger.debug('Clearing reauth flag and retrying enrollment');
-
-    // ✅ Set flag to indicate we're retrying after reauth
-    isRetryingAfterReauth.current = true;
-
     setNeedsReauth(false);
     setError('');
 
-    // ✅ Use setTimeout to ensure state updates have completed
-    setTimeout(() => {
-      const phoneNumber = pendingPhoneNumberRef.current;
-      if (phoneNumber) {
-        logger.debug('Retrying enrollment after successful reauthentication');
+    // Retry enrollment with stored phone number if available
+    const phoneNumber = pendingPhoneNumberRef.current;
+    if (phoneNumber) {
+      logger.debug('Retrying enrollment after reauthentication');
+      // ✅ Longer delay to ensure Firebase internal state is clean
+      setTimeout(() => {
         startEnrollment(phoneNumber);
-      } else {
-        logger.warn('No phone number stored for retry after reauth');
-        isRetryingAfterReauth.current = false;
-      }
-    }, 100);
+      }, 500); // Increased from 100ms to 500ms
+    }
   }, [startEnrollment]);
 
   /**
@@ -397,17 +495,10 @@ export function useMFAEnrollment() {
     setSuccess(false);
     setNeedsReauth(false);
     pendingPhoneNumberRef.current = '';
-    isRetryingAfterReauth.current = false;
+    attemptCounterRef.current = 0;
 
-    if (recaptchaVerifierRef.current) {
-      try {
-        recaptchaVerifierRef.current.clear();
-        recaptchaVerifierRef.current = null;
-      } catch (e) {
-        logger.warn('Failed to clear recaptcha verifier:', e);
-      }
-    }
-  }, []);
+    cleanupRecaptcha();
+  }, [cleanupRecaptcha]);
 
   return {
     loading,

@@ -27,6 +27,9 @@ export function initializeRecaptchaVerifier(
     try {
         logger.debug('Initializing reCAPTCHA verifier for container:', containerId);
 
+        // ✅ CRITICAL: Clear existing reCAPTCHA widgets first
+        clearRecaptchaContainer(containerId);
+
         const verifier = new RecaptchaVerifier(auth, containerId, {
             size: 'invisible',
             callback: () => {
@@ -51,8 +54,22 @@ export function initializeRecaptchaVerifier(
 }
 
 /**
+ * Safely clear a reCAPTCHA verifier
+ */
+export function clearRecaptchaVerifier(verifier: RecaptchaVerifier | null): void {
+    if (verifier) {
+        try {
+            verifier.clear();
+            logger.debug('reCAPTCHA verifier cleared');
+        } catch (error) {
+            logger.warn('Error clearing reCAPTCHA verifier:', error);
+        }
+    }
+}
+
+/**
  * Enroll phone number for MFA
- * FIXED: Now correctly uses multiFactorSession
+ * FIXED: Now correctly uses multiFactorSession and handles reCAPTCHA cleanup
  */
 export async function enrollPhoneMFA(
     phoneNumber: string,
@@ -84,6 +101,7 @@ export async function enrollPhoneMFA(
 
         return verificationId;
     } catch (error: any) {
+        // Only log as debug if it's the expected reauth error, otherwise log as error
         if (error?.code === 'auth/requires-recent-login') {
             logger.debug('Reauthentication required for MFA enrollment');
         } else {
@@ -280,4 +298,23 @@ export function formatPhoneNumberMasked(phoneNumber: string): string {
     if (digits.length <= 4) return phoneNumber;
 
     return `***-***-${digits.slice(-4)}`;
+}
+
+/**
+ * Clear all reCAPTCHA widgets from the container
+ * This prevents the "reCAPTCHA has already been rendered" error
+ */
+export function clearRecaptchaContainer(containerId: string): void {
+    try {
+        const container = document.getElementById(containerId);
+        if (container) {
+            // Clear all child elements
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+            logger.debug('reCAPTCHA container cleared:', containerId);
+        }
+    } catch (error) {
+        logger.warn('Error clearing reCAPTCHA container:', error);
+    }
 }
