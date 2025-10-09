@@ -1,3 +1,4 @@
+// src/services/auth/mfaService.ts
 import {
     multiFactor,
     PhoneAuthProvider,
@@ -51,11 +52,12 @@ export function initializeRecaptchaVerifier(
 
 /**
  * Enroll phone number for MFA
+ * FIXED: Now correctly uses multiFactorSession
  */
 export async function enrollPhoneMFA(
     phoneNumber: string,
     verifier: RecaptchaVerifier
-): Promise<void> {
+): Promise<string> {
     try {
         const user = auth.currentUser;
 
@@ -65,17 +67,22 @@ export async function enrollPhoneMFA(
 
         logger.debug('Starting phone MFA enrollment for:', phoneNumber);
 
+        // Get the multi-factor session - CRITICAL for enrollment
         const multiFactorSession = await multiFactor(user).getSession();
         const phoneAuthProvider = new PhoneAuthProvider(auth);
 
+        // FIXED: Pass session object with phoneNumber for MFA enrollment
         const verificationId = await phoneAuthProvider.verifyPhoneNumber(
-            phoneNumber,
+            {
+                phoneNumber: phoneNumber,
+                session: multiFactorSession,
+            },
             verifier
         );
 
         logger.debug('Verification code sent to phone');
 
-        return verificationId as any;
+        return verificationId;
     } catch (error) {
         logger.error('Error enrolling phone MFA:', error);
         throw handleAuthError(error);
@@ -131,7 +138,7 @@ export function getMFAResolver(error: MultiFactorError): MultiFactorResolver {
 }
 
 /**
- * Send verification code for MFA challenge
+ * Send verification code for MFA challenge (during sign-in)
  */
 export async function sendMFAVerificationCode(
     resolver: MultiFactorResolver,
