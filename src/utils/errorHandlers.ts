@@ -88,6 +88,10 @@ export function handleAuthError(error: unknown): AuthError {
         message = 'Invalid verification ID. Please try again.';
         break;
 
+      case 'auth/unsupported-first-factor':
+        message = 'Phone-only authentication is not supported when MFA is enabled. Please use Email or Social login.';
+        break;
+
       // ✅ Reauthentication error - PRESERVE CODE
       case 'auth/requires-recent-login':
         message = 'For security, please verify your identity to continue.';
