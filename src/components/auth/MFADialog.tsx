@@ -65,9 +65,8 @@ export default function MFADialog({
       fullWidth
       PaperProps={{
         sx: {
-          backgroundColor: isDarkMode ? "background.default" : "#f8f9fa", // Force solid background
+          backgroundColor: "background.paper",
           backgroundImage: "none !important", // CRITICAL: Disable MUI's elevation overlay
-          opacity: 1, // Ensure full opacity
           borderRadius: `${brand.borderRadius * 1.5}px`,
           border: 2,
           borderColor: "primary.main",
