@@ -1,4 +1,5 @@
-import { AuthGuard, RegisterForm } from '@/components/auth';
+import RegisterForm from "@/components/auth/RegisterForm";
+import AuthRedirect from "@/components/auth/AuthRedirect";
 
 /**
  * Register Page
@@ -6,12 +7,8 @@ import { AuthGuard, RegisterForm } from '@/components/auth';
  */
 export default function RegisterPage() {
   return (
-    <AuthGuard 
-      requireAuth={false} 
-      redirectIfAuthenticated="/dashboard"
-      loadingText="Loading..."
-    >
+    <AuthRedirect redirectTo="/profile">
       <RegisterForm />
-    </AuthGuard>
+    </AuthRedirect>
   );
 }

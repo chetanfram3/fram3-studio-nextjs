@@ -1,4 +1,5 @@
-import { AuthGuard, SignInForm } from '@/components/auth';
+import AuthRedirect from "@/components/auth/AuthRedirect";
+import SignInForm from "@/components/auth/SignInForm";
 
 /**
  * Sign In Page
@@ -6,12 +7,8 @@ import { AuthGuard, SignInForm } from '@/components/auth';
  */
 export default function SignInPage() {
   return (
-    <AuthGuard 
-      requireAuth={false} 
-      redirectIfAuthenticated="/dashboard"
-      loadingText="Loading..."
-    >
+    <AuthRedirect redirectTo="/dashboard">
       <SignInForm />
-    </AuthGuard>
+    </AuthRedirect>
   );
 }
