@@ -1,7 +1,7 @@
 // src/components/profile/ProfileForm.tsx
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Container,
   Box,
@@ -19,11 +19,15 @@ import {
   ListItemIcon,
   ListItemText,
   CircularProgress,
+  Divider,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { Error as ErrorIcon, Save as SaveIcon } from "@mui/icons-material";
 import { getCurrentBrand } from "@/config/brandConfig";
-import { useProfileForm } from "@/hooks/useProfileForm";
+import {
+  useProfileQuery,
+  useUpdateProfileMutation,
+} from "@/hooks/useProfileQuery";
 import { LoadingAnimation } from "@/components/common/LoadingAnimation";
 import ProfileBanner from "./ProfileBanner";
 import BasicInfoSection from "./BasicInfoSection";
@@ -33,28 +37,34 @@ import TagsSection from "./TagsSection";
 import MetadataSection from "./MetadataSection";
 import GSTINDetails from "./GSTINDetails";
 import { validateProfile } from "@/utils/profileHelpers";
+import { UserProfile } from "@/types/profile";
 
 export default function ProfileForm() {
   const theme = useTheme();
   const brand = getCurrentBrand();
+
+  // TanStack Query hooks
   const {
-    profile,
+    data: profile,
     isLoading,
-    isUpdating,
-    error,
-    loadProfile,
-    updateField,
-    handleSubmit,
-  } = useProfileForm();
+    error: queryError,
+    isError,
+  } = useProfileQuery();
 
-  const [validationErrors, setValidationErrors] = React.useState<string[]>([]);
-  const [showSuccess, setShowSuccess] = React.useState(false);
-  const [showErrorDialog, setShowErrorDialog] = React.useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+  const updateProfile = useUpdateProfileMutation();
 
+  // Local state for form editing
+  const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+
+  // Sync profile data to local state when loaded
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    if (profile && !editedProfile) {
+      setEditedProfile(profile);
+    }
+  }, [profile, editedProfile]);
 
   // Show error dialog when validation errors exist
   useEffect(() => {
@@ -63,11 +73,49 @@ export default function ProfileForm() {
     }
   }, [validationErrors]);
 
+  // Show success message when mutation succeeds
+  useEffect(() => {
+    if (updateProfile.isSuccess) {
+      setShowSuccess(true);
+    }
+  }, [updateProfile.isSuccess]);
+
+  /**
+   * Update a field in the edited profile
+   * Supports nested paths like ['extendedInfo', 'details', 'firstName']
+   */
+  const updateField = (path: string[], value: any) => {
+    setEditedProfile((currentProfile) => {
+      if (!currentProfile) return null;
+
+      const newProfile = { ...currentProfile };
+      let current: any = newProfile;
+
+      // Navigate to the nested object, creating objects if they don't exist
+      for (let i = 0; i < path.length - 1; i++) {
+        if (!current[path[i]]) {
+          current[path[i]] = {};
+        }
+        // Create a new object reference for immutability
+        current[path[i]] = { ...current[path[i]] };
+        current = current[path[i]];
+      }
+
+      // Update the value
+      current[path[path.length - 1]] = value;
+      return newProfile;
+    });
+  };
+
+  /**
+   * Handle form submission
+   */
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile) return;
+    if (!editedProfile) return;
 
-    const errors = validateProfile(profile);
+    // Validate profile
+    const errors = validateProfile(editedProfile);
     if (errors.length > 0) {
       setValidationErrors(errors);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -75,11 +123,30 @@ export default function ProfileForm() {
     }
 
     setValidationErrors([]);
+
     try {
-      await handleSubmit();
-      setShowSuccess(true);
+      // Prepare update data - only send fields that can be updated
+      const updateData = {
+        displayName: editedProfile.displayName,
+        photoURL: editedProfile.photoURL,
+        phoneNumber: editedProfile.phoneNumber,
+        extendedInfo: {
+          details: {
+            firstName: editedProfile.extendedInfo.details.firstName,
+            lastName: editedProfile.extendedInfo.details.lastName,
+            dob: editedProfile.extendedInfo.details.dob,
+            address: editedProfile.extendedInfo.details.address,
+            gstin: editedProfile.extendedInfo.details.gstin,
+            preferences: editedProfile.extendedInfo.details.preferences,
+            genre: editedProfile.extendedInfo.details.genre,
+            expertise: editedProfile.extendedInfo.details.expertise,
+          },
+        },
+      };
+
+      await updateProfile.mutateAsync(updateData);
     } catch (err) {
-      // Error is handled by the hook
+      console.error("Profile update failed:", err);
     }
   };
 
@@ -87,8 +154,12 @@ export default function ProfileForm() {
     setShowErrorDialog(false);
   };
 
-  // Show loading animation while loading profile
-  if (isLoading) {
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+  };
+
+  // Show loading animation only on initial load (when there's no cached data)
+  if (isLoading && !editedProfile) {
     return (
       <Container maxWidth="lg">
         <LoadingAnimation message="Loading your profile..." minHeight="80vh" />
@@ -97,7 +168,7 @@ export default function ProfileForm() {
   }
 
   // Show error if profile failed to load
-  if (!profile) {
+  if (isError || !editedProfile) {
     return (
       <Container maxWidth="lg">
         <Box sx={{ py: 4 }}>
@@ -105,7 +176,8 @@ export default function ProfileForm() {
             severity="error"
             sx={{ borderRadius: `${brand.borderRadius}px` }}
           >
-            Failed to load profile. Please refresh the page or contact support.
+            {queryError?.message ||
+              "Failed to load profile. Please refresh the page or contact support."}
           </Alert>
         </Box>
       </Container>
@@ -115,13 +187,44 @@ export default function ProfileForm() {
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 4 }}>
+        {/* Validation Errors */}
+        {validationErrors.length > 0 && (
+          <Alert
+            severity="error"
+            sx={{ mb: 3, borderRadius: `${brand.borderRadius}px` }}
+          >
+            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              Please fix the following errors:
+            </Typography>
+            <ul style={{ margin: 0, paddingLeft: 20 }}>
+              {validationErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </Alert>
+        )}
+
+        {/* Mutation Error */}
+        {updateProfile.isError && (
+          <Alert
+            severity="error"
+            sx={{ mb: 3, borderRadius: `${brand.borderRadius}px` }}
+          >
+            {updateProfile.error?.message ||
+              "Failed to update profile. Please try again."}
+          </Alert>
+        )}
+
+        {/* Profile Banner - Outside Paper */}
         <ProfileBanner
           banner=""
-          photoURL={profile.photoURL}
-          displayName={profile.displayName}
+          photoURL={editedProfile.photoURL}
+          displayName={editedProfile.displayName}
         />
 
+        {/* Profile Form */}
         <Paper
+          elevation={0}
           sx={{
             p: { xs: 2, md: 4 },
             mt: 8,
@@ -131,29 +234,18 @@ export default function ProfileForm() {
             borderColor: "primary.dark",
           }}
         >
-          <Box component="form" ref={formRef} onSubmit={handleFormSubmit}>
-            {error && (
-              <Alert
-                severity="error"
-                sx={{
-                  mb: 3,
-                  position: "sticky",
-                  top: 0,
-                  zIndex: 1000,
-                  borderRadius: `${brand.borderRadius}px`,
-                }}
-              >
-                {error}
-              </Alert>
-            )}
-
+          <Box component="form" onSubmit={handleFormSubmit}>
+            {/* BasicInfoSection - expects profile and onUpdate */}
             <BasicInfoSection
-              profile={profile}
+              profile={editedProfile}
               onUpdate={(field, value) => updateField(field, value)}
             />
 
+            <Divider sx={{ my: 4 }} />
+
+            {/* AddressSection - expects address and onUpdate */}
             <AddressSection
-              address={profile.extendedInfo.details.address}
+              address={editedProfile.extendedInfo.details.address}
               onUpdate={(field, value) =>
                 updateField(
                   ["extendedInfo", "details", "address", field],
@@ -162,10 +254,13 @@ export default function ProfileForm() {
               }
             />
 
+            <Divider sx={{ my: 4 }} />
+
+            {/* GSTINDetails - expects gstin, companyName, and onChange */}
             <GSTINDetails
-              gstin={profile.extendedInfo.details.gstin?.number || ""}
+              gstin={editedProfile.extendedInfo.details.gstin?.number || ""}
               companyName={
-                profile.extendedInfo.details.gstin?.companyName || ""
+                editedProfile.extendedInfo.details.gstin?.companyName || ""
               }
               onChange={(values, isValid) => {
                 if (!values.gstin && !values.companyName) {
@@ -179,8 +274,11 @@ export default function ProfileForm() {
               }}
             />
 
+            <Divider sx={{ my: 4 }} />
+
+            {/* PreferencesSection - expects preferences and onUpdate */}
             <PreferencesSection
-              preferences={profile.extendedInfo.details.preferences}
+              preferences={editedProfile.extendedInfo.details.preferences}
               onUpdate={(field, value) =>
                 updateField(
                   ["extendedInfo", "details", "preferences", field],
@@ -189,43 +287,51 @@ export default function ProfileForm() {
               }
             />
 
+            <Divider sx={{ my: 4 }} />
+
+            {/* TagsSection for Genre */}
             <TagsSection
               title="Genres"
-              tags={profile.extendedInfo.details.genre}
+              tags={editedProfile.extendedInfo.details.genre}
               onAdd={(tag) =>
                 updateField(
                   ["extendedInfo", "details", "genre"],
-                  [...profile.extendedInfo.details.genre, tag]
+                  [...editedProfile.extendedInfo.details.genre, tag]
                 )
               }
               onDelete={(tag) =>
                 updateField(
                   ["extendedInfo", "details", "genre"],
-                  profile.extendedInfo.details.genre.filter((g) => g !== tag)
+                  editedProfile.extendedInfo.details.genre.filter(
+                    (g) => g !== tag
+                  )
                 )
               }
             />
 
+            <Divider sx={{ my: 4 }} />
+
+            {/* TagsSection for Expertise */}
             <TagsSection
               title="Expertise"
-              tags={profile.extendedInfo.details.expertise}
+              tags={editedProfile.extendedInfo.details.expertise}
               onAdd={(tag) =>
                 updateField(
                   ["extendedInfo", "details", "expertise"],
-                  [...profile.extendedInfo.details.expertise, tag]
+                  [...editedProfile.extendedInfo.details.expertise, tag]
                 )
               }
               onDelete={(tag) =>
                 updateField(
                   ["extendedInfo", "details", "expertise"],
-                  profile.extendedInfo.details.expertise.filter(
+                  editedProfile.extendedInfo.details.expertise.filter(
                     (e) => e !== tag
                   )
                 )
               }
             />
 
-            {/* Sticky Save Button with loading state */}
+            {/* Sticky Save Button */}
             <Box
               sx={{
                 mt: 3,
@@ -246,9 +352,13 @@ export default function ProfileForm() {
               <Button
                 type="submit"
                 variant="contained"
-                disabled={isUpdating}
+                disabled={updateProfile.isPending}
                 startIcon={
-                  isUpdating ? <CircularProgress size={20} /> : <SaveIcon />
+                  updateProfile.isPending ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <SaveIcon />
+                  )
                 }
                 sx={{
                   bgcolor: "primary.main",
@@ -267,13 +377,16 @@ export default function ProfileForm() {
                   },
                 }}
               >
-                {isUpdating ? "Saving..." : "Save Changes"}
+                {updateProfile.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </Box>
 
+            <Divider sx={{ my: 4 }} />
+
+            {/* MetadataSection - expects metadata and providerData */}
             <MetadataSection
-              metadata={profile.metadata}
-              providerData={profile.providerData}
+              metadata={editedProfile.metadata}
+              providerData={editedProfile.providerData}
             />
           </Box>
         </Paper>
@@ -349,11 +462,11 @@ export default function ProfileForm() {
         <Snackbar
           open={showSuccess}
           autoHideDuration={6000}
-          onClose={() => setShowSuccess(false)}
+          onClose={handleCloseSuccess}
           anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
           <Alert
-            onClose={() => setShowSuccess(false)}
+            onClose={handleCloseSuccess}
             severity="success"
             sx={{
               bgcolor: "primary.main",

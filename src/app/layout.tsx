@@ -12,6 +12,7 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import EmotionRegistry from "@/lib/EmotionRegistry";
 import "./globals.css";
 import { ThemeProvider } from "@/theme";
+import { QueryProvider } from "@/providers/QueryProvider";
 import { getCurrentBrand } from "@/config/brandConfig";
 
 // Get current brand for metadata and HTML attributes
@@ -95,7 +96,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <EmotionRegistry options={{ key: "mui" }}>
           <AppRouterCacheProvider>
-            <ThemeProvider>{children}</ThemeProvider>
+            <ThemeProvider>
+              <QueryProvider>{children}</QueryProvider>
+            </ThemeProvider>
           </AppRouterCacheProvider>
         </EmotionRegistry>
       </body>
