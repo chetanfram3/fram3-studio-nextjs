@@ -26,6 +26,7 @@ import {
 } from "@mui/icons-material";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { useMFAEnrollment } from "@/hooks/auth/useMFA";
+import ReauthDialog from "@/components/auth/ReauthDialog";
 
 interface MFAEnrollmentDialogProps {
   open: boolean;
@@ -44,17 +45,27 @@ export default function MFAEnrollmentDialog({
     error,
     verificationId,
     success,
+    needsReauth,
     startEnrollment,
     completeEnrollment,
     reset,
+    clearReauthFlag,
   } = useMFAEnrollment();
 
   const [activeStep, setActiveStep] = useState(0);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [factorName, setFactorName] = useState("My Phone");
+  const [reauthDialogOpen, setReauthDialogOpen] = useState(false);
 
   const steps = ["Enter Phone Number", "Verify Code", "Complete"];
+
+  // CRITICAL FIX: Show reauth dialog when needed
+  useEffect(() => {
+    if (needsReauth && open) {
+      setReauthDialogOpen(true);
+    }
+  }, [needsReauth, open]);
 
   // Reset state when dialog opens/closes
   useEffect(() => {
@@ -64,6 +75,7 @@ export default function MFAEnrollmentDialog({
         setPhoneNumber("");
         setVerificationCode("");
         setFactorName("My Phone");
+        setReauthDialogOpen(false);
         reset();
       }, 300);
     }
@@ -114,6 +126,17 @@ export default function MFAEnrollmentDialog({
     await completeEnrollment(verificationCode, factorName);
   };
 
+  const handleReauthSuccess = () => {
+    setReauthDialogOpen(false);
+    clearReauthFlag(); // This will automatically retry enrollment
+  };
+
+  const handleReauthClose = () => {
+    setReauthDialogOpen(false);
+    // Also close the main dialog since reauth was cancelled
+    handleClose();
+  };
+
   const isPhoneValid = () => {
     const digits = phoneNumber.replace(/\D/g, "");
     return digits.length >= 10;
@@ -128,17 +151,27 @@ export default function MFAEnrollmentDialog({
       {/* Hidden reCAPTCHA container */}
       <div id="recaptcha-container" style={{ display: "none" }} />
 
+      {/* Reauthentication Dialog - Shows INSTEAD of main dialog when needed */}
+      <ReauthDialog
+        open={reauthDialogOpen}
+        onClose={handleReauthClose}
+        onSuccess={handleReauthSuccess}
+        title="Verify Your Identity"
+        message="For security reasons, please verify your identity before enabling MFA."
+      />
+
+      {/* MFA Enrollment Dialog - HIDDEN when reauth dialog is open */}
       <Dialog
-        open={open}
+        open={open && !reauthDialogOpen}
         onClose={handleClose}
         maxWidth="sm"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: `${brand.borderRadius * 1.5}px`,
+            backgroundImage: "none !important",
             border: 2,
             borderColor: "primary.main",
-            backgroundImage: "none !important",
           },
         }}
       >
@@ -167,8 +200,8 @@ export default function MFAEnrollmentDialog({
             ))}
           </Stepper>
 
-          {/* Error Alert */}
-          {error && (
+          {/* Error Alert - Don't show if it's a reauth error */}
+          {error && !needsReauth && (
             <Alert
               severity="error"
               sx={{

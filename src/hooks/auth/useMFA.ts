@@ -1,3 +1,4 @@
+// src/hooks/auth/useMFA.ts
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -40,7 +41,7 @@ export function useMFA(): UseMFAReturn {
   const [loading, setLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [resolver, setResolver] = useState<MultiFactorResolver | null>(null);
-  
+
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -50,7 +51,7 @@ export function useMFA(): UseMFAReturn {
   useEffect(() => {
     // Create container if it doesn't exist
     let container = document.getElementById('recaptcha-container') as HTMLDivElement;
-    
+
     if (!container) {
       container = document.createElement('div');
       container.id = 'recaptcha-container';
@@ -84,7 +85,7 @@ export function useMFA(): UseMFAReturn {
 
     try {
       logger.debug('Handling MFA challenge');
-      
+
       // Get resolver from error
       const mfaResolver = getMFAResolver(mfaError);
       setResolver(mfaResolver);
@@ -100,7 +101,7 @@ export function useMFA(): UseMFAReturn {
           setIsOpen(false);
         },
       });
-      
+
       recaptchaVerifierRef.current = verifier;
 
       // Verify reCAPTCHA
@@ -126,7 +127,7 @@ export function useMFA(): UseMFAReturn {
           ? err.message
           : 'Failed to initiate multi-factor authentication'
       );
-      
+
       // Cleanup verifier on error
       if (recaptchaVerifierRef.current) {
         recaptchaVerifierRef.current.clear();
@@ -151,22 +152,22 @@ export function useMFA(): UseMFAReturn {
 
     try {
       logger.debug('Verifying MFA code');
-      
+
       const user = await completeMFASignIn(resolver, verificationId, verificationCode);
-      
+
       logger.debug('MFA verification successful');
-      
+
       // Cleanup
       if (recaptchaVerifierRef.current) {
         recaptchaVerifierRef.current.clear();
         recaptchaVerifierRef.current = null;
       }
-      
+
       setIsOpen(false);
       setVerificationCode('');
       setVerificationId('');
       setResolver(null);
-      
+
       return user;
     } catch (err) {
       logger.error('MFA verification error:', err);
@@ -188,7 +189,7 @@ export function useMFA(): UseMFAReturn {
     setIsOpen(false);
     setVerificationCode('');
     setError('');
-    
+
     if (recaptchaVerifierRef.current) {
       recaptchaVerifierRef.current.clear();
       recaptchaVerifierRef.current = null;
@@ -206,7 +207,7 @@ export function useMFA(): UseMFAReturn {
     setLoading(false);
     setPhoneNumber('');
     setResolver(null);
-    
+
     if (recaptchaVerifierRef.current) {
       recaptchaVerifierRef.current.clear();
       recaptchaVerifierRef.current = null;
@@ -244,7 +245,7 @@ export function useIsMFAEnabled(): {
     try {
       const enabled = checkMFAEnabled();
       const enrolledFactors = getEnrolledMFAFactors();
-      
+
       setIsEnabled(enabled);
       setFactors(enrolledFactors);
     } catch (error) {
@@ -264,15 +265,17 @@ export function useIsMFAEnabled(): {
 }
 
 /**
- * Hook for MFA enrollment
+ * Hook for MFA enrollment with reauthentication support
  */
 export function useMFAEnrollment() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [verificationId, setVerificationId] = useState('');
   const [success, setSuccess] = useState(false);
-  
+  const [needsReauth, setNeedsReauth] = useState(false);
+
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const pendingPhoneNumberRef = useRef<string>('');
 
   /**
    * Start enrollment process
@@ -281,26 +284,47 @@ export function useMFAEnrollment() {
     setLoading(true);
     setError('');
     setSuccess(false);
+    setNeedsReauth(false);
+    pendingPhoneNumberRef.current = phoneNumber;
 
     try {
       logger.debug('Starting MFA enrollment for phone:', phoneNumber);
-      
+
       // Initialize reCAPTCHA
       const verifier = initializeRecaptchaVerifier('recaptcha-container', {
         onError: () => setError('reCAPTCHA verification failed'),
       });
-      
+
       recaptchaVerifierRef.current = verifier;
       await verifier.verify();
 
       // Enroll phone
-      const vId = await enrollPhoneMFA(phoneNumber, verifier) as any;
+      const vId = await enrollPhoneMFA(phoneNumber, verifier);
       setVerificationId(vId);
-      
+
       logger.debug('Enrollment initiated, verification code sent');
-    } catch (err) {
+    } catch (err: any) {
       logger.error('MFA enrollment error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to start enrollment');
+
+      // Check multiple ways the error might indicate reauthentication needed
+      const errorCode = err?.code || '';
+      const errorMessage = err?.message || '';
+      const firebaseMessage = err?.error?.message || '';
+
+      // Check for reauthentication needed (multiple possible indicators)
+      const needsReauthCheck =
+        errorCode === 'auth/requires-recent-login' ||
+        errorMessage.includes('requires-recent-login') ||
+        errorMessage.includes('CREDENTIAL_TOO_OLD') ||
+        firebaseMessage.includes('CREDENTIAL_TOO_OLD_LOGIN_AGAIN');
+
+      if (needsReauthCheck) {
+        logger.debug('Reauthentication required - detected from error');
+        setNeedsReauth(true);
+        setError('Please verify your identity to continue.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to start enrollment');
+      }
     } finally {
       setLoading(false);
     }
@@ -321,17 +345,18 @@ export function useMFAEnrollment() {
 
       try {
         logger.debug('Completing MFA enrollment');
-        
+
         await completePhoneMFAEnrollment(verificationId, code, displayName);
-        
+
         setSuccess(true);
         logger.debug('MFA enrollment completed successfully');
-        
+
         // Cleanup
         if (recaptchaVerifierRef.current) {
           recaptchaVerifierRef.current.clear();
           recaptchaVerifierRef.current = null;
         }
+        pendingPhoneNumberRef.current = '';
       } catch (err) {
         logger.error('MFA enrollment completion error:', err);
         setError(err instanceof Error ? err.message : 'Failed to complete enrollment');
@@ -343,6 +368,21 @@ export function useMFAEnrollment() {
   );
 
   /**
+   * Clear reauthentication flag and retry enrollment
+   */
+  const clearReauthFlag = useCallback(() => {
+    setNeedsReauth(false);
+    setError('');
+
+    // Retry enrollment with stored phone number if available
+    const phoneNumber = pendingPhoneNumberRef.current;
+    if (phoneNumber) {
+      logger.debug('Retrying enrollment after reauthentication');
+      startEnrollment(phoneNumber);
+    }
+  }, [startEnrollment]);
+
+  /**
    * Reset enrollment state
    */
   const reset = useCallback(() => {
@@ -350,7 +390,9 @@ export function useMFAEnrollment() {
     setError('');
     setVerificationId('');
     setSuccess(false);
-    
+    setNeedsReauth(false);
+    pendingPhoneNumberRef.current = '';
+
     if (recaptchaVerifierRef.current) {
       recaptchaVerifierRef.current.clear();
       recaptchaVerifierRef.current = null;
@@ -362,8 +404,10 @@ export function useMFAEnrollment() {
     error,
     verificationId,
     success,
+    needsReauth,
     startEnrollment,
     completeEnrollment,
     reset,
+    clearReauthFlag,
   };
 }
