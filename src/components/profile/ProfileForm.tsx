@@ -29,6 +29,7 @@ import {
   Save as SaveIcon,
   Person as PersonIcon,
   Security as SecurityIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { getCurrentBrand } from "@/config/brandConfig";
 import {
@@ -46,6 +47,7 @@ import GSTINDetails from "./GSTINDetails";
 import MFAStatusSection from "./MFAStatusSection";
 import { validateProfile } from "@/utils/profileHelpers";
 import { UserProfile } from "@/types/profile";
+import DeleteAccountDialog from "./DeleteAccountDialog";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -98,6 +100,7 @@ export default function ProfileForm() {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Initialize edited profile when data loads
   useEffect(() => {
@@ -409,6 +412,30 @@ export default function ProfileForm() {
             <MetadataSection
               metadata={editedProfile.metadata}
               providerData={editedProfile.providerData}
+            />
+          </Box>
+          <Box sx={{ p: { xs: 2, md: 4 } }}>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              Deleting your account is permanent and cannot be undone after 30
+              days.
+            </Alert>
+
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={() => setDeleteDialogOpen(true)}
+              sx={{
+                borderRadius: `${brand.borderRadius}px`,
+              }}
+            >
+              Delete My Account
+            </Button>
+
+            <DeleteAccountDialog
+              open={deleteDialogOpen}
+              onClose={() => setDeleteDialogOpen(false)}
+              userEmail={profile.email}
             />
           </Box>
         </TabPanel>
