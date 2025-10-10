@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "copy-favicon": "node scripts/copy-favicon.js",
-    "dev": "npm run copy-favicon && next dev -p 5180 -H app.fram3studio.local --turbopack",
+    "dev": "npm run copy-favicon && next dev -p 5180 -H app.fram3studio.local --experimental-https --turbopack",
     "build": "npm run copy-favicon && next build --turbopack",
     "start": "next start -p 5180 -H app.fram3studio.local",
     "lint": "eslint",
