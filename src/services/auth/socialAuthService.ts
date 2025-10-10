@@ -57,7 +57,7 @@ function getProvider(providerType: SocialProvider) {
 export async function handleSocialSignIn(
     providerType: SocialProvider,
     useRedirect = false
-): Promise<{ user: User; isNewUser: boolean }> {
+): Promise<{ user: User | null; isNewUser: boolean }> {
     const authStore = useAuthStore.getState();
     authStore.reset();
 
@@ -73,7 +73,7 @@ export async function handleSocialSignIn(
             // Use redirect method (better for mobile)
             await signInWithRedirect(auth, provider);
             // The actual result will be handled by checkRedirectResult
-            return { user: null as any, isNewUser: false };
+            return { user: null, isNewUser: false };
         } else {
             // Use popup method (better for desktop)
             result = await signInWithPopup(auth, provider);
@@ -95,9 +95,10 @@ export async function handleSocialSignIn(
         logger.debug(`${providerType} sign in completed, isNewUser: ${isNewUser}`);
 
         return { user, isNewUser };
-    } catch (error: any) {
+    } catch (error: unknown) {
         // CRITICAL: If it's an MFA error, re-throw it as-is so the UI can handle it
-        if (error.code === 'auth/multi-factor-auth-required') {
+        const firebaseError = error as { code?: string };
+        if (firebaseError.code === 'auth/multi-factor-auth-required') {
             logger.debug('MFA required - re-throwing error for UI handling');
             throw error; // Re-throw the original Firebase error with code intact
         }

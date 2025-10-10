@@ -54,7 +54,7 @@ export default function CopyrightPage() {
         <Section title="1. Copyright Notice">
           <Alert severity="info" sx={{ mb: 3 }}>
             <Typography variant="body2">
-              All content on {companyName}'s Script-to-Video AI platform,
+              All content on {companyName}&apos;s Script-to-Video AI platform,
               including but not limited to text, graphics, logos, icons, images,
               audio clips, video clips, AI-generated videos, animations, data
               compilations, software, and the compilation thereof, is the
@@ -122,7 +122,7 @@ export default function CopyrightPage() {
               </ListItem>
               <ListItem>
                 <strong>You remain responsible</strong> for ensuring your
-                content does not infringe on others' intellectual property
+                content does not infringe on others&apos; intellectual property
                 rights
               </ListItem>
               <ListItem>
@@ -134,7 +134,7 @@ export default function CopyrightPage() {
 
           <SubSection title="2.3 AI-Generated Videos">
             <Typography variant="body1" paragraph>
-              Videos generated using {companyName}'s AI technology:
+              Videos generated using {companyName}&apos;s AI technology:
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
               <ListItem>
@@ -236,7 +236,7 @@ export default function CopyrightPage() {
               assets separately
             </ListItem>
             <ListItem>
-              Use our platform to create content that infringes others'
+              Use our platform to create content that infringes others&apos;
               copyrights
             </ListItem>
             <ListItem>
@@ -255,8 +255,8 @@ export default function CopyrightPage() {
         {/* Third-Party Content */}
         <Section title="4. Third-Party Content and Media Libraries">
           <Typography variant="body1" paragraph>
-            {companyName}'s platform may include licensed content from third
-            parties:
+            {companyName}&apos;s platform may include licensed content from
+            third parties:
           </Typography>
 
           <SubSection title="4.1 Stock Footage and Images">
@@ -370,8 +370,8 @@ export default function CopyrightPage() {
             <Alert severity="warning" sx={{ mb: 3 }}>
               <Typography variant="body2">
                 <strong>CRITICAL REQUIREMENT:</strong> The use of any
-                celebrity's image, likeness, voice, or persona through our AI
-                platform is STRICTLY PROHIBITED unless you possess explicit
+                celebrity&apos;s image, likeness, voice, or persona through our
+                AI platform is STRICTLY PROHIBITED unless you possess explicit
                 legal authorization, licensing rights, or written consent from
                 the individual or their legal representatives.
               </Typography>
@@ -384,8 +384,8 @@ export default function CopyrightPage() {
               <ListItem>
                 <strong>You MUST have rights:</strong> You are solely
                 responsible for obtaining all necessary rights, licenses, and
-                permissions to use any person's image, likeness, voice, or other
-                identifying characteristics
+                permissions to use any person&apos;s image, likeness, voice, or
+                other identifying characteristics
               </ListItem>
               <ListItem>
                 <strong>No unauthorized celebrity content:</strong> Creating,
@@ -404,133 +404,122 @@ export default function CopyrightPage() {
                 prohibited
               </ListItem>
               <ListItem>
-                <strong>Right of publicity:</strong> We respect individuals'
-                rights to control commercial use of their identity, including
-                name, image, likeness, and voice
+                <strong>Right of publicity:</strong> You must respect
+                individuals&apos; rights to control commercial use of their
+                identity
               </ListItem>
             </Box>
           </SubSection>
 
-          <SubSection title="6.2 Prohibited Uses of AI Technology">
+          <SubSection title="6.2 Exceptions and Permitted Uses">
             <Typography variant="body1" paragraph>
-              You may NOT use {companyName}'s AI platform to create content
-              that:
+              Limited exceptions may apply for:
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
               <ListItem>
-                Impersonates or falsely represents any real person without
-                authorization
+                <strong>News reporting and journalism:</strong> Using AI for
+                legitimate news purposes with proper attribution
               </ListItem>
               <ListItem>
-                Creates non-consensual intimate or explicit content featuring
-                real individuals
+                <strong>Historical or educational content:</strong> Academic use
+                when properly disclosed as AI-generated
               </ListItem>
               <ListItem>
-                Generates misleading political content featuring public figures
+                <strong>Parody and satire:</strong> Clearly labeled
+                transformative works protected under fair use (consult legal
+                counsel)
               </ListItem>
               <ListItem>
-                Creates fraudulent endorsements or testimonials from celebrities
-                or public figures
-              </ListItem>
-              <ListItem>
-                Produces content that could damage an individual's reputation or
-                violate their privacy rights
-              </ListItem>
-              <ListItem>
-                Generates content for harassment, defamation, or malicious
-                purposes
-              </ListItem>
-              <ListItem>
-                Creates synthetic media designed to deceive or manipulate
-                audiences
+                <strong>Licensed content:</strong> When you have obtained
+                explicit written permission from the individual or rights holder
               </ListItem>
             </Box>
           </SubSection>
 
-          <SubSection title="6.3 Required Documentation">
+          <SubSection title="6.3 Disclosure Requirements">
             <Typography variant="body1" paragraph>
-              If you create content featuring identifiable individuals, you must
-              be able to provide upon request:
+              If you create any content featuring real individuals&apos;
+              likenesses or voices (whether authorized or under fair use
+              exceptions), you MUST:
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
               <ListItem>
-                Written consent or authorization from the individual
+                Clearly label the content as AI-generated or AI-enhanced
               </ListItem>
               <ListItem>
-                Valid licensing agreements for commercial use of likeness
+                Include a disclaimer that the content is not an actual recording
+                of the individual
               </ListItem>
               <ListItem>
-                Model release forms if using real people's images
+                Not present the content in a way that could deceive viewers into
+                believing it is authentic
               </ListItem>
               <ListItem>
-                Voice talent agreements for voice cloning or synthesis
+                Comply with all applicable laws regarding synthetic media
+                disclosure
               </ListItem>
-              <ListItem>Estate permissions for deceased individuals</ListItem>
             </Box>
-
-            <Typography variant="body1" paragraph>
-              {companyName} reserves the right to request proof of authorization
-              at any time and will remove content or terminate accounts if
-              proper documentation cannot be provided.
-            </Typography>
           </SubSection>
 
-          <SubSection title="6.4 Transparency and Disclosure Requirements">
+          <SubSection title="6.4 Prohibited Uses of Personality Rights">
             <Typography variant="body1" paragraph>
-              When distributing AI-generated content featuring real individuals:
+              You are expressly prohibited from using our platform to:
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
               <ListItem>
-                <strong>Clearly disclose</strong> that content is AI-generated
-                when it could be mistaken for authentic footage
+                Create deepfakes or misleading content of politicians, public
+                officials, or candidates during election periods
               </ListItem>
               <ListItem>
-                <strong>Do not mislead audiences</strong> into believing
-                synthetic content is real or endorsed by the depicted individual
+                Generate fake endorsements or testimonials from real individuals
               </ListItem>
               <ListItem>
-                <strong>Include appropriate disclaimers</strong> for parody,
-                satire, or commentary content
+                Create non-consensual intimate imagery or content that harms an
+                individual&apos;s reputation
               </ListItem>
               <ListItem>
-                <strong>Comply with platform policies</strong> on synthetic
-                media disclosure when posting to social media or video platforms
+                Produce content that falsely depicts someone engaging in illegal
+                activities
+              </ListItem>
+              <ListItem>
+                Exploit minors&apos; images, voices, or likenesses in any way
+              </ListItem>
+              <ListItem>
+                Create content that violates personality rights laws in any
+                jurisdiction
               </ListItem>
             </Box>
-          </SubSection>
 
-          <SubSection title="6.5 Consequences of Violations">
-            <Alert severity="error" sx={{ my: 2 }}>
+            <Alert severity="error" sx={{ mt: 2 }}>
               <Typography variant="body2">
-                Violations of personality rights and unauthorized use of
-                celebrity images, voices, or likenesses will result in:
+                <strong>Zero Tolerance:</strong> Violation of these personality
+                rights provisions will result in immediate account termination,
+                content removal, and potential legal action. We cooperate fully
+                with law enforcement on such matters.
               </Typography>
-              <Box component="ul" sx={{ pl: 3, mt: 1 }}>
-                <Box component="li" sx={{ mb: 0.5 }}>
-                  <Typography variant="body2">
-                    <strong>Immediate content removal</strong>
-                  </Typography>
-                </Box>
-                <Box component="li" sx={{ mb: 0.5 }}>
-                  <Typography variant="body2">
-                    <strong>Account suspension or permanent termination</strong>
-                  </Typography>
-                </Box>
-                <Box component="li" sx={{ mb: 0.5 }}>
-                  <Typography variant="body2">
-                    <strong>Legal action and liability</strong> - you are solely
-                    responsible for any legal claims arising from unauthorized
-                    use
-                  </Typography>
-                </Box>
-                <Box component="li">
-                  <Typography variant="body2">
-                    <strong>Cooperation with law enforcement</strong> if content
-                    violates applicable laws
-                  </Typography>
-                </Box>
-              </Box>
             </Alert>
+          </SubSection>
+
+          <SubSection title="6.5 AI Detection and Monitoring">
+            <Typography variant="body1" paragraph>
+              {companyName} employs AI detection systems to identify potential
+              unauthorized use of real individuals&apos; likenesses and voices:
+            </Typography>
+            <Box component="ul" sx={{ pl: 3, mb: 2 }}>
+              <ListItem>
+                Content flagged by our systems may be reviewed manually
+              </ListItem>
+              <ListItem>
+                You may be required to provide proof of authorization or consent
+              </ListItem>
+              <ListItem>
+                Failure to provide adequate documentation may result in content
+                removal
+              </ListItem>
+              <ListItem>
+                Repeated violations lead to account suspension or termination
+              </ListItem>
+            </Box>
           </SubSection>
 
           <SubSection title="6.6 Reporting Unauthorized Use">
@@ -611,8 +600,8 @@ export default function CopyrightPage() {
               <strong>Note on Celebrity Parody:</strong> Even parody and satire
               content featuring celebrities must not violate personality rights
               or create misleading representations. Clearly label satirical
-              content and ensure it's transformative enough to qualify for fair
-              use protection.
+              content and ensure it&apos;s transformative enough to qualify for
+              fair use protection.
             </Typography>
           </Alert>
         </Section>
@@ -620,9 +609,9 @@ export default function CopyrightPage() {
         {/* Trademarks */}
         <Section title="8. Trademarks and Branding">
           <Typography variant="body1" paragraph>
-            "Fram3 Studio," our logo, and associated marks are trademarks or
-            registered trademarks of {companyName}. You may not use these marks
-            without our prior written permission, except:
+            &quot;Fram3 Studio,&quot; our logo, and associated marks are
+            trademarks or registered trademarks of {companyName}. You may not
+            use these marks without our prior written permission, except:
           </Typography>
           <Box component="ul" sx={{ pl: 3, mb: 2 }}>
             <ListItem>
@@ -719,33 +708,32 @@ export default function CopyrightPage() {
         {/* Permissions and Licensing */}
         <Section title="10. Requesting Permissions and Commercial Licensing">
           <Typography variant="body1" paragraph>
-            If you wish to use {companyName}'s technology, templates, or content
-            beyond the scope of standard user licenses, you must obtain written
-            permission. This includes:
+            If you wish to use {companyName}&apos;s technology, templates, or
+            content beyond the scope of standard user licenses, you must obtain
+            written permission.
+          </Typography>
+
+          <Typography variant="body1" paragraph>
+            Contact our business development team for:
           </Typography>
           <Box component="ul" sx={{ pl: 3, mb: 2 }}>
+            <ListItem>White-label or reselling opportunities</ListItem>
+            <ListItem>Enterprise licensing of our AI technology</ListItem>
+            <ListItem>Custom integration and API access</ListItem>
             <ListItem>
-              White-label or rebranded versions of our platform
+              Bulk licensing of templates or media library content
             </ListItem>
-            <ListItem>API access for custom integrations at scale</ListItem>
-            <ListItem>
-              Reselling or redistributing our templates or assets
-            </ListItem>
-            <ListItem>
-              Using our brand or technology in your marketing materials
-            </ListItem>
-            <ListItem>Enterprise licensing for large organizations</ListItem>
+            <ListItem>Partnership and collaboration proposals</ListItem>
           </Box>
 
           <Typography variant="body1" paragraph>
-            To request commercial licensing, contact{" "}
+            <strong>Email:</strong>{" "}
             <Link
               href="mailto:business@fram3studio.io"
               sx={{ color: "primary.main" }}
             >
               business@fram3studio.io
-            </Link>{" "}
-            with details about your intended use.
+            </Link>
           </Typography>
         </Section>
 
@@ -754,7 +742,7 @@ export default function CopyrightPage() {
           <Typography variant="body1" paragraph>
             For free-tier users, videos may include a {companyName} watermark.
             Premium subscribers can remove watermarks, but we appreciate (though
-            don't require) attribution such as:
+            don&apos;t require) attribution such as:
           </Typography>
 
           <Paper
@@ -767,10 +755,10 @@ export default function CopyrightPage() {
             }}
           >
             <Typography variant="body2" sx={{ fontStyle: "italic" }}>
-              "Created with Fram3 Studio"
+              &quot;Created with Fram3 Studio&quot;
             </Typography>
             <Typography variant="body2" sx={{ fontStyle: "italic" }}>
-              "Video generated using fram3studio.io"
+              &quot;Video generated using fram3studio.io&quot;
             </Typography>
           </Paper>
 
@@ -851,7 +839,8 @@ export default function CopyrightPage() {
           </Typography>
           <Box component="ul" sx={{ pl: 3, mb: 2 }}>
             <ListItem>
-              The "Last Updated" date at the top of this page will be revised
+              The &quot;Last Updated&quot; date at the top of this page will be
+              revised
             </ListItem>
             <ListItem>
               Significant changes will be announced via email or platform
@@ -928,6 +917,36 @@ export default function CopyrightPage() {
             </Typography>
           </Box>
         </Section>
+
+        {/* Footer */}
+        <Divider sx={{ my: 4 }} />
+        <Box sx={{ textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            © {new Date().getFullYear()} {companyName}. All rights reserved.
+          </Typography>
+          <Box
+            sx={{ mt: 2, display: "flex", justifyContent: "center", gap: 2 }}
+          >
+            <Link
+              href="/legal/privacy"
+              sx={{ color: "primary.main", fontSize: "0.875rem" }}
+            >
+              Privacy Policy
+            </Link>
+            <Link
+              href="/legal/cookies"
+              sx={{ color: "primary.main", fontSize: "0.875rem" }}
+            >
+              Cookie Policy
+            </Link>
+            <Link
+              href="/legal/terms"
+              sx={{ color: "primary.main", fontSize: "0.875rem" }}
+            >
+              Terms of Service
+            </Link>
+          </Box>
+        </Box>
       </Paper>
     </Container>
   );

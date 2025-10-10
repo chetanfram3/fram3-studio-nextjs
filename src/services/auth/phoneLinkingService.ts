@@ -63,7 +63,7 @@ export async function sendPhoneLinkingCode(
 ): Promise<ConfirmationResult> {
   try {
     const user = auth.currentUser;
-    
+
     if (!user) {
       throw new Error('No user signed in');
     }
@@ -87,17 +87,19 @@ export async function sendPhoneLinkingCode(
 
     logger.debug('Phone linking code sent successfully');
     return confirmationResult;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error sending phone linking code:', error);
-    
-    if (error?.code === 'auth/provider-already-linked') {
+
+    const firebaseError = error as { code?: string };
+
+    if (firebaseError?.code === 'auth/provider-already-linked') {
       throw new Error('This phone number is already linked to your account.');
     }
-    
-    if (error?.code === 'auth/credential-already-in-use') {
+
+    if (firebaseError?.code === 'auth/credential-already-in-use') {
       throw new Error('This phone number is already in use by another account.');
     }
-    
+
     throw handleAuthError(error);
   }
 }
@@ -116,17 +118,19 @@ export async function verifyPhoneLinkingCode(
 
     logger.debug('Phone number linked successfully');
     return userCredential.user;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error verifying phone linking code:', error);
-    
-    if (error?.code === 'auth/invalid-verification-code') {
+
+    const firebaseError = error as { code?: string };
+
+    if (firebaseError?.code === 'auth/invalid-verification-code') {
       throw new Error('Invalid verification code. Please try again.');
     }
-    
-    if (error?.code === 'auth/code-expired') {
+
+    if (firebaseError?.code === 'auth/code-expired') {
       throw new Error('Verification code expired. Please request a new code.');
     }
-    
+
     throw handleAuthError(error);
   }
 }
@@ -137,7 +141,7 @@ export async function verifyPhoneLinkingCode(
 export async function unlinkPhoneNumber(): Promise<User> {
   try {
     const user = auth.currentUser;
-    
+
     if (!user) {
       throw new Error('No user signed in');
     }
@@ -149,13 +153,15 @@ export async function unlinkPhoneNumber(): Promise<User> {
 
     logger.debug('Phone number unlinked successfully');
     return updatedUser;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error unlinking phone number:', error);
-    
-    if (error?.code === 'auth/no-such-provider') {
+
+    const firebaseError = error as { code?: string };
+
+    if (firebaseError?.code === 'auth/no-such-provider') {
       throw new Error('No phone number is linked to this account.');
     }
-    
+
     throw handleAuthError(error);
   }
 }

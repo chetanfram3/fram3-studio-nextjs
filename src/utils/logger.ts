@@ -1,3 +1,5 @@
+// src/utils/logger.ts
+
 /**
  * Logger utility for consistent logging across the application
  * Only logs debug messages in development mode
@@ -9,30 +11,30 @@ const logger = {
   /**
    * Debug level logging - only in development
    */
-  debug: (...args: any[]) => {
+  debug: (...args: unknown[]) => {
     if (isDev) {
       console.log('[DEBUG]', new Date().toISOString(), ...args);
     }
   },
-  
+
   /**
    * Info level logging - always shown
    */
-  info: (...args: any[]) => {
+  info: (...args: unknown[]) => {
     console.log('[INFO]', new Date().toISOString(), ...args);
   },
-  
+
   /**
    * Warning level logging - always shown
    */
-  warn: (...args: any[]) => {
+  warn: (...args: unknown[]) => {
     console.warn('[WARN]', new Date().toISOString(), ...args);
   },
-  
+
   /**
    * Error level logging - always shown
    */
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     console.error('[ERROR]', new Date().toISOString(), ...args);
   },
 };

@@ -52,7 +52,7 @@ export default function TermsOfServicePage() {
         {/* Agreement to Terms */}
         <Section title="1. Agreement to Terms">
           <Typography variant="body1" paragraph>
-            By accessing or using {companyName}'s services, you agree to be
+            By accessing or using {companyName}&apos;s services, you agree to be
             bound by these Terms of Service and all applicable laws and
             regulations. If you do not agree with any of these terms, you are
             prohibited from using our services.
@@ -84,8 +84,8 @@ export default function TermsOfServicePage() {
             </ListItem>
             <ListItem>Remove any copyright or proprietary notations</ListItem>
             <ListItem>
-              Transfer the materials to another person or "mirror" on any other
-              server
+              Transfer the materials to another person or &quot;mirror&quot; on
+              any other server
             </ListItem>
             <ListItem>
               Use automated systems (bots, scrapers) without permission
@@ -122,7 +122,7 @@ export default function TermsOfServicePage() {
           <SubSection title="4.1 Pricing">
             <Typography variant="body1" paragraph>
               Subscription fees are stated on our pricing page. We reserve the
-              right to change prices with 30 days' notice to existing
+              right to change prices with 30 days&apos; notice to existing
               subscribers.
             </Typography>
           </SubSection>
@@ -230,8 +230,8 @@ export default function TermsOfServicePage() {
         {/* Disclaimer */}
         <Section title="8. Disclaimer of Warranties">
           <Typography variant="body1" paragraph sx={{ fontWeight: 600 }}>
-            OUR SERVICES ARE PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND,
-            EITHER EXPRESS OR IMPLIED.
+            OUR SERVICES ARE PROVIDED &quot;AS IS&quot; WITHOUT WARRANTIES OF
+            ANY KIND, EITHER EXPRESS OR IMPLIED.
           </Typography>
           <Typography variant="body1" paragraph>
             We do not warrant that:

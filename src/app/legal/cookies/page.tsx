@@ -213,7 +213,7 @@ export default function CookiesPolicyPage() {
 
           <SubSection title="5.1 Through Our Cookie Banner">
             <Typography variant="body1" paragraph>
-              When you first visit our website, you'll see a cookie consent
+              When you first visit our website, you&apos;ll see a cookie consent
               banner. You can:
             </Typography>
             <Box component="ul" sx={{ pl: 3, mb: 2 }}>
@@ -321,11 +321,11 @@ export default function CookiesPolicyPage() {
         <Section title="7. Updates to This Policy">
           <Typography variant="body1" paragraph>
             We may update this cookie policy to reflect changes in our practices
-            or for legal reasons. When we make significant changes, we'll notify
-            you by:
+            or for legal reasons. When we make significant changes, we&apos;ll
+            notify you by:
           </Typography>
           <Box component="ul" sx={{ pl: 3, mb: 2 }}>
-            <ListItem>Updating the "Last Updated" date</ListItem>
+            <ListItem>Updating the &quot;Last Updated&quot; date</ListItem>
             <ListItem>Showing a notice on our website</ListItem>
             <ListItem>Requesting consent again if required</ListItem>
           </Box>

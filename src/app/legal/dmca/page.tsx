@@ -109,7 +109,7 @@ export default function DMCAPage() {
                 <strong>Accuracy statement:</strong> A statement, made under
                 penalty of perjury, that the information in your notice is
                 accurate and that you are the copyright owner or authorized to
-                act on the copyright owner's behalf.
+                act on the copyright owner&apos;s behalf.
               </ListItem>
               <ListItem>
                 <strong>Signature:</strong> An electronic or physical signature
@@ -223,7 +223,8 @@ export default function DMCAPage() {
               disabled access to it
             </ListItem>
             <ListItem>
-              Terminate repeat infringers' accounts in appropriate circumstances
+              Terminate repeat infringers&apos; accounts in appropriate
+              circumstances
             </ListItem>
           </Box>
         </Section>
@@ -247,8 +248,8 @@ export default function DMCAPage() {
         <Section title="7. Limitations and Good Faith">
           <Typography variant="body1" paragraph>
             Please note that under Section 512(f) of the DMCA, you may be liable
-            for damages (including costs and attorneys' fees) if you materially
-            misrepresent that material or activity is infringing.
+            for damages (including costs and attorneys&apos; fees) if you
+            materially misrepresent that material or activity is infringing.
           </Typography>
           <Typography variant="body1" paragraph>
             Before submitting a DMCA notice, please consider whether the use

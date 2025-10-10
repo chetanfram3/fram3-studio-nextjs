@@ -85,7 +85,7 @@ export function getUserInitials(displayName: string): string {
  * Parse JWT token (without verification)
  * Used for debugging/display purposes only
  */
-export function parseJWT(token: string): any {
+export function parseJWT(token: string): unknown {
   try {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');

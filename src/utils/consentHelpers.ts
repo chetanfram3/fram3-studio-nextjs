@@ -10,6 +10,18 @@ import type { UserProfile } from '@/types/profile';
 import logger from '@/utils/logger';
 
 // =============================================================================
+// WINDOW TYPE EXTENSIONS
+// =============================================================================
+
+// Extend Window interface for tracking services
+interface WindowWithTracking extends Window {
+    gtag?: (...args: unknown[]) => void;
+    fbq?: (...args: unknown[]) => void;
+}
+
+declare const window: WindowWithTracking;
+
+// =============================================================================
 // CONSTANTS
 // =============================================================================
 
@@ -330,16 +342,16 @@ export function initializeTrackingServices(consent: CookieConsent): void {
  */
 function initializeAnalytics(): void {
     try {
-        if (typeof window !== 'undefined' && (window as any).gtag) {
+        if (typeof window !== 'undefined' && window.gtag) {
             // Update consent mode
-            (window as any).gtag('consent', 'update', {
+            window.gtag('consent', 'update', {
                 analytics_storage: 'granted'
             });
 
             // Initialize GA if not already initialized
             const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
             if (GA_MEASUREMENT_ID) {
-                (window as any).gtag('config', GA_MEASUREMENT_ID);
+                window.gtag('config', GA_MEASUREMENT_ID);
             }
 
             logger.debug('✓ Google Analytics enabled');
@@ -357,8 +369,8 @@ function initializeAnalytics(): void {
  */
 function disableAnalytics(): void {
     try {
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('consent', 'update', {
+        if (typeof window !== 'undefined' && window.gtag) {
+            window.gtag('consent', 'update', {
                 analytics_storage: 'denied'
             });
         }
@@ -376,8 +388,8 @@ function initializeMarketing(): void {
     try {
         if (typeof window !== 'undefined') {
             // Google Ads consent
-            if ((window as any).gtag) {
-                (window as any).gtag('consent', 'update', {
+            if (window.gtag) {
+                window.gtag('consent', 'update', {
                     ad_storage: 'granted',
                     ad_user_data: 'granted',
                     ad_personalization: 'granted'
@@ -385,8 +397,8 @@ function initializeMarketing(): void {
             }
 
             // Facebook Pixel consent
-            if ((window as any).fbq) {
-                (window as any).fbq('consent', 'grant');
+            if (window.fbq) {
+                window.fbq('consent', 'grant');
             }
 
             logger.debug('✓ Marketing tracking enabled');
@@ -404,8 +416,8 @@ function disableMarketing(): void {
     try {
         if (typeof window !== 'undefined') {
             // Google Ads consent
-            if ((window as any).gtag) {
-                (window as any).gtag('consent', 'update', {
+            if (window.gtag) {
+                window.gtag('consent', 'update', {
                     ad_storage: 'denied',
                     ad_user_data: 'denied',
                     ad_personalization: 'denied'
@@ -413,8 +425,8 @@ function disableMarketing(): void {
             }
 
             // Facebook Pixel consent
-            if ((window as any).fbq) {
-                (window as any).fbq('consent', 'revoke');
+            if (window.fbq) {
+                window.fbq('consent', 'revoke');
             }
         }
         console.log('✗ Marketing cookies disabled');
@@ -504,15 +516,17 @@ export function needsConsentUpdate(
  * Validate consent preferences structure
  */
 export function isValidConsentPreferences(
-    preferences: any
+    preferences: unknown
 ): preferences is ConsentPreferences {
     if (!preferences || typeof preferences !== 'object') {
         return false;
     }
 
+    const prefs = preferences as Record<string, unknown>;
+
     // Check cookie consent structure if present
-    if (preferences.cookieConsent) {
-        const cc = preferences.cookieConsent;
+    if (prefs.cookieConsent) {
+        const cc = prefs.cookieConsent as Record<string, unknown>;
         if (
             typeof cc.necessary !== 'boolean' ||
             typeof cc.analytics !== 'boolean' ||
@@ -532,7 +546,7 @@ export function isValidConsentPreferences(
 // EXPORT ALL
 // =============================================================================
 
-export default {
+const consentHelpers = {
     // Constants
     CONSENT_VERSION,
     TERMS_VERSION,
@@ -568,3 +582,5 @@ export default {
     needsConsentUpdate,
     isValidConsentPreferences
 };
+
+export default consentHelpers;

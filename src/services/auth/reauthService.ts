@@ -32,9 +32,10 @@ export async function reauthenticateWithPassword(
 
         logger.debug('Reauthentication successful');
         return result.user;
-    } catch (error: any) {
+    } catch (error: unknown) {
         // ✅ Don't transform MFA errors - let them bubble up
-        if (error?.code === 'auth/multi-factor-auth-required') {
+        const firebaseError = error as { code?: string };
+        if (firebaseError?.code === 'auth/multi-factor-auth-required') {
             logger.debug('MFA required during password reauthentication');
             throw error;
         }
@@ -77,9 +78,10 @@ export async function reauthenticateWithProvider(
 
         logger.debug('Reauthentication successful');
         return result.user;
-    } catch (error: any) {
+    } catch (error: unknown) {
         // ✅ Don't transform MFA errors - let them bubble up
-        if (error?.code === 'auth/multi-factor-auth-required') {
+        const firebaseError = error as { code?: string };
+        if (firebaseError?.code === 'auth/multi-factor-auth-required') {
             logger.debug('MFA required during provider reauthentication');
             throw error;
         }

@@ -11,7 +11,7 @@ export interface Notification {
     type: NotificationType;
     title: string;
     body: string;
-    data?: Record<string, any>;
+    data?: Record<string, unknown>;
     read: boolean;
     createdAt: Date;
     actionUrl?: string;

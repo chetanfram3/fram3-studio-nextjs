@@ -199,7 +199,7 @@ export async function updatePrivacyAcceptance(
 // EXPORT DEFAULT
 // =============================================================================
 
-export default {
+const consentService = {
     updateConsentPreferences,
     getConsentPreferences,
     deleteConsentPreferences,
@@ -209,3 +209,5 @@ export default {
     updateTermsAcceptance,
     updatePrivacyAcceptance
 };
+
+export default consentService;
