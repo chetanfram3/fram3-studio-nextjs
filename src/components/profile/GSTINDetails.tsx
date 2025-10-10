@@ -183,7 +183,7 @@ export default function GSTINDetails({
           >
             <strong>GSTIN Information:</strong> Goods and Services Tax
             Identification Number is required for business users in India. If
-            you're using this platform for business purposes, please provide
+            you are using this platform for business purposes, please provide
             your valid GSTIN and registered company name.
           </Typography>
         </Box>

@@ -43,7 +43,7 @@ export function BrandSwitcher() {
     setAnchorEl(null);
   };
 
-  const handleBrandSelect = (_brandKey: string) => {
+  const handleBrandSelect = () => {
     setShowInstructions(true);
     handleClose();
 
@@ -102,7 +102,7 @@ export function BrandSwitcher() {
           return (
             <MenuItem
               key={brand.id}
-              onClick={() => handleBrandSelect(brand.id)}
+              onClick={() => handleBrandSelect()}
               sx={{
                 py: 1.5,
                 px: 2,

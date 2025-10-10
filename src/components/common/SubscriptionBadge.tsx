@@ -28,7 +28,7 @@ export const SubscriptionBadge = () => {
     accessLevel === AccessLevels.TEAM_ADMIN;
 
   // Mapping subscription levels to corresponding badge components
-  const badgeComponents: Record<string, React.ComponentType<any>> = {
+  const badgeComponents: Record<string, React.ComponentType> = {
     starter: StarterBadge,
     pro: ProBadge,
     premium: PremiumBadge,
@@ -52,7 +52,7 @@ export const SubscriptionBadge = () => {
         }
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <SubscriptionIcon sx={{ fontSize: "2.5rem" }} />
+          <SubscriptionIcon />
         </Box>
       </Tooltip>
 

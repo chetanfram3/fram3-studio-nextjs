@@ -303,7 +303,7 @@ export function getBrandDisplayInfo(brand: BrandConfig) {
 /**
  * Default export for convenience
  */
-export default {
+const brandConfig = {
   brands,
   getCurrentBrand,
   getBrandByKey,
@@ -312,3 +312,5 @@ export default {
   isValidBrandKey,
   getBrandDisplayInfo,
 };
+
+export default brandConfig;

@@ -26,6 +26,15 @@ import { formatPhoneNumberMasked } from "@/services/auth/mfaService";
 import MFAEnrollmentDialog from "./MFAEnrollmentDialog";
 import ReauthDialog from "@/components/auth/ReauthDialog";
 
+// ✅ ADD: Type definition for MFA factor
+interface MFAFactor {
+  uid: string;
+  displayName: string;
+  phoneNumber: string;
+  enrollmentTime: string;
+  factorId?: string;
+}
+
 export default function MFAStatusSection() {
   const brand = getCurrentBrand();
   const { isEnabled, factors, loading } = useIsMFAEnabled();
@@ -101,7 +110,7 @@ export default function MFAStatusSection() {
 
   const handleReauthSuccess = () => {
     setReauthDialogOpen(false);
-    clearReauthFlag(); // This will automatically retry removal
+    clearReauthFlag();
   };
 
   const handleReauthClose = () => {
@@ -118,6 +127,9 @@ export default function MFAStatusSection() {
       </Box>
     );
   }
+
+  // ✅ FIX: Cast factors to proper type
+  const typedFactors = factors as MFAFactor[];
 
   return (
     <>
@@ -214,7 +226,7 @@ export default function MFAStatusSection() {
           </Box>
 
           {/* Enrolled Factors */}
-          {isEnabled && factors.length > 0 && (
+          {isEnabled && typedFactors.length > 0 && (
             <Box sx={{ mt: 2 }}>
               <Box
                 sx={{
@@ -245,7 +257,7 @@ export default function MFAStatusSection() {
               </Box>
 
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                {factors.map((factor, index) => (
+                {typedFactors.map((factor, index) => (
                   <Box
                     key={factor.uid || index}
                     sx={{
@@ -319,9 +331,10 @@ export default function MFAStatusSection() {
                 verification code from your phone in addition to your password.
               </Typography>
               <Typography variant="body2" sx={{ mt: 1 }}>
-                <strong>Why enable it?</strong> Even if someone gets your
-                password, they won't be able to access your account without your
-                phone.
+                <strong>Why enable it?</strong>{" "}
+                {
+                  "Even if someone gets your password, they won't be able to access your account without your phone."
+                }
               </Typography>
             </Alert>
           )}
@@ -336,9 +349,7 @@ export default function MFAStatusSection() {
               }}
             >
               <Typography variant="body2">
-                ✅ Your account is protected with Multi-Factor Authentication.
-                You'll need to verify your identity with your phone when signing
-                in.
+                {`✅ Your account is protected with Multi-Factor Authentication. You'll need to verify your identity with your phone when signing in.`}
               </Typography>
             </Alert>
           )}

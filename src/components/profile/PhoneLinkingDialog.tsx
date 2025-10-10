@@ -114,9 +114,13 @@ export default function PhoneLinkingDialog({
       // Move to verification step
       setActiveStep(1);
       logger.debug("Phone linking code sent to:", formattedPhone);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Phone linking error:", err);
-      setError(err.message || "Failed to send verification code");
+
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to send verification code";
+
+      setError(errorMessage);
 
       // Clean up on error
       if (verifierRef.current) {
@@ -173,9 +177,13 @@ export default function PhoneLinkingDialog({
         onSuccess(formattedPhone);
         handleCloseDialog();
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Verification error:", err);
-      setError(err.message || "Invalid verification code");
+
+      const errorMessage =
+        err instanceof Error ? err.message : "Invalid verification code";
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -291,11 +299,11 @@ export default function PhoneLinkingDialog({
                 sx={{
                   mt: 3,
                   borderRadius: `${brand.borderRadius}px`,
-                  backgroundColor: "background.default"
+                  backgroundColor: "background.default",
                 }}
               >
                 <Typography variant="body2">
-                  <strong>You'll receive an SMS code</strong> to verify this
+                  <strong>{"You'll receive an SMS code"}</strong> to verify this
                   phone number. Standard SMS rates may apply.
                 </Typography>
               </Alert>

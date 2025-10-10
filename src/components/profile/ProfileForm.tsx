@@ -114,15 +114,18 @@ export default function ProfileForm() {
   };
 
   // Helper to update nested fields
-  const updateField = (path: string[], value: any) => {
+  const updateField = (path: string[], value: unknown) => {
     if (!editedProfile) return;
 
     const newProfile = { ...editedProfile };
-    let current: any = newProfile;
+    let current: Record<string, unknown> = newProfile as Record<
+      string,
+      unknown
+    >;
 
     for (let i = 0; i < path.length - 1; i++) {
-      current[path[i]] = { ...current[path[i]] };
-      current = current[path[i]];
+      current[path[i]] = { ...(current[path[i]] as Record<string, unknown>) };
+      current = current[path[i]] as Record<string, unknown>;
     }
 
     current[path[path.length - 1]] = value;

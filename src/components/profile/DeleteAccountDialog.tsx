@@ -62,9 +62,13 @@ export default function DeleteAccountDialog({
       await downloadUserData();
       setDownloadedData(true);
       logger.debug("User data downloaded successfully");
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Error downloading user data:", err);
-      setError(err.message || "Failed to download data");
+
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to download data";
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -93,9 +97,15 @@ export default function DeleteAccountDialog({
 
       // Redirect to goodbye page
       window.location.href = "/goodbye";
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Error requesting account deletion:", err);
-      setError(err.message || "Failed to request account deletion");
+
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to request account deletion";
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

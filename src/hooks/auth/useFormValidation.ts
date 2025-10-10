@@ -2,15 +2,14 @@
 
 import { useState, useCallback } from 'react';
 
-interface ValidationRule<T = any> {
+interface ValidationRule<T = unknown> {
     validate: (value: T) => boolean | Promise<boolean>;
     message: string;
 }
 
-
 interface UseFormValidationReturn<T> {
     errors: Record<keyof T, string>;
-    validateField: (fieldName: keyof T, value: any) => Promise<boolean>;
+    validateField: (fieldName: keyof T, value: unknown) => Promise<boolean>;
     validateForm: (values: T) => Promise<boolean>;
     clearError: (fieldName: keyof T) => void;
     clearAllErrors: () => void;
@@ -20,7 +19,7 @@ interface UseFormValidationReturn<T> {
 /**
  * Custom hook for form validation
  */
-export function useFormValidation<T extends Record<string, any>>(
+export function useFormValidation<T extends Record<string, unknown>>(
     validationRules: Partial<Record<keyof T, ValidationRule[]>>
 ): UseFormValidationReturn<T> {
     const [errors, setErrors] = useState<Record<keyof T, string>>({} as Record<keyof T, string>);
@@ -29,7 +28,7 @@ export function useFormValidation<T extends Record<string, any>>(
      * Validate a single field
      */
     const validateField = useCallback(
-        async (fieldName: keyof T, value: any): Promise<boolean> => {
+        async (fieldName: keyof T, value: unknown): Promise<boolean> => {
             const rules = validationRules[fieldName];
 
             if (!rules || rules.length === 0) {
@@ -136,7 +135,8 @@ export const validationRules = {
     }),
 
     email: (message = 'Please enter a valid email address'): ValidationRule => ({
-        validate: (value: string) => {
+        validate: (value: unknown) => {
+            if (typeof value !== 'string') return false;
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return emailRegex.test(value);
         },
@@ -144,27 +144,37 @@ export const validationRules = {
     }),
 
     minLength: (length: number, message?: string): ValidationRule => ({
-        validate: (value: string) => value.length >= length,
+        validate: (value: unknown) => {
+            if (typeof value !== 'string') return false;
+            return value.length >= length;
+        },
         message: message || `Must be at least ${length} characters`,
     }),
 
     maxLength: (length: number, message?: string): ValidationRule => ({
-        validate: (value: string) => value.length <= length,
+        validate: (value: unknown) => {
+            if (typeof value !== 'string') return false;
+            return value.length <= length;
+        },
         message: message || `Must be no more than ${length} characters`,
     }),
 
     pattern: (regex: RegExp, message = 'Invalid format'): ValidationRule => ({
-        validate: (value: string) => regex.test(value),
+        validate: (value: unknown) => {
+            if (typeof value !== 'string') return false;
+            return regex.test(value);
+        },
         message,
     }),
 
-    matchField: (otherValue: any, message = 'Fields do not match'): ValidationRule => ({
+    matchField: (otherValue: unknown, message = 'Fields do not match'): ValidationRule => ({
         validate: (value) => value === otherValue,
         message,
     }),
 
     phoneNumber: (message = 'Please enter a valid phone number'): ValidationRule => ({
-        validate: (value: string) => {
+        validate: (value: unknown) => {
+            if (typeof value !== 'string') return false;
             const digits = value.replace(/\D/g, '');
             return digits.length >= 10 && digits.length <= 15;
         },
@@ -172,7 +182,8 @@ export const validationRules = {
     }),
 
     passwordStrength: (message = 'Password is too weak'): ValidationRule => ({
-        validate: (value: string) => {
+        validate: (value: unknown) => {
+            if (typeof value !== 'string') return false;
             return (
                 value.length >= 8 &&
                 /\d/.test(value) &&
@@ -183,7 +194,8 @@ export const validationRules = {
     }),
 
     url: (message = 'Please enter a valid URL'): ValidationRule => ({
-        validate: (value: string) => {
+        validate: (value: unknown) => {
+            if (typeof value !== 'string') return false;
             try {
                 new URL(value);
                 return true;

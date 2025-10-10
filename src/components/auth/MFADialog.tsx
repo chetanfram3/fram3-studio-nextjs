@@ -247,7 +247,7 @@ export default function MFADialog({
               lineHeight: 1.5,
             }}
           >
-            Didn't receive the code? Check your messages or try again in a few
+            Did not receive the code? Check your messages or try again in a few
             moments.
           </Typography>
         </DialogContent>

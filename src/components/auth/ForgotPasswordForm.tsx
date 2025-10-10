@@ -94,7 +94,7 @@ export default function ForgotPasswordForm() {
             align="center"
             sx={{ mb: 3, color: 'text.secondary' }}
           >
-            Enter your email address and we'll send you a link to reset your password
+            Enter your email address and we shall send you a link to reset your password
           </Typography>
 
           {error && (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Alert, Button, Snackbar } from "@mui/material";
 import { useAuthStore } from "@/store/authStore";
 import { sendEmailVerification } from "firebase/auth";
+import logger from "@/utils/logger";
 
 export function EmailVerificationAlert() {
   const { user, claims } = useAuthStore();
@@ -46,7 +47,8 @@ export function EmailVerificationAlert() {
         message: "Verification email sent successfully!",
         severity: "success",
       });
-    } catch (_error) {
+    } catch (error) {
+      logger.debug("Error", error);
       setSnackbar({
         open: true,
         message: "Error sending verification email. Please try again later.",

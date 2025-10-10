@@ -251,7 +251,7 @@ export default function MFAEnrollmentDialog({
                 }}
               >
                 <Typography variant="body2">
-                  <strong>Standard SMS rates may apply.</strong> You'll receive
+                  <strong>Standard SMS rates may apply.</strong> You shall receive
                   a 6-digit verification code to confirm your phone number.
                 </Typography>
               </Alert>
@@ -350,7 +350,7 @@ export default function MFAEnrollmentDialog({
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 Your account is now protected with multi-factor authentication.
-                You'll need to verify your identity with your phone when signing
+                You will need to verify your identity with your phone when signing
                 in.
               </Typography>
             </Box>

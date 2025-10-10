@@ -97,17 +97,24 @@ export default function PhoneSignInForm({ onBack }: PhoneSignInFormProps) {
       // Move to verification step
       setStep("code");
       logger.debug("Verification code sent to:", formattedPhone);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Phone sign-in error:", err);
 
+      // Type guard for Firebase error
+      const firebaseError = err as { code?: string; message?: string };
+
       // ✅ Check for MFA conflict error
-      if (err?.code === "auth/unsupported-first-factor") {
+      if (firebaseError?.code === "auth/unsupported-first-factor") {
         setShowMFAWarning(true);
         setError(
           "Phone-only authentication is not supported when MFA is enabled. Please use Email or Social login."
         );
       } else {
-        setError(err.message || "Failed to send verification code");
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to send verification code";
+        setError(errorMessage);
       }
 
       // Clean up on error
@@ -151,9 +158,13 @@ export default function PhoneSignInForm({ onBack }: PhoneSignInFormProps) {
 
       // Redirect to dashboard
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Verification error:", err);
-      setError(err.message || "Invalid verification code");
+
+      const errorMessage =
+        err instanceof Error ? err.message : "Invalid verification code";
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

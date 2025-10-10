@@ -14,11 +14,12 @@ import {
   handleTwitterSignIn,
 } from "@/services";
 import logger from "@/utils/logger";
+import { MultiFactorError } from "firebase/auth";
 
 interface SocialAuthButtonsProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
-  onMFARequired?: (error: any) => void;
+  onMFARequired?: (error: MultiFactorError) => void;
   onLoadingChange?: (isLoading: boolean) => void;
   disabled?: boolean;
 }
@@ -26,7 +27,7 @@ interface SocialAuthButtonsProps {
 interface SocialProvider {
   name: string;
   icon: typeof GoogleIcon;
-  handler: () => Promise<any>;
+  handler: () => Promise<unknown>;
   hoverColor: string;
 }
 
@@ -77,21 +78,28 @@ export default function SocialAuthButtons({
       logger.debug(`${provider.name} sign in successful`);
       onLoadingChange?.(false); // ✅ Clear loading on success
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      // Type assertion for Firebase error structure
+      const firebaseError = error as {
+        code?: string;
+        message?: string;
+        error?: { code?: string };
+      };
+
       // Check multiple ways the error code might be present
-      const errorCode = error?.code || error?.error?.code || "";
+      const errorCode = firebaseError?.code || firebaseError?.error?.code || "";
 
       // Check if MFA is required
       if (
         errorCode === "auth/multi-factor-auth-required" ||
-        error?.message?.includes("multi-factor-auth-required")
+        firebaseError?.message?.includes("multi-factor-auth-required")
       ) {
         logger.debug("MFA required for social sign-in, passing to handler");
 
         if (onMFARequired) {
           // Pass the raw error to the parent to handle MFA
           // DON'T clear loading here - let parent handle it
-          onMFARequired(error);
+          onMFARequired(error as MultiFactorError);
         } else {
           // Fallback if no MFA handler provided
           onLoadingChange?.(false); // ✅ Clear loading on error
@@ -103,8 +111,9 @@ export default function SocialAuthButtons({
         logger.error(`${provider.name} sign in error:`, error);
         // Other errors - clear loading
         onLoadingChange?.(false); // ✅ Clear loading on error
+
         const errorMessage =
-          error?.message || `Failed to sign in with ${provider.name}`;
+          firebaseError?.message || `Failed to sign in with ${provider.name}`;
         onError?.(errorMessage);
       }
     } finally {

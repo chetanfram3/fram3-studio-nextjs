@@ -58,10 +58,7 @@ export default function PrivacyPolicyPage() {
             services.
           </Typography>
           <Typography variant="body1" paragraph>
-            This policy applies to all users of our platform, whether you're a
-            visitor, registered user, or subscriber. By using our services, you
-            agree to the collection and use of information in accordance with
-            this policy.
+            {`This policy applies to all users of our platform, whether you're a visitor, registered user, or subscriber. By using our services, you agree to the collection and use of information in accordance with this policy.`}
           </Typography>
         </Section>
 

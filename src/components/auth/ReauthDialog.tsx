@@ -34,6 +34,7 @@ import {
 import { useMFA } from "@/hooks/auth/useMFA";
 import MFADialog from "@/components/auth/MFADialog";
 import logger from "@/utils/logger";
+import { MultiFactorError } from "firebase/auth";
 
 interface ReauthDialogProps {
   open: boolean;
@@ -77,13 +78,16 @@ export default function ReauthDialog({
 
       setPassword("");
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Reauthentication error:", err);
 
+      // Type assertion for Firebase error
+      const firebaseError = err as { code?: string };
+
       // ✅ Check if MFA is required
-      if (err?.code === "auth/multi-factor-auth-required") {
+      if (firebaseError?.code === "auth/multi-factor-auth-required") {
         logger.debug("MFA required during reauthentication");
-        await mfa.handleMFAChallenge(err);
+        await mfa.handleMFAChallenge(err as MultiFactorError);
       } else {
         setError(
           err instanceof Error
@@ -106,13 +110,16 @@ export default function ReauthDialog({
       logger.debug("Reauthentication successful");
 
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error("Reauthentication error:", err);
 
+      // Type assertion for Firebase error
+      const firebaseError = err as { code?: string };
+
       // ✅ Check if MFA is required
-      if (err?.code === "auth/multi-factor-auth-required") {
+      if (firebaseError?.code === "auth/multi-factor-auth-required") {
         logger.debug("MFA required during reauthentication");
-        await mfa.handleMFAChallenge(err);
+        await mfa.handleMFAChallenge(err as MultiFactorError);
       } else {
         setError(
           err instanceof Error

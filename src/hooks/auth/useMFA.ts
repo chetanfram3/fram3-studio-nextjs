@@ -385,14 +385,17 @@ export function useMFAEnrollment() {
     setNeedsReauth(false);
     pendingPhoneNumberRef.current = phoneNumber;
 
-    // ✅ Generate unique container ID for this attempt
+    // Generate unique container ID for this attempt
     const containerId = getUniqueContainerId();
 
-    // ✅ Clean up any previous attempts
+    // Clean up any previous attempts
     cleanupRecaptcha();
 
     try {
       logger.debug('Starting MFA enrollment for phone:', phoneNumber);
+
+      // ✅ CREATE THE FRESH CONTAINER FIRST
+      createFreshContainer(containerId);
 
       // Initialize reCAPTCHA with the unique container
       const verifier = initializeRecaptchaVerifier(containerId, {
@@ -416,7 +419,6 @@ export function useMFAEnrollment() {
       // Clean up reCAPTCHA on error
       cleanupRecaptcha(containerId);
 
-      // Only log as debug if it's the expected reauth error, otherwise log as error
       const firebaseError = err as { code?: string };
 
       if (firebaseError?.code === 'auth/requires-recent-login') {
@@ -430,7 +432,8 @@ export function useMFAEnrollment() {
     } finally {
       setLoading(false);
     }
-  }, [getUniqueContainerId, cleanupRecaptcha]);
+  }, [getUniqueContainerId, cleanupRecaptcha, createFreshContainer]);
+
 
   /**
    * Complete enrollment with verification code

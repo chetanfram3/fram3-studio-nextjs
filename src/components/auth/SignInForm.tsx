@@ -32,6 +32,7 @@ import MFADialog from "./MFADialog";
 import PhoneSignInForm from "./PhoneSignInForm";
 import LoadingDots from "../common/LoadingDots";
 import logger from "@/utils/logger";
+import { MultiFactorError } from "firebase/auth";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -98,17 +99,25 @@ export default function SignInForm() {
         logger.debug("Sign in successful");
         router.push("/dashboard");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      // Type assertion for Firebase error
+      const firebaseError = err as { code?: string; message?: string };
+
       // Check if MFA is required
-      if (err.code === "auth/multi-factor-auth-required") {
+      if (firebaseError.code === "auth/multi-factor-auth-required") {
         logger.debug("MFA required, initiating challenge");
-        await mfa.handleMFAChallenge(err);
+        await mfa.handleMFAChallenge(err as MultiFactorError);
         setIsLoading(false);
       } else {
         logger.error("Sign in error:", err);
-        setError(
-          err.message || "Failed to sign in. Please check your credentials."
-        );
+
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : firebaseError.message ||
+              "Failed to sign in. Please check your credentials.";
+
+        setError(errorMessage);
         setIsLoading(false);
       }
     }
@@ -132,9 +141,9 @@ export default function SignInForm() {
     setError(error);
   };
 
-  const handleSocialMFA = async (error: any) => {
+  const handleSocialMFA = async (error: unknown) => {
     logger.debug("Social sign in requires MFA");
-    await mfa.handleMFAChallenge(error);
+    await mfa.handleMFAChallenge(error as MultiFactorError);
   };
 
   const handleSocialLoadingChange = (loading: boolean) => {
@@ -361,7 +370,7 @@ export default function SignInForm() {
           <Divider sx={{ my: 3 }} />
           <Box sx={{ textAlign: "center" }}>
             <Typography variant="body2" color="text.secondary">
-              Don't have an account?
+              {"Don't have an account?"}
             </Typography>
             <Button
               onClick={() => router.push("/register")}
