@@ -27,6 +27,8 @@ import {
   Article as TextIcon,
   AutoAwesome as SparkleIcon,
   ArrowForward as ArrowIcon,
+  KeyboardDoubleArrowDown as ShowIcon,
+  ViewSidebarOutlined,
 } from "@mui/icons-material";
 import logger from "@/utils/logger";
 
@@ -292,6 +294,194 @@ function CreditLoadingDialog({
 }
 
 /**
+ * Sidebar Hint Overlay Component
+ * Shows after credit loading for first-time users
+ */
+function SidebarHintOverlay({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const theme = useTheme();
+  const brand = getCurrentBrand();
+  const [mouseInCorner, setMouseInCorner] = useState(false);
+
+  const primaryColor =
+    theme.palette.mode === "dark"
+      ? brand.colors.dark.primary
+      : brand.colors.light.primary;
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Check if mouse is in bottom-left corner (within 100px from edges)
+      if (e.clientX <= 100 && e.clientY >= window.innerHeight - 100) {
+        setMouseInCorner(true);
+        // Close overlay after a short delay
+        setTimeout(() => {
+          onClose();
+        }, 500);
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <Box
+      sx={{
+        position: "fixed",
+        inset: 0,
+        bgcolor: "rgba(0, 0, 0, 0.7)",
+        backdropFilter: "blur(4px)",
+        zIndex: 1300,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "flex-start",
+        p: 4,
+        cursor: "pointer",
+      }}
+      onClick={onClose}
+    >
+      {/* Arrow pointing to sidebar toggle */}
+      <Box
+        sx={{
+          position: "relative",
+          ml: 8,
+          mb: 8,
+        }}
+      >
+        {/* Pulsating circle indicator */}
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            width: 60,
+            height: 60,
+            borderRadius: "50%",
+            border: `3px solid ${primaryColor}`,
+            animation: `${pulse} 2s ease-in-out infinite`,
+          }}
+        />
+
+        {/* Message card */}
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 80,
+            left: -20,
+            bgcolor: "background.paper",
+            borderRadius: `${brand.borderRadius * 2}px`,
+            border: `2px solid ${primaryColor}`,
+            p: 3,
+            minWidth: 300,
+            boxShadow: theme.shadows[24],
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              bottom: -12,
+              left: 40,
+              width: 0,
+              height: 0,
+              borderLeft: "12px solid transparent",
+              borderRight: "12px solid transparent",
+              borderTop: `12px solid ${primaryColor}`,
+            },
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                bgcolor: primaryColor,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "1.5rem",
+                  color: theme.palette.mode === "dark" ? "#0F0F0F" : "#FFFFFF",
+                }}
+              >
+                <ViewSidebarOutlined />
+              </Typography>
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: primaryColor,
+              }}
+            >
+              Open Sidebar
+            </Typography>
+          </Box>
+
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              mb: 1,
+            }}
+          >
+            Move your mouse to the <strong>bottom-left corner</strong> to open
+            the sidebar and explore more options.
+          </Typography>
+
+          <Typography
+            variant="caption"
+            sx={{
+              color: "text.disabled",
+              fontStyle: "italic",
+            }}
+          >
+            Click anywhere to dismiss
+          </Typography>
+        </Box>
+
+        {/* Animated arrow */}
+        {/* Animated arrow */}
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: -5,
+            left: 0,
+            animation: "bounce 2s ease-in-out infinite",
+            "@keyframes bounce": {
+              "0%, 100%": {
+                transform: "translateY(0) rotate(45deg)",
+              },
+              "50%": {
+                transform: "translateY(-10px) rotate(45deg)",
+              },
+            },
+          }}
+        >
+          <ShowIcon
+            sx={{
+              fontSize: "4rem",
+              color: primaryColor,
+              filter: "drop-shadow(0 0 8px rgba(255, 213, 0, 0.5))",
+            }}
+          />
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+/**
  * Describe Idea Page - What would you like to create?
  * Now includes integrated onboarding dialog
  */
@@ -308,6 +498,7 @@ export default function DescribeIdeaPage() {
   // Check if this is a first-time user from query params
   const isFirstTime = searchParams.get("firstTime") === "true";
   const [showCreditDialog, setShowCreditDialog] = useState(isFirstTime);
+  const [showSidebarHint, setShowSidebarHint] = useState(false);
 
   useEffect(() => {
     if (isFirstTime) {
@@ -331,13 +522,22 @@ export default function DescribeIdeaPage() {
       // await saveCreditsToBackend(user?.uid, 100);
 
       setShowCreditDialog(false);
-
-      // Remove the firstTime query param from URL
+      // Show sidebar hint for first-time users
+      if (isFirstTime) {
+        setTimeout(() => {
+          setShowSidebarHint(true);
+        }, 500);
+      }
     } catch (error) {
       logger.error("Failed to save credits:", error);
       // Even if saving fails, close dialog and continue
       setShowCreditDialog(false);
     }
+  };
+
+  const handleSidebarHintClose = () => {
+    setShowSidebarHint(false);
+    logger.debug("Sidebar hint dismissed");
   };
 
   const handleOptionSelect = (option: string) => {
@@ -620,6 +820,10 @@ export default function DescribeIdeaPage() {
       <CreditLoadingDialog
         open={showCreditDialog}
         onComplete={handleCreditLoadingComplete}
+      />
+      <SidebarHintOverlay
+        open={showSidebarHint}
+        onClose={handleSidebarHintClose}
       />
     </>
   );
