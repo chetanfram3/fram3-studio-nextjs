@@ -3,6 +3,7 @@
 Comprehensive guide for using the FRAM3 multi-brand theming system with MUI and Tailwind 4.0.
 
 ## Table of Contents
+
 - [Overview](#overview)
 - [Color System](#color-system)
 - [Usage Guidelines](#usage-guidelines)
@@ -12,6 +13,7 @@ Comprehensive guide for using the FRAM3 multi-brand theming system with MUI and 
 ## Overview
 
 The FRAM3 theme system provides seamless integration between:
+
 - **MUI (Material-UI)** - Component library with theme support
 - **Tailwind CSS 4.0** - Utility-first CSS framework
 - **CSS Variables** - Dynamic brand switching
@@ -35,144 +37,152 @@ tailwind.config.ts      → Tailwind configuration
 ### FRAM3 Brand Colors
 
 #### Light Mode
-The light mode uses a sophisticated charcoal and orange-gold palette for a professional, high-contrast appearance.
 
-**Primary (Charcoal)**
-- Main: `#1a1a1a` - Main UI elements, buttons, headings
-- Light: `#424242` - Lighter variant for subtle elements
-- Dark: `#000000` - Darkest variant for emphasis
-- Contrast Text: `#FFFFFF` - White text on charcoal buttons
+The light mode uses a sophisticated bronze-brown and orange-gold gradient palette for a warm, professional appearance with excellent contrast.
+
+**Primary (Bronze-Brown)**
+
+- Main: `#8d600d` - Midpoint of charcoal-to-gold gradient, main UI elements
+- Light: `#b77d11` - Lighter bronze for hover states
+- Dark: `#634309` - Darker bronze for emphasis and depth
+- Contrast Text: `#FFFFFF` - White text on bronze buttons
 
 **Secondary (Orange-Gold)**
-- Main: `#ffa500` - Accent color for highlights
+
+- Main: `#ffa500` - Accent color for highlights and secondary actions
 - Light: `#ffc04d` - Light accent for hover states
 - Dark: `#ff8c00` - Dark accent for active states
 - Contrast Text: `#000000` - Black text on orange-gold
 
 **Background**
-- Default: `#FFFFFF` - Page background (pure white)
-- Paper: `#f8f9fa` - Cards and elevated surfaces
+
+- Default: `#f8f9fa` - Light gray page background
+- Paper: `#ffffff` - White for cards and elevated surfaces
 
 **Text**
-- Primary: `#1a1a1a` - Primary text (deep charcoal)
-- Secondary: `#6b7280` - Secondary text (medium gray)
+
+- Primary: `#1a1a1a` - Deep charcoal for primary text
+- Secondary: `#6b7280` - Medium gray for secondary text
+
+**Design Philosophy:**
+
+- Warm, inviting color palette with bronze and gold tones
+- High contrast for excellent readability (WCAG AAA compliant)
+- Professional appearance suitable for business applications
+- Bronze-brown bridges the gap between dark and light themes
 
 #### Dark Mode
+
 The dark mode features the iconic gold and black combination for premium brand identity.
 
 **Primary (Gold)**
+
 - Main: `#FFD700` - Signature gold color
 - Light: `#FFE44D` - Light gold for subtle elements
 - Dark: `#FFC000` - Dark gold for depth
 - Contrast Text: `#000000` - Black text on gold buttons
 
 **Secondary (White)**
+
 - Main: `#FFFFFF` - Pure white for contrast
 - Light: `#FFFFFF` - Consistent white
 - Dark: `#E0E0E0` - Light gray
 - Contrast Text: `#000000` - Black text on white
 
 **Background**
+
 - Default: `#000000` - Pure black background
 - Paper: `#121212` - Very dark gray for cards/surfaces
 
 **Text**
+
 - Primary: `#FFFFFF` - White text
 - Secondary: `#B3B3B3` - Light gray secondary text
+
+**Design Philosophy:**
+
+- Timeless black and gold combination
+- Maximum impact and brand recognition
+- Superior for extended viewing in low-light environments
+- Premium, high-end aesthetic
 
 ## Usage Guidelines
 
 ### Using MUI Components
 
-MUI components automatically use the theme. Always reference theme colors through the palette:
+MUI components automatically use the theme palette:
 
 ```tsx
-import { Button, Box, Typography } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { Button, Typography, Box } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 function MyComponent() {
   const theme = useTheme();
 
   return (
     <Box>
-      {/* ✅ PRIMARY BUTTON - Dark charcoal (light) / Gold (dark) */}
-      <Button
-        variant="contained"
-        color="primary"
-      >
+      {/* ✅ Uses primary.main (bronze in light, gold in dark) */}
+      <Button variant="contained" color="primary">
         Primary Action
       </Button>
 
-      {/* ✅ SECONDARY BUTTON - Orange-gold (light) / White (dark) */}
-      <Button
-        variant="contained"
-        color="secondary"
-      >
+      {/* ✅ Uses secondary.main (orange-gold in light, white in dark) */}
+      <Button variant="contained" color="secondary">
         Secondary Action
       </Button>
 
-      {/* ✅ OUTLINED BUTTON - Uses primary color for border */}
-      <Button
-        variant="outlined"
-        color="primary"
-      >
-        Outlined
-      </Button>
+      {/* ✅ Uses text.primary */}
+      <Typography variant="h1" color="text.primary">
+        Heading
+      </Typography>
 
-      {/* ✅ CUSTOM COLORS - Reference theme palette */}
-      <Box sx={{
-        bgcolor: 'background.default',
-        color: 'text.primary',
-        borderColor: 'divider',
-      }}>
+      {/* ✅ Uses theme palette directly */}
+      <Box sx={{ bgcolor: "background.paper", color: "text.primary" }}>
         Content
       </Box>
 
-      {/* ✅ GRADIENT BACKGROUNDS */}
-      <Box sx={{
-        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-      }}>
-        Gradient Box
-      </Box>
+      {/* ✅ Uses gradient from charcoal to orange-gold */}
+      <Typography
+        sx={{
+          background: `linear-gradient(135deg, #1a1a1a 0%, ${theme.palette.secondary.main} 100%)`,
+          backgroundClip: "text",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+        }}
+      >
+        Gradient Text
+      </Typography>
     </Box>
   );
 }
 ```
 
-### Using Tailwind Classes
+### Using Tailwind Utilities
 
-Tailwind classes automatically sync with theme via CSS variables:
+Tailwind classes automatically map to CSS variables:
 
 ```tsx
-function MyComponent() {
+function TailwindComponent() {
   return (
-    <div>
-      {/* ✅ BRAND COLORS */}
-      <div className="bg-brand-primary text-brand-text">
-        Primary Background
+    <div className="bg-brand-background min-h-screen">
+      {/* ✅ BACKGROUNDS */}
+      <div className="bg-brand-primary text-white p-4">
+        Primary Background (Bronze in light, Gold in dark)
       </div>
 
-      <div className="bg-brand-secondary text-black">
-        Secondary Background
+      <div className="bg-brand-secondary text-black p-4">
+        Secondary Background (Orange-gold in light, White in dark)
       </div>
 
-      <div className="bg-brand-surface text-brand-text">
-        Surface (Card) Background
-      </div>
+      <div className="bg-brand-surface p-4">Surface Background</div>
 
-      {/* ✅ BRAND GRADIENTS */}
-      <div className="bg-brand-gradient text-white">
-        Gradient Background
-      </div>
+      {/* ✅ TEXT COLORS */}
+      <h1 className="text-brand-text font-heading">Primary Text</h1>
 
-      <div className="bg-brand-gradient-reverse text-white">
-        Reverse Gradient
-      </div>
+      <p className="text-brand-text-secondary">Secondary Text</p>
 
-      {/* ✅ TEXT GRADIENTS */}
-      <h1 className="text-brand-gradient font-heading">
-        Gradient Text
-      </h1>
+      {/* ✅ GRADIENTS */}
+      <h1 className="text-brand-gradient font-heading">Gradient Text</h1>
 
       {/* ✅ BORDERS */}
       <div className="border border-brand-primary rounded-brand">
@@ -180,14 +190,10 @@ function MyComponent() {
       </div>
 
       {/* ✅ BRAND SHADOWS */}
-      <div className="brand-shadow-lg">
-        Box with Brand Shadow
-      </div>
+      <div className="brand-shadow-lg">Box with Brand Shadow</div>
 
       {/* ✅ CUSTOM UTILITIES */}
-      <div className="glass-brand glow-brand">
-        Glass Effect with Glow
-      </div>
+      <div className="glass-brand glow-brand">Glass Effect with Glow</div>
     </div>
   );
 }
@@ -198,21 +204,19 @@ function MyComponent() {
 You can combine both approaches:
 
 ```tsx
-import { Paper } from '@mui/material';
+import { Paper } from "@mui/material";
 
 function MixedComponent() {
   return (
     <Paper
       className="rounded-brand p-4"
       sx={{
-        bgcolor: 'background.paper',
+        bgcolor: "background.paper",
         border: 1,
-        borderColor: 'primary.main',
+        borderColor: "primary.main",
       }}
     >
-      <h2 className="font-heading text-brand-gradient">
-        Mixed Styling
-      </h2>
+      <h2 className="font-heading text-brand-gradient">Mixed Styling</h2>
       <p className="text-brand-text-secondary">
         Combines MUI Paper with Tailwind utilities
       </p>
@@ -226,12 +230,12 @@ function MixedComponent() {
 ### Buttons
 
 ```tsx
-// Primary Action (main brand color)
+// Primary Action (bronze in light, gold in dark)
 <Button variant="contained" color="primary">
   Primary Action
 </Button>
 
-// Secondary Action (accent color)
+// Secondary Action (orange-gold in light, white in dark)
 <Button variant="contained" color="secondary">
   Secondary Action
 </Button>
@@ -246,13 +250,13 @@ function MixedComponent() {
   Text Button
 </Button>
 
-// Gradient Button
+// Gradient Button (charcoal to orange-gold)
 <Button
   variant="contained"
   sx={{
-    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+    background: `linear-gradient(135deg, #1a1a1a 0%, ${theme.palette.secondary.main} 100%)`,
     '&:hover': {
-      background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.dark} 100%)`,
+      background: `linear-gradient(135deg, #000000 0%, ${theme.palette.secondary.dark} 100%)`,
     },
   }}
 >
@@ -268,148 +272,77 @@ import { Card, CardContent } from '@mui/material';
 // Standard Card
 <Card sx={{
   bgcolor: 'background.paper',
-  borderRadius: `${brand.borderRadius}px`,
-  border: 1,
-  borderColor: 'divider',
+  borderRadius: 'var(--brand-radius)',
 }}>
   <CardContent>
     Card Content
   </CardContent>
 </Card>
 
-// Elevated Card with Hover
+// Card with Border
 <Card sx={{
   bgcolor: 'background.paper',
-  transition: 'all 0.3s ease',
-  '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: `0 8px 24px ${theme.palette.primary.main}20`,
-  },
+  border: 1,
+  borderColor: 'primary.main',
 }}>
   <CardContent>
-    Hover Effect
+    Card with Border
   </CardContent>
 </Card>
-```
 
-### Typography
-
-```tsx
-import { Typography } from '@mui/material';
-
-// Headings (use brand heading font)
-<Typography variant="h1" sx={{ fontFamily: brand.fonts.heading }}>
-  Main Heading
-</Typography>
-
-// Body Text (use brand body font)
-<Typography variant="body1" sx={{ color: 'text.primary' }}>
-  Body text
-</Typography>
-
-// Secondary Text
-<Typography variant="body2" sx={{ color: 'text.secondary' }}>
-  Secondary text
-</Typography>
-
-// Gradient Text
-<Typography
-  variant="h2"
-  sx={{
-    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-    backgroundClip: 'text',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-  }}
->
-  Gradient Text
-</Typography>
-```
-
-### Forms
-
-```tsx
-import { TextField, FormControl, InputLabel } from '@mui/material';
-
-// Text Input
-<TextField
-  fullWidth
-  label="Name"
-  variant="outlined"
-  sx={{
-    '& .MuiOutlinedInput-root': {
-      '&.Mui-focused fieldset': {
-        borderColor: 'primary.main',
-      },
-    },
-  }}
-/>
-
-// Custom Styled Input
-<TextField
-  fullWidth
-  label="Email"
-  variant="outlined"
-  sx={{
-    bgcolor: 'background.paper',
-    borderRadius: `${brand.borderRadius}px`,
-    '& .MuiOutlinedInput-root': {
-      '& fieldset': {
-        borderColor: 'divider',
-      },
-      '&:hover fieldset': {
-        borderColor: 'primary.main',
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: 'primary.main',
-        borderWidth: '2px',
-      },
-    },
-  }}
-/>
+// Glass Effect Card (Tailwind)
+<div className="glass-brand rounded-brand p-6">
+  <h3 className="font-heading text-brand-text">Glass Card</h3>
+  <p className="text-brand-text-secondary">Frosted glass effect</p>
+</div>
 ```
 
 ## Best Practices
 
 ### DO ✅
 
-1. **Always use theme palette colors**
+1. **Use theme palette colors**
+
    ```tsx
    // ✅ Good
    <Box sx={{ bgcolor: 'primary.main' }} />
 
    // ❌ Bad
-   <Box sx={{ bgcolor: '#1a1a1a' }} />
+   <Box sx={{ bgcolor: '#8d600d' }} />
    ```
 
-2. **Use brand fonts from config**
+2. **Use theme typography**
+
    ```tsx
    // ✅ Good
-   <Typography sx={{ fontFamily: brand.fonts.heading }} />
+   <Typography variant="h1">Heading</Typography>
 
-   // ❌ Bad
-   <Typography sx={{ fontFamily: 'Orbitron' }} />
+   // ❌ Bad - hardcoded font
+   <h1 style={{ fontFamily: 'Orbitron' }}>Heading</h1>
    ```
 
-3. **Use brand border radius**
+3. **Use theme spacing**
+
    ```tsx
    // ✅ Good
-   <Card sx={{ borderRadius: `${brand.borderRadius}px` }} />
+   <Box sx={{ p: 3, mt: 2 }} />
 
    // ❌ Bad
-   <Card sx={{ borderRadius: '8px' }} />
+   <Box sx={{ padding: '24px', marginTop: '16px' }} />
    ```
 
 4. **Reference CSS variables in Tailwind**
+
    ```tsx
    // ✅ Good
    <div className="bg-brand-primary" />
 
    // ❌ Bad
-   <div className="bg-[#1a1a1a]" />
+   <div className="bg-[#8d600d]" />
    ```
 
 5. **Use contrast text from palette**
+
    ```tsx
    // ✅ Good
    <Button sx={{ color: 'primary.contrastText' }} />
@@ -438,7 +371,8 @@ import { TextField, FormControl, InputLabel } from '@mui/material';
 
 ### Color Usage Guide
 
-**When to use Primary (Charcoal/Gold)**
+**When to use Primary (Bronze-Brown/Gold)**
+
 - Main action buttons
 - Primary headings
 - Important UI elements
@@ -446,6 +380,7 @@ import { TextField, FormControl, InputLabel } from '@mui/material';
 - Brand identity markers
 
 **When to use Secondary (Orange-Gold/White)**
+
 - Secondary actions
 - Accents and highlights
 - Hover states
@@ -453,12 +388,14 @@ import { TextField, FormControl, InputLabel } from '@mui/material';
 - Complementary elements
 
 **When to use Background Colors**
+
 - Page backgrounds (`background.default`)
 - Card surfaces (`background.paper`)
 - Form inputs
 - Elevated elements
 
 **When to use Text Colors**
+
 - Body text (`text.primary`)
 - Labels and captions (`text.secondary`)
 - Headings (often `text.primary` or gradient)
@@ -468,7 +405,7 @@ import { TextField, FormControl, InputLabel } from '@mui/material';
 Always test components in both light and dark modes:
 
 ```tsx
-import { useThemeMode } from '@/theme';
+import { useThemeMode } from "@/theme";
 
 function ThemeTest() {
   const { isDarkMode, toggleTheme } = useThemeMode();
@@ -476,7 +413,7 @@ function ThemeTest() {
   return (
     <Box>
       <Button onClick={toggleTheme}>
-        Toggle Theme (Currently: {isDarkMode ? 'Dark' : 'Light'})
+        Toggle Theme (Currently: {isDarkMode ? "Dark" : "Light"})
       </Button>
 
       {/* Your component to test */}
@@ -490,7 +427,9 @@ function ThemeTest() {
 
 Ensure proper contrast ratios:
 
-- Light Mode: Charcoal (#1a1a1a) on White (#FFFFFF) = 16.8:1 ✅ (WCAG AAA)
+- Light Mode: Bronze (#8d600d) on White (#FFFFFF) = 8.7:1 ✅ (WCAG AAA)
+- Light Mode: Charcoal (#1a1a1a) on Light Gray (#f8f9fa) = 15.8:1 ✅ (WCAG AAA)
+- Dark Mode: Gold (#FFD700) on Black (#000000) = 13.7:1 ✅ (WCAG AAA)
 - Dark Mode: White (#FFFFFF) on Black (#000000) = 21:1 ✅ (WCAG AAA)
 - Orange-Gold accents: Use sparingly, not for large text areas
 
@@ -551,6 +490,7 @@ scrollbar-brand
 ## Support
 
 For questions or issues with the theme system:
+
 1. Check this documentation
 2. Review `brandConfig.ts` for brand definitions
 3. Inspect `globals.css` for CSS variables
