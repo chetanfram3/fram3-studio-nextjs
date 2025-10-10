@@ -10,6 +10,7 @@ import { auth } from '@/lib/firebase';
 import { registerUser } from './registerService';
 import { handleAuthError } from '@/utils/errorHandlers';
 import logger from '@/utils/logger';
+import { deleteFCMToken } from '@/services/fcmService';
 
 /**
  * Sign in with email and password
@@ -37,6 +38,10 @@ export async function signInWithEmail(email: string, password: string): Promise<
 export async function signOut(): Promise<void> {
     try {
         logger.debug('Signing out user');
+
+        // Delete FCM token before signing out
+        await deleteFCMToken();
+
         await firebaseSignOut(auth);
         logger.debug('Sign out successful');
     } catch (error) {

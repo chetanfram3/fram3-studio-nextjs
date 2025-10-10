@@ -13,7 +13,6 @@ import {
   useTheme,
 } from "@mui/material";
 import {
-  NotificationsOutlined as NotificationsIcon,
   EmailOutlined as MessageIcon,
   Close as CloseIcon,
 } from "@mui/icons-material";
@@ -24,6 +23,7 @@ import { ThemeSwitch } from "./components/ThemeSwitch";
 import { ProjectSearch } from "@/components/search/ProjectSearch";
 import SubscriptionBadge from "@/components/common/SubscriptionBadge";
 import { Logo } from "./Logo";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 export function Header() {
   const theme = useTheme();
@@ -71,6 +71,7 @@ export function Header() {
 
           {isMobile ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <NotificationBell />
               <ThemeSwitch />
               <ProfileButton onClick={handleProfileClick} />
             </Box>
@@ -87,6 +88,7 @@ export function Header() {
                   borderColor: "divider",
                 }}
               />
+              <NotificationBell />
               <ThemeSwitch />
               <ProfileButton onClick={handleProfileClick} />
             </Box>
@@ -119,7 +121,9 @@ export function Header() {
             p: 2,
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 500 }}></Typography>
+          <Typography variant="h6" sx={{ fontWeight: 500 }}>
+            Menu
+          </Typography>
           <IconButton onClick={handleMobileMenuClose} edge="end">
             <CloseIcon />
           </IconButton>

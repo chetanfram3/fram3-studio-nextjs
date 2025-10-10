@@ -2,6 +2,8 @@
 
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getMessaging, Messaging, isSupported } from 'firebase/messaging';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -16,6 +18,9 @@ const firebaseConfig = {
 // Initialize Firebase
 let app: FirebaseApp;
 let auth: Auth;
+let messaging: Messaging | null = null;
+let db: Firestore;
+const databaseId = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || '(default)';
 
 // Only initialize on client side with proper error handling
 if (typeof window !== 'undefined') {
@@ -23,10 +28,22 @@ if (typeof window !== 'undefined') {
     // Check if app is already initialized
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     auth = getAuth(app);
-    
+
+    // Initialize Firestore with custom database ID
+    db = getFirestore(app, databaseId);
+
     // Set persistence explicitly
     setPersistence(auth, browserLocalPersistence).catch((error) => {
       console.warn('Failed to set persistence:', error);
+    });
+
+    // Initialize messaging if supported
+    isSupported().then((supported) => {
+      if (supported) {
+        messaging = getMessaging(app);
+      }
+    }).catch((error) => {
+      console.warn('Messaging not supported:', error);
     });
   } catch (error) {
     console.error('Firebase initialization error:', error);
@@ -34,4 +51,4 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export { app, auth };
+export { app, auth, messaging, db };
