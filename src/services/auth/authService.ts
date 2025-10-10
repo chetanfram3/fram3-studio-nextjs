@@ -23,8 +23,10 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
         logger.debug('Sign in successful:', userCredential.user.uid);
         return userCredential.user;
-    } catch (error: any) {
-        if (error?.code === 'auth/multi-factor-auth-required') {
+    } catch (error: unknown) {
+        const firebaseError = error as { code?: string };
+
+        if (firebaseError?.code === 'auth/multi-factor-auth-required') {
             throw error;
         }
         logger.error('Email sign-in error:', error);

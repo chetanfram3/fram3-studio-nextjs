@@ -12,6 +12,10 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    rules: {
+      "@typescript-eslint/no-explicit-any-debug": "off",
+      "react/no-unescaped-entities-debug": "off",
+    },
     ignores: [
       "node_modules/**",
       ".next/**",

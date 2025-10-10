@@ -35,9 +35,9 @@ export function useSubscription() {
     );
 
     const hasFeatureAccess = (requiredLevel: string) => {
-        const levels = Object.values(SubscriptionLevels);
-        const currentIndex = levels.indexOf(subscription as any);
-        const requiredIndex = levels.indexOf(requiredLevel as any);
+        const levels = Object.values(SubscriptionLevels) as string[];
+        const currentIndex = levels.indexOf(subscription);
+        const requiredIndex = levels.indexOf(requiredLevel);
         return currentIndex >= requiredIndex;
     };
 

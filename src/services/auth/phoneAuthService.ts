@@ -72,7 +72,7 @@ export async function sendPhoneVerificationCode(
 
     logger.debug('Verification code sent successfully');
     return confirmationResult;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error sending verification code:', error);
     throw handleAuthError(error);
   }
@@ -92,17 +92,19 @@ export async function verifyPhoneCode(
 
     logger.debug('Phone sign-in successful');
     return userCredential.user;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error('Error verifying phone code:', error);
-    
-    if (error?.code === 'auth/invalid-verification-code') {
+
+    const firebaseError = error as { code?: string };
+
+    if (firebaseError?.code === 'auth/invalid-verification-code') {
       throw new Error('Invalid verification code. Please try again.');
     }
-    
-    if (error?.code === 'auth/code-expired') {
+
+    if (firebaseError?.code === 'auth/code-expired') {
       throw new Error('Verification code expired. Please request a new code.');
     }
-    
+
     throw handleAuthError(error);
   }
 }
@@ -127,7 +129,7 @@ export function cleanupPhoneRecaptcha(verifier: RecaptchaVerifier | null): void 
 export function formatPhoneNumber(phoneNumber: string): string {
   // Remove all non-digit characters
   const digits = phoneNumber.replace(/\D/g, '');
-  
+
   // Format based on length
   if (digits.length === 10) {
     // US format: (555) 123-4567
@@ -139,7 +141,7 @@ export function formatPhoneNumber(phoneNumber: string): string {
     // International format: +XX XXX XXX XXXX
     return `+${digits.slice(0, -10)} ${digits.slice(-10, -7)} ${digits.slice(-7, -4)} ${digits.slice(-4)}`;
   }
-  
+
   return phoneNumber;
 }
 
@@ -149,7 +151,7 @@ export function formatPhoneNumber(phoneNumber: string): string {
 export function isValidPhoneNumber(phoneNumber: string): boolean {
   // Remove all non-digit characters
   const digits = phoneNumber.replace(/\D/g, '');
-  
+
   // Must have at least 10 digits
   return digits.length >= 10;
 }

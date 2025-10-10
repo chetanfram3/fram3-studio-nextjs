@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { RecaptchaVerifier, MultiFactorResolver, User } from 'firebase/auth';
+import { RecaptchaVerifier, MultiFactorResolver, User, MultiFactorError } from 'firebase/auth';
 import {
   initializeRecaptchaVerifier,
   getMFAResolver,
@@ -26,7 +26,7 @@ interface UseMFAReturn {
   loading: boolean;
   phoneNumber: string;
   setVerificationCode: (code: string) => void;
-  handleMFAChallenge: (error: any) => Promise<void>;
+  handleMFAChallenge: (error: MultiFactorError) => Promise<void>;
   handleMFAVerification: () => Promise<User | null>;
   closeDialog: () => void;
   reset: () => void;
@@ -83,7 +83,7 @@ export function useMFA(): UseMFAReturn {
   /**
    * Handle MFA challenge from sign-in error
    */
-  const handleMFAChallenge = useCallback(async (mfaError: any) => {
+  const handleMFAChallenge = useCallback(async (mfaError: MultiFactorError) => {
     setLoading(true);
     setError('');
 
@@ -128,7 +128,7 @@ export function useMFA(): UseMFAReturn {
 
       // Extract phone number from hint
       if (mfaResolver.hints.length > 0) {
-        const phoneHint = mfaResolver.hints[0] as any;
+        const phoneHint = mfaResolver.hints[0] as { phoneNumber?: string };
         const maskedPhone = formatPhoneNumberMasked(phoneHint.phoneNumber || '');
         setPhoneNumber(maskedPhone);
       }
@@ -269,11 +269,11 @@ export function useMFA(): UseMFAReturn {
  */
 export function useIsMFAEnabled(): {
   isEnabled: boolean;
-  factors: any[];
+  factors: unknown[];
   loading: boolean;
 } {
   const [isEnabled, setIsEnabled] = useState(false);
-  const [factors, setFactors] = useState<any[]>([]);
+  const [factors, setFactors] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -412,12 +412,14 @@ export function useMFAEnrollment() {
       setVerificationId(vId);
 
       logger.debug('Enrollment initiated, verification code sent');
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Clean up reCAPTCHA on error
       cleanupRecaptcha(containerId);
 
       // Only log as debug if it's the expected reauth error, otherwise log as error
-      if (err?.code === 'auth/requires-recent-login') {
+      const firebaseError = err as { code?: string };
+
+      if (firebaseError?.code === 'auth/requires-recent-login') {
         logger.debug('Reauthentication required - detected from error code');
         setNeedsReauth(true);
         setError('Please verify your identity to continue.');
@@ -428,7 +430,7 @@ export function useMFAEnrollment() {
     } finally {
       setLoading(false);
     }
-  }, [getUniqueContainerId, cleanupRecaptcha, createFreshContainer]);
+  }, [getUniqueContainerId, cleanupRecaptcha]);
 
   /**
    * Complete enrollment with verification code
@@ -539,9 +541,11 @@ export function useMFARemoval() {
       setSuccess(true);
       logger.debug('MFA factor removed successfully');
       pendingFactorRef.current = null;
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Only log as debug if it's the expected reauth error, otherwise log as error
-      if (err?.code === 'auth/requires-recent-login') {
+      const firebaseError = err as { code?: string };
+
+      if (firebaseError?.code === 'auth/requires-recent-login') {
         logger.debug('Reauthentication required for MFA removal');
         setNeedsReauth(true);
         setError('Please verify your identity to continue.');

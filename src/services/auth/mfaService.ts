@@ -100,9 +100,11 @@ export async function enrollPhoneMFA(
         logger.debug('Verification code sent to phone');
 
         return verificationId;
-    } catch (error: any) {
+    } catch (error: unknown) {
         // Only log as debug if it's the expected reauth error, otherwise log as error
-        if (error?.code === 'auth/requires-recent-login') {
+        const firebaseError = error as { code?: string };
+
+        if (firebaseError?.code === 'auth/requires-recent-login') {
             logger.debug('Reauthentication required for MFA enrollment');
         } else {
             logger.error('Error enrolling phone MFA:', error);
@@ -249,8 +251,10 @@ export async function unenrollMFA(factorUid: string): Promise<void> {
         await multiFactor(user).unenroll(factor);
 
         logger.debug('MFA factor unenrolled successfully');
-    } catch (error: any) {
-        if (error?.code === 'auth/requires-recent-login') {
+    } catch (error: unknown) {
+        const firebaseError = error as { code?: string };
+
+        if (firebaseError?.code === 'auth/requires-recent-login') {
             logger.debug('Reauthentication required for MFA removal');
         } else {
             logger.error('Error unenrolling MFA:', error);
@@ -262,7 +266,7 @@ export async function unenrollMFA(factorUid: string): Promise<void> {
 /**
  * Get enrolled MFA factors for current user
  */
-export function getEnrolledMFAFactors(): any[] {
+export function getEnrolledMFAFactors(): unknown[] {
     const user = auth.currentUser;
 
     if (!user) {
@@ -283,8 +287,9 @@ export function isMFAEnabled(): boolean {
 /**
  * Get phone number from MFA hint
  */
-export function getPhoneNumberFromHint(hint: any): string {
-    return hint.phoneNumber || 'Unknown';
+export function getPhoneNumberFromHint(hint: unknown): string {
+    const hintObj = hint as { phoneNumber?: string };
+    return hintObj.phoneNumber || 'Unknown';
 }
 
 /**

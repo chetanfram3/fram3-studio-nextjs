@@ -60,7 +60,7 @@ export function useNavigationItems() {
         )}
       </div>
     );
-  }, [apiInfo, appVersion]);
+  }, [apiInfo]);
 
   return useMemo<NavigationItem[]>(
     () => [

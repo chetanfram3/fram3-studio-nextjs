@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { User } from 'firebase/auth';
 
 interface TokenClaims {
   access_level: string;
@@ -7,13 +8,19 @@ interface TokenClaims {
   is_enabled: boolean;
 }
 
-const extractTokenClaims = (user: any): TokenClaims | null => {
+const extractTokenClaims = (user: User | null): TokenClaims | null => {
   try {
-    if (!user?.stsTokenManager?.accessToken) {
+    const userWithToken = user as User & {
+      stsTokenManager?: {
+        accessToken?: string;
+      };
+    };
+
+    if (!userWithToken?.stsTokenManager?.accessToken) {
       return null;
     }
 
-    const payload = user.stsTokenManager.accessToken.split('.')[1];
+    const payload = userWithToken.stsTokenManager.accessToken.split('.')[1];
     const decodedPayload = JSON.parse(atob(payload));
 
     return {
