@@ -28,8 +28,6 @@ export {
 // Redirect hooks
 export {
   useAuthRedirect,
-  useProtectedRoute,
-  useAuthPage,
 } from './auth/useAuthRedirect';
 
 // Form validation hooks
