@@ -9,11 +9,6 @@ import {
 } from '@/services/auth/reCaptchaService';
 import logger from '@/utils/logger';
 
-interface UseRecaptchaOptions {
-  action: string;
-  executeOnMount?: boolean;
-}
-
 interface UseRecaptchaReturn {
   token: string;
   isLoading: boolean;

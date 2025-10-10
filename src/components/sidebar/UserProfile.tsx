@@ -28,7 +28,7 @@ interface UserProfileProps {
  * - Includes hover effects and transitions
  * - Uses Firebase User object for data
  */
-export function UserProfile({ user, showSidebar }: UserProfileProps) {
+export function UserProfile({ user }: UserProfileProps) {
   const router = useRouter();
   const { isExpanded } = useSidebar();
   const theme = useTheme();

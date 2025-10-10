@@ -141,12 +141,6 @@ export default function SignInForm() {
     setSocialLoading(loading);
   };
 
-  const handleMFASuccess = () => {
-    logger.debug("MFA verification successful");
-    mfa.closeDialog();
-    router.push("/dashboard");
-  };
-
   // ✅ FIXED: Only show loading when NOT in MFA dialog state
   const isAuthLoading = (isLoading || socialLoading) && !mfa.isOpen;
 

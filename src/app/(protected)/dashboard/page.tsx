@@ -2,7 +2,6 @@
 
 import { Box, Container, Typography, Button, Card, CardContent } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import { useTheme } from '@mui/material/styles';
 import { getCurrentBrand } from '@/config/brandConfig';
 import { AuthGuard } from '@/components/auth';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -14,7 +13,6 @@ import logger from '@/utils/logger';
  * Protected route - requires authentication
  */
 function DashboardContent() {
-  const theme = useTheme();
   const brand = getCurrentBrand();
   const router = useRouter();
   const { user } = useAuth();

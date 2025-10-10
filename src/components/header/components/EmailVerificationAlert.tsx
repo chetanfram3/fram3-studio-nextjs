@@ -46,7 +46,7 @@ export function EmailVerificationAlert() {
         message: "Verification email sent successfully!",
         severity: "success",
       });
-    } catch (error) {
+    } catch (_error) {
       setSnackbar({
         open: true,
         message: "Error sending verification email. Please try again later.",

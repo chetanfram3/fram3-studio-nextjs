@@ -5,7 +5,6 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useAuthStore } from '@/store/authStore';
 import { checkUserProfile } from '@/services/userService';
-import { deleteFCMToken } from '@/services/fcmService';
 import logger from '@/utils/logger';
 
 /**

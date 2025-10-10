@@ -391,9 +391,6 @@ export function useMFAEnrollment() {
     // ✅ Clean up any previous attempts
     cleanupRecaptcha();
 
-    // ✅ Create fresh container
-    const container = createFreshContainer(containerId);
-
     try {
       logger.debug('Starting MFA enrollment for phone:', phoneNumber);
 

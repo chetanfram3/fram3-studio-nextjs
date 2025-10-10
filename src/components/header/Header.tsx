@@ -12,11 +12,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import {
-  EmailOutlined as MessageIcon,
-  Close as CloseIcon,
-} from "@mui/icons-material";
-import { useRouter } from "next/navigation";
+import { Close as CloseIcon } from "@mui/icons-material";
 import { ProfileButton } from "./components/ProfileButton";
 import { ProfileMenu } from "./components/ProfileMenu";
 import { ThemeSwitch } from "./components/ThemeSwitch";
@@ -30,7 +26,6 @@ export function Header() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const router = useRouter();
 
   const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
     if (isMobile) {

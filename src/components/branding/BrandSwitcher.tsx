@@ -1,20 +1,27 @@
 // src/components/branding/BrandSwitcher.tsx
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { 
-  Button, 
-  Menu, 
-  MenuItem, 
-  Box, 
+import { useState } from "react";
+import {
+  Button,
+  Menu,
+  MenuItem,
+  Box,
   Typography,
   Alert,
   AlertTitle,
   Divider,
-  Chip
-} from '@mui/material';
-import { Palette as PaletteIcon, Check as CheckIcon } from '@mui/icons-material';
-import { getCurrentBrand, getAvailableBrands, getBrandByKey } from '@/config/brandConfig';
+  Chip,
+} from "@mui/material";
+import {
+  Palette as PaletteIcon,
+  Check as CheckIcon,
+} from "@mui/icons-material";
+import {
+  getCurrentBrand,
+  getAvailableBrands,
+  getBrandByKey,
+} from "@/config/brandConfig";
 
 export function BrandSwitcher() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -24,7 +31,7 @@ export function BrandSwitcher() {
   const availableBrands = getAvailableBrands();
 
   // Only render in development mode
-  if (process.env.NODE_ENV !== 'development') {
+  if (process.env.NODE_ENV !== "development") {
     return null;
   }
 
@@ -36,10 +43,10 @@ export function BrandSwitcher() {
     setAnchorEl(null);
   };
 
-  const handleBrandSelect = (brandKey: string) => {
+  const handleBrandSelect = (_brandKey: string) => {
     setShowInstructions(true);
     handleClose();
-    
+
     // Auto-hide instructions after 10 seconds
     setTimeout(() => {
       setShowInstructions(false);
@@ -55,7 +62,7 @@ export function BrandSwitcher() {
         onClick={handleClick}
         sx={{
           borderRadius: currentBrand.borderRadius / 4,
-          textTransform: 'none',
+          textTransform: "none",
           fontWeight: 600,
         }}
       >
@@ -83,7 +90,7 @@ export function BrandSwitcher() {
             Development Mode Only
           </Typography>
         </Box>
-        
+
         <Divider />
 
         {availableBrands.map((brandKey) => {
@@ -99,20 +106,20 @@ export function BrandSwitcher() {
               sx={{
                 py: 1.5,
                 px: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
                 gap: 1,
-                position: 'relative',
+                position: "relative",
               }}
             >
               {/* Brand Color Preview */}
               <Box
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
+                  display: "flex",
+                  alignItems: "center",
                   gap: 1,
-                  width: '100%',
+                  width: "100%",
                 }}
               >
                 <Box
@@ -124,12 +131,12 @@ export function BrandSwitcher() {
                     flexShrink: 0,
                   }}
                 />
-                
+
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography 
-                      variant="subtitle2" 
-                      sx={{ 
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{
                         fontFamily: brand.fonts.heading,
                         fontWeight: 700,
                       }}
@@ -137,17 +144,17 @@ export function BrandSwitcher() {
                       {brand.name}
                     </Typography>
                     {isActive && (
-                      <CheckIcon sx={{ fontSize: 18, color: 'success.main' }} />
+                      <CheckIcon sx={{ fontSize: 18, color: "success.main" }} />
                     )}
                   </Box>
-                  <Typography 
-                    variant="caption" 
+                  <Typography
+                    variant="caption"
                     color="text.secondary"
-                    sx={{ 
-                      display: 'block',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                    sx={{
+                      display: "block",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {brand.tagline}
@@ -156,15 +163,16 @@ export function BrandSwitcher() {
               </Box>
 
               {/* Font Preview */}
-              <Box sx={{ width: '100%', pl: 6 }}>
-                <Typography 
-                  variant="caption" 
-                  sx={{ 
+              <Box sx={{ width: "100%", pl: 6 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
                     fontFamily: brand.fonts.body,
-                    color: 'text.secondary',
+                    color: "text.secondary",
                   }}
                 >
-                  {brand.fonts.heading.split(',')[0].replace(/"/g, '')} • {brand.fonts.body.split(',')[0].replace(/"/g, '')}
+                  {brand.fonts.heading.split(",")[0].replace(/"/g, "")} •{" "}
+                  {brand.fonts.body.split(",")[0].replace(/"/g, "")}
                 </Typography>
               </Box>
 
@@ -175,11 +183,11 @@ export function BrandSwitcher() {
                   size="small"
                   color="success"
                   sx={{
-                    position: 'absolute',
+                    position: "absolute",
                     top: 8,
                     right: 8,
                     height: 20,
-                    fontSize: '0.7rem',
+                    fontSize: "0.7rem",
                   }}
                 />
               )}
@@ -202,7 +210,7 @@ export function BrandSwitcher() {
           severity="info"
           onClose={() => setShowInstructions(false)}
           sx={{
-            position: 'fixed',
+            position: "fixed",
             bottom: 24,
             right: 24,
             maxWidth: 400,
@@ -215,12 +223,16 @@ export function BrandSwitcher() {
             To switch brands permanently:
           </Typography>
           <Typography variant="body2" component="ol" sx={{ pl: 2, mb: 1 }}>
-            <li>Update <code>.env.local</code> file</li>
-            <li>Set <code>NEXT_PUBLIC_BRAND_KEY=brandname</code></li>
+            <li>
+              Update <code>.env.local</code> file
+            </li>
+            <li>
+              Set <code>NEXT_PUBLIC_BRAND_KEY=brandname</code>
+            </li>
             <li>Restart the development server</li>
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            Available brands: {availableBrands.join(', ')}
+            Available brands: {availableBrands.join(", ")}
           </Typography>
         </Alert>
       )}

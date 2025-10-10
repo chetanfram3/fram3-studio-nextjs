@@ -467,6 +467,7 @@ export function formatConsentDate(timestamp: string): string {
             day: 'numeric'
         });
     } catch (e) {
+        logger.debug("Error:", e);
         return 'Unknown';
     }
 }

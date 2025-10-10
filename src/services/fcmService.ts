@@ -4,8 +4,8 @@ import { useNotificationStore } from '@/store/notificationStore';
 import type { Notification } from '@/types/notifications';
 import { NotificationType } from '@/types/notifications';
 import logger from '@/utils/logger';
-import { getFirestore, collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { app, auth, db } from '@/lib/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 

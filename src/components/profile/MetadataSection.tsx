@@ -2,7 +2,6 @@
 "use client";
 
 import { Box, Typography, Paper, Chip } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { UserProfile } from "@/types/profile";
 
@@ -15,7 +14,6 @@ export default function MetadataSection({
   metadata,
   providerData,
 }: MetadataSectionProps) {
-  const theme = useTheme();
   const brand = getCurrentBrand();
 
   const formatDate = (dateString: string) => {

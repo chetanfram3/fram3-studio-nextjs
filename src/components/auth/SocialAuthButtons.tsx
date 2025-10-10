@@ -13,7 +13,6 @@ import {
   handleFacebookSignIn,
   handleTwitterSignIn,
 } from "@/services";
-import { getCurrentBrand } from "@/config/brandConfig";
 import logger from "@/utils/logger";
 
 interface SocialAuthButtonsProps {
@@ -43,7 +42,6 @@ export default function SocialAuthButtons({
   disabled = false,
 }: SocialAuthButtonsProps) {
   const theme = useTheme();
-  const brand = getCurrentBrand();
   const [loading, setLoading] = useState<string | null>(null);
 
   const socialProviders: SocialProvider[] = [

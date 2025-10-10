@@ -1,5 +1,6 @@
 import { User as FirebaseUser } from 'firebase/auth';
 import { UserProfile } from '@/types/auth';
+import logger from '@/utils/logger';
 
 /**
  * Extract user data from Firebase User object
@@ -96,6 +97,7 @@ export function parseJWT(token: string): any {
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
+    logger.debug("Error:", error);
     return null;
   }
 }

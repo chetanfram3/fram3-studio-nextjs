@@ -1,7 +1,6 @@
 'use client';
 
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 
 interface LoadingDotsProps {
   isLoading: boolean;
@@ -20,7 +19,6 @@ export default function LoadingDots({
   size = 60,
   fullScreen = true,
 }: LoadingDotsProps) {
-  const theme = useTheme();
 
   if (!isLoading) return null;
 

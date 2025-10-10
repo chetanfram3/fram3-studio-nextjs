@@ -7,7 +7,6 @@ import {
     FacebookAuthProvider,
     TwitterAuthProvider,
     User,
-    AuthCredential,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import logger from '@/utils/logger';

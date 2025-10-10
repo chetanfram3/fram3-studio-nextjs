@@ -7,12 +7,6 @@ interface ValidationRule<T = any> {
     message: string;
 }
 
-interface FieldValidation {
-    rules: ValidationRule[];
-    error: string;
-    isValid: boolean;
-}
-
 interface UseFormValidationReturn<T> {
     errors: Record<keyof T, string>;
     validateField: (fieldName: keyof T, value: any) => Promise<boolean>;

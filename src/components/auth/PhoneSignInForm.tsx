@@ -18,7 +18,6 @@ import {
   Warning as WarningIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
-import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
 import {
   initializePhoneRecaptcha,
@@ -36,7 +35,6 @@ interface PhoneSignInFormProps {
 }
 
 export default function PhoneSignInForm({ onBack }: PhoneSignInFormProps) {
-  const theme = useTheme();
   const brand = getCurrentBrand();
   const router = useRouter();
 

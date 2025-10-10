@@ -12,7 +12,6 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import {
   Security as SecurityIcon,
   CheckCircle as CheckIcon,
@@ -26,10 +25,8 @@ import { useIsMFAEnabled, useMFARemoval } from "@/hooks/auth/useMFA";
 import { formatPhoneNumberMasked } from "@/services/auth/mfaService";
 import MFAEnrollmentDialog from "./MFAEnrollmentDialog";
 import ReauthDialog from "@/components/auth/ReauthDialog";
-import logger from "@/utils/logger";
 
 export default function MFAStatusSection() {
-  const theme = useTheme();
   const brand = getCurrentBrand();
   const { isEnabled, factors, loading } = useIsMFAEnabled();
   const {

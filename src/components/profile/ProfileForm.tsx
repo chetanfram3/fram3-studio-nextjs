@@ -302,7 +302,7 @@ export default function ProfileForm() {
               companyName={
                 editedProfile.extendedInfo.details.gstin?.companyName || ""
               }
-              onChange={(values, isValid) => {
+              onChange={(values) => {
                 if (!values.gstin && !values.companyName) {
                   updateField(["extendedInfo", "details", "gstin"], null);
                 } else {

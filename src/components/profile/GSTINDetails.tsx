@@ -2,7 +2,6 @@
 "use client";
 
 import { TextField, Box, Typography, Alert } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 import { useState, useEffect } from "react";
 import { getCurrentBrand } from "@/config/brandConfig";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -21,7 +20,6 @@ export default function GSTINDetails({
   companyName,
   onChange,
 }: GSTINDetailsProps) {
-  const theme = useTheme();
   const brand = getCurrentBrand();
   const [gstinError, setGstinError] = useState<string>("");
   const [companyError, setCompanyError] = useState<string>("");

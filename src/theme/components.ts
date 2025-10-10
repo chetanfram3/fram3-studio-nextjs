@@ -30,20 +30,20 @@ export const components: Components<Theme> = {
   },
   MuiButton: {
     styleOverrides: {
-      root: ({ theme }) => ({
+      root: ({ }) => ({
         borderRadius: brand.borderRadius,
         textTransform: 'none',
         fontWeight: 600,
         fontFamily: brand.fonts.heading,
       }),
-      contained: ({ theme }) => ({
+      contained: ({ }) => ({
         boxShadow: 'none',
         '&:hover': {
           boxShadow: 'none',
         },
       }),
       // Text variant for links (Register Now, etc.)
-      text: ({ theme }) => ({
+      text: ({ }) => ({
         '&:hover': {
           backgroundColor: 'rgba(255, 215, 0, 0.08)', // Gold with transparency
         },

@@ -192,7 +192,7 @@ export default function NotificationsPage() {
                                 border: 1,
                                 borderColor: "divider",
                               }}
-                              onError={(e) => {
+                              onError={() => {
                                 console.error(
                                   "Failed to load image:",
                                   notification.image

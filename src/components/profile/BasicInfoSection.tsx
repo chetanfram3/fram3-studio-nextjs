@@ -40,7 +40,7 @@ export default function BasicInfoSection({
   const [phoneLinkingOpen, setPhoneLinkingOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const handlePhoneLinked = async (phoneNumber: string) => {
+  const handlePhoneLinked = async () => {
     await queryClient.refetchQueries({
       queryKey: PROFILE_QUERY_KEY,
       type: "active",
