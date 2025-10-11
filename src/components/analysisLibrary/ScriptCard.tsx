@@ -1,14 +1,17 @@
+// src/components/analysisLibrary/ScriptCard.tsx
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, Suspense, startTransition } from "react";
 import { Box, Typography, IconButton, Tooltip, Skeleton } from "@mui/material";
 import {
   VisibilityOutlined as ViewIcon,
   InfoOutlined as InfoIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
+import NextImage from "next/image";
 import { FavoriteButton } from "./FavouriteButton";
 import type { Script } from "@/types";
+import logger from "@/utils/logger";
 
 interface ScriptCardProps {
   script: Script;
@@ -17,6 +20,76 @@ interface ScriptCardProps {
   onViewDetails: () => void;
   onInfoClick: () => void;
 }
+
+// ===========================
+// OPTIMIZED IMAGE COMPONENT
+// ===========================
+
+interface OptimizedCardImageProps {
+  src: string;
+  alt: string;
+  aspectRatio: number | null;
+  isHovered: boolean;
+  onLoad: (e: React.SyntheticEvent<HTMLImageElement>) => void;
+}
+
+function OptimizedCardImage({
+  src,
+  alt,
+  aspectRatio,
+  isHovered,
+  onLoad,
+}: OptimizedCardImageProps) {
+  // Check if external URL
+  const isExternalImage =
+    src.startsWith("https://storage.googleapis.com") || src.startsWith("http");
+
+  const getImageStyle = () => ({
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    objectFit:
+      aspectRatio !== null && aspectRatio >= 1 ? "cover" : ("contain" as const),
+    transition: "transform 0.4s ease-in-out",
+    transform: isHovered ? "scale(1.08)" : "scale(1)",
+  });
+
+  // Use regular img for external signed URLs
+  if (isExternalImage || !src || src === "/placeHolder.webp") {
+    return (
+      <Box
+        component="img"
+        src={src || "/placeHolder.webp"}
+        alt={alt}
+        onLoad={onLoad}
+        sx={getImageStyle()}
+      />
+    );
+  }
+
+  // Use Next.js Image for local images
+  return (
+    <NextImage
+      src={src}
+      alt={alt}
+      fill
+      style={{
+        objectFit:
+          aspectRatio !== null && aspectRatio >= 1 ? "cover" : "contain",
+        transition: "transform 0.4s ease-in-out",
+        transform: isHovered ? "scale(1.08)" : "scale(1)",
+      }}
+      sizes="(max-width: 600px) 100vw, (max-width: 900px) 50vw, 33vw"
+      quality={85}
+    />
+  );
+}
+
+// ===========================
+// MAIN SCRIPT CARD COMPONENT
+// ===========================
 
 export function ScriptCard({
   script,
@@ -29,11 +102,14 @@ export function ScriptCard({
   const [isHovered, setIsHovered] = useState(false);
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
 
+  // Detect image aspect ratio
   const detectImageAspectRatio = useCallback((imgElement: HTMLImageElement) => {
     if (imgElement.naturalWidth && imgElement.naturalHeight) {
       const ratio = imgElement.naturalWidth / imgElement.naturalHeight;
-      setImageAspectRatio(ratio);
-      console.log(
+      startTransition(() => {
+        setImageAspectRatio(ratio);
+      });
+      logger.debug(
         "ScriptCard aspect ratio detected:",
         ratio,
         ratio >= 1 ? "landscape (cover)" : "portrait (contain)"
@@ -41,61 +117,72 @@ export function ScriptCard({
     }
   }, []);
 
-  const getImageStyle = () => ({
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    objectFit:
-      imageAspectRatio !== null && imageAspectRatio >= 1
-        ? "cover"
-        : ("contain" as const),
-    transition: "transform 0.4s ease-in-out",
-    transform: isHovered ? "scale(1.08)" : "scale(1)",
-  });
+  const handleImageLoad = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement>) => {
+      detectImageAspectRatio(e.currentTarget);
+    },
+    [detectImageAspectRatio]
+  );
 
   return (
     <Box
       sx={{
         position: "relative",
         cursor: "pointer",
-        // ✅ FIXED: Use primary color for selected border (Gold/Bronze)
-        border: isSelected ? `2px solid ${theme.palette.primary.main}` : "none",
-        borderRadius: 2,
+        border: (theme) =>
+          isSelected
+            ? `2px solid ${theme.palette.primary.main}`
+            : `1px solid ${theme.palette.divider}`,
+        borderRadius: 1,
         overflow: "hidden",
+        transition: "all 0.3s ease",
+        bgcolor: "background.paper",
         "&:hover": {
-          transform: "scale(1.02)",
-          transition: "transform 0.2s ease-in-out",
+          transform: "translateY(-4px)",
+          boxShadow: isSelected
+            ? `0 6px 20px ${theme.palette.primary.main}40`
+            : theme.shadows[4],
         },
       }}
       onClick={onSelect}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Image container with 16:9 aspect ratio */}
       <Box
         sx={{
           position: "relative",
           paddingTop: "56.25%", // 16:9 Aspect Ratio
           width: "100%",
-          overflow: "hidden",
-          // ✅ FIXED: Use theme background instead of hardcoded 'black'
           backgroundColor: theme.palette.background.default,
         }}
       >
-        <Box
-          component="img"
-          src={script.thumbnailPath || "/placeHolder.webp"}
-          alt={script.scriptTitle || "Untitled Script"}
-          sx={getImageStyle()}
-          onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
-            detectImageAspectRatio(e.currentTarget);
-          }}
-          onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-            e.currentTarget.src = "/placeHolder.webp";
-          }}
-        />
+        <Suspense
+          fallback={
+            <Skeleton
+              variant="rectangular"
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+              }}
+              animation="wave"
+            />
+          }
+        >
+          <OptimizedCardImage
+            src={script.thumbnailPath || "/placeHolder.webp"}
+            alt={script.scriptTitle || "Script thumbnail"}
+            aspectRatio={imageAspectRatio}
+            isHovered={isHovered}
+            onLoad={handleImageLoad}
+          />
+        </Suspense>
       </Box>
+
+      {/* Bottom overlay with title and actions */}
       <Box
         sx={{
           position: "absolute",
@@ -103,32 +190,36 @@ export function ScriptCard({
           left: 0,
           right: 0,
           p: 2,
-          // ✅ FIXED: Use theme-aware gradient
           background:
-            theme.palette.mode === "dark"
-              ? "rgba(0, 0, 0, 0.7)"
-              : "rgba(0, 0, 0, 0.6)",
-          // ✅ FIXED: Use theme text color instead of hardcoded 'white'
-          color: theme.palette.text.primary,
+            "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%)",
         }}
       >
-        <Typography variant="subtitle1" fontWeight="bold" noWrap>
-          {script.scriptTitle || "Untitled Script"}
+        <Typography
+          variant="body2"
+          fontWeight="bold"
+          color="white"
+          sx={{
+            display: "block",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {script.scriptTitle || "Untitled"}
         </Typography>
         <Typography
           variant="caption"
-          // ✅ FIXED: Use theme secondary text color instead of hardcoded grey.300
-          color="text.secondary"
-          sx={{ display: "block" }}
+          sx={{ display: "block", color: theme.palette.text.secondary }}
         >
           v{script.versions[0]?.versionNumber || 1}
         </Typography>
+
+        {/* Action buttons */}
         <Box
           sx={{ position: "absolute", bottom: 8, right: 0, display: "flex" }}
         >
           <Tooltip title="Version details">
             <IconButton
-              // ✅ Use primary color (Gold/Bronze)
               color="primary"
               onClick={(e) => {
                 e.stopPropagation();
@@ -140,7 +231,6 @@ export function ScriptCard({
           </Tooltip>
           <Tooltip title="View Details">
             <IconButton
-              // ✅ Use primary color (Gold/Bronze)
               color="primary"
               onClick={(e) => {
                 e.stopPropagation();
@@ -160,6 +250,10 @@ export function ScriptCard({
   );
 }
 
+// ===========================
+// SKELETON CARD COMPONENT
+// ===========================
+
 export function SkeletonCard() {
   const theme = useTheme();
 
@@ -178,7 +272,6 @@ export function SkeletonCard() {
           position: "relative",
           paddingTop: "56.25%", // 16:9 Aspect Ratio
           width: "100%",
-          // ✅ FIXED: Use theme background instead of hardcoded 'black'
           backgroundColor: theme.palette.background.default,
         }}
       >
@@ -204,18 +297,24 @@ export function SkeletonCard() {
           left: 0,
           right: 0,
           p: 2,
-          // ✅ FIXED: Use theme-aware gradient
-          background:
-            theme.palette.mode === "dark"
-              ? "rgba(0, 0, 0, 0.7)"
-              : "rgba(0, 0, 0, 0.6)",
+          background: "rgba(0, 0, 0, 0.7)",
         }}
       >
         {/* Title skeleton */}
-        <Skeleton variant="text" width="70%" height={28} sx={{ mb: 1 }} />
+        <Skeleton
+          variant="text"
+          width="70%"
+          height={28}
+          sx={{ mb: 1, bgcolor: "grey.300" }}
+        />
 
         {/* Version number skeleton */}
-        <Skeleton variant="text" width="30%" height={20} sx={{ mb: 2 }} />
+        <Skeleton
+          variant="text"
+          width="30%"
+          height={20}
+          sx={{ mb: 2, bgcolor: "grey.300" }}
+        />
 
         {/* Action buttons skeleton */}
         <Box
@@ -231,14 +330,12 @@ export function SkeletonCard() {
             variant="circular"
             width={24}
             height={24}
-            // ✅ Use primary color for skeleton
             sx={{ bgcolor: theme.palette.primary.main }}
           />
           <Skeleton
             variant="circular"
             width={24}
             height={24}
-            // ✅ Use primary color for skeleton
             sx={{ bgcolor: theme.palette.primary.main }}
           />
         </Box>

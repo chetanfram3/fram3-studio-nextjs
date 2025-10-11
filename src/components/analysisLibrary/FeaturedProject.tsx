@@ -1,7 +1,14 @@
 // src/components/analysisLibrary/FeaturedProject.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  Suspense,
+  startTransition,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   Box,
   Paper,
@@ -23,17 +30,18 @@ import {
   VisibilityOutlined as ViewIcon,
   EditOutlined as EditIcon,
   AccessTimeOutlined as TimeIcon,
-  LocalOfferOutlined as TagIcon,
   PhotoCameraOutlined as ImageEditIcon,
   CloseOutlined as CloseIcon,
+  LocalOfferOutlined as TagIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
+import NextImage from "next/image";
 import { FavoriteButton } from "./FavouriteButton";
 import { useScriptDashboardAnalysis } from "@/hooks/scripts/useScriptDashboardAnalysis";
 import { ActorAvatars } from "@/components/common/ActorInfoAvatar";
 import { ShotImageViewer } from "@/components/imageEditor/ShotImageViewer";
-import type { Actor, ApiResponse, ApiActorData } from "@/types/overview/types";
+import type { Actor, ApiActorData, ApiResponse } from "@/types/overview/types";
 import type { SxProps } from "@mui/system";
 import { useAuthStore } from "@/store/authStore";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,14 +62,32 @@ interface FeaturedProjectProps {
   onEdit: () => void;
 }
 
-// ✅ FIXED: Theme-aware styles with proper color usage
+interface KeyVisualData {
+  signedUrl?: string;
+  thumbnailPath?: string;
+  versions?: {
+    current?: {
+      version: number;
+      signedUrl: string;
+      thumbnailPath: string;
+      isCurrent: boolean;
+      destinationPath?: string;
+      lastEditedAt?: string | null;
+    };
+    archived?: Record<string, unknown>;
+    totalVersions: number;
+    totalEdits: number;
+    editHistory?: unknown[];
+  };
+}
+
+// ✅ CORRECT: Original theme-aware styles
 const styles = {
   paper: (theme: Theme): SxProps => ({
     position: "relative",
     borderRadius: 2,
     overflow: "hidden",
     mb: 4,
-    // ✅ Use primary color for border (Gold in dark, Bronze in light)
     border: `2px solid ${theme.palette.primary.main}`,
     transition: "transform 0.3s ease, box-shadow 0.3s ease",
     "&:hover": {
@@ -71,11 +97,10 @@ const styles = {
   }),
   imageContainer: (theme: Theme): SxProps => ({
     position: "relative",
-    paddingTop: "56.25%", // 16:9 Aspect Ratio
+    paddingTop: "56.25%",
     width: "100%",
     overflow: "hidden",
     cursor: "pointer",
-    // ✅ FIXED: Use theme background instead of hardcoded 'black'
     backgroundColor: theme.palette.background.default,
   }),
   image: (aspectRatio: number | null) => ({
@@ -103,12 +128,10 @@ const styles = {
     left: 0,
     right: 0,
     p: 3,
-    // ✅ FIXED: Use theme-aware gradient
     background:
       theme.palette.mode === "dark"
         ? "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0.4) 100%)"
         : "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.3) 100%)",
-    // ✅ FIXED: Use theme text color instead of hardcoded 'white'
     color: theme.palette.text.primary,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
@@ -122,16 +145,13 @@ const styles = {
     alignItems: "center",
   },
   actionButton: (theme: Theme): SxProps => ({
-    // ✅ FIXED: Use theme text color instead of hardcoded 'white'
     color: theme.palette.text.primary,
     width: 42,
     height: 42,
-    // ✅ FIXED: Use theme background with alpha instead of hardcoded rgba
     backgroundColor: alpha(theme.palette.background.paper, 0.5),
     backdropFilter: "blur(5px)",
     transition: "all 0.2s ease",
     "&:hover": {
-      // ✅ Use primary color for hover (Gold/Bronze)
       backgroundColor: alpha(theme.palette.primary.main, 0.8),
       transform: "scale(1.1)",
     },
@@ -140,16 +160,13 @@ const styles = {
     position: "absolute",
     top: 16,
     right: 60,
-    // ✅ FIXED: Use theme text color instead of hardcoded 'white'
     color: theme.palette.text.primary,
     width: 36,
     height: 36,
-    // ✅ FIXED: Use theme background with alpha instead of hardcoded rgba
     backgroundColor: alpha(theme.palette.background.paper, 0.5),
     backdropFilter: "blur(5px)",
     transition: "all 0.2s ease",
     "&:hover": {
-      // ✅ Use primary color for hover
       backgroundColor: alpha(theme.palette.primary.main, 0.8),
       transform: "scale(1.1)",
     },
@@ -159,12 +176,9 @@ const styles = {
     top: 16,
     left: 16,
     backdropFilter: "blur(5px)",
-    // ✅ Use primary color for text
     color: theme.palette.primary.main,
-    // ✅ FIXED: Use theme background with alpha
     background: alpha(theme.palette.background.paper, 0.7),
     fontWeight: "bold",
-    // ✅ FIXED: Use brand fonts
     fontFamily: getCurrentBrand().fonts.body,
   }),
   versionChip: (theme: Theme): SxProps => ({
@@ -172,12 +186,9 @@ const styles = {
     top: 16,
     right: 16,
     backdropFilter: "blur(5px)",
-    // ✅ Use primary color for text
     color: theme.palette.primary.main,
-    // ✅ FIXED: Use theme background with alpha
     background: alpha(theme.palette.background.paper, 0.7),
     fontWeight: "bold",
-    // ✅ FIXED: Use brand fonts
     fontFamily: getCurrentBrand().fonts.body,
   }),
   metaContainer: {
@@ -191,7 +202,6 @@ const styles = {
     alignItems: "center",
     gap: 0.5,
     mt: 0.5,
-    // ✅ FIXED: Use theme secondary text color instead of hardcoded grey.300
     color: theme.palette.text.secondary,
   }),
   dialog: {
@@ -210,7 +220,6 @@ const styles = {
     height: "100%",
     display: "flex",
     flexDirection: "column",
-    // ✅ FIXED: Use theme background
     backgroundColor: theme.palette.background.default,
   }),
   shotImageViewerContainer: (theme: Theme): SxProps => ({
@@ -222,7 +231,6 @@ const styles = {
     position: "relative",
     borderRadius: 1,
     border: 1,
-    // ✅ FIXED: Use theme divider
     borderColor: theme.palette.divider,
   }),
   dialogTitle: (theme: Theme): SxProps => ({
@@ -246,675 +254,632 @@ const styles = {
   },
 } as const;
 
-export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
-  ({
-    title,
-    brand,
-    productCategory,
-    version,
-    createdAt,
-    lastModifiedAt,
-    signedUrl,
+// ===========================
+// UTILITY FUNCTIONS
+// ===========================
+
+const getTimeAgo = (timestamp: number): string => {
+  try {
+    const now = new Date();
+    const date = new Date(timestamp);
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
+    if (diffInSeconds < 3600)
+      return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400)
+      return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 2592000)
+      return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    if (diffInSeconds < 31536000)
+      return `${Math.floor(diffInSeconds / 2592000)} months ago`;
+    return `${Math.floor(diffInSeconds / 31536000)} years ago`;
+  } catch (e) {
+    logger.error("Error calculating time ago:", e);
+    return "Unknown time";
+  }
+};
+
+const formatDate = (timestamp: number): string => {
+  try {
+    return new Date(timestamp).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch (e) {
+    logger.error("Error formatting date:", e);
+    return "Invalid date";
+  }
+};
+
+const extractActors = (data: Record<string, unknown> | undefined): Actor[] => {
+  if (!data) return [];
+
+  const actors: Actor[] = [];
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (
+      key === "keyVisualSignedUrl" ||
+      key === "keyVisualThumbnailPath" ||
+      key === "keyVisualVersions"
+    )
+      return;
+
+    if (value && typeof value === "object" && "actorName" in value) {
+      const apiActor = value as ApiActorData;
+
+      const actor: Actor = {
+        actorName: apiActor.actorName,
+        actorId: apiActor.actorId,
+        actorVersionId: apiActor.actorVersionId,
+        actorArchetype: apiActor.actorArchetype,
+        actorType: apiActor.actorType,
+        sceneIds: apiActor.sceneIds,
+        gender: apiActor.gender,
+        celebrity: {
+          celebrityName: "",
+          celebrityDetails: {},
+          isCelebrity: apiActor.celebrity?.isCelebrity || "No",
+        },
+        signedUrl: apiActor.signedUrl || "",
+        signedProfileUrl: apiActor.signedProfileUrl || undefined,
+        faceDetection: apiActor.faceDetection || undefined,
+        thumbnailPath: apiActor.thumbnailPath,
+        versions: apiActor.versions,
+      };
+
+      actors.push(actor);
+    }
+  });
+
+  return actors;
+};
+
+// ===========================
+// IMAGE COMPONENT WITH OPTIMIZATION
+// ===========================
+
+interface OptimizedImageProps {
+  src: string;
+  alt: string;
+  aspectRatio: number | null;
+  onError: () => void;
+  onLoad: (e: React.SyntheticEvent<HTMLImageElement>) => void;
+  isLoading: boolean;
+}
+
+function OptimizedImage({
+  src,
+  alt,
+  aspectRatio,
+  onError,
+  onLoad,
+  isLoading,
+}: OptimizedImageProps) {
+  // Check if this is an external URL
+  const isExternalImage =
+    src.startsWith("https://storage.googleapis.com") || src.startsWith("http");
+
+  if (!src || src === "/placeHolder.webp") {
+    return (
+      <Box
+        component="img"
+        src="/placeHolder.webp"
+        alt={alt}
+        sx={styles.image(aspectRatio)}
+      />
+    );
+  }
+
+  // Use regular img for external signed URLs
+  if (isExternalImage) {
+    return (
+      <Box
+        component="img"
+        src={src}
+        alt={alt}
+        onError={onError}
+        onLoad={onLoad}
+        sx={{
+          ...styles.image(aspectRatio),
+          opacity: isLoading ? 0.7 : 1,
+          filter: isLoading ? "blur(2px)" : "none",
+          transition: "opacity 0.3s ease, filter 0.3s ease",
+        }}
+      />
+    );
+  }
+
+  // Use Next.js Image for local images
+  return (
+    <NextImage
+      src={src}
+      alt={alt}
+      fill
+      style={{
+        objectFit:
+          aspectRatio !== null && aspectRatio >= 1 ? "cover" : "contain",
+        opacity: isLoading ? 0.7 : 1,
+        transition: "opacity 0.3s ease, transform 0.6s ease",
+      }}
+      priority={true}
+      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+      onError={onError}
+      quality={85}
+    />
+  );
+}
+
+// ===========================
+// ACTORS SECTION WITH SUSPENSE
+// ===========================
+
+function ActorsSection({
+  data,
+}: {
+  data: Record<string, unknown> | undefined;
+}) {
+  const actors = extractActors(data);
+
+  if (actors.length === 0) {
+    return null;
+  }
+
+  return <ActorAvatars actors={actors} />;
+}
+
+// ===========================
+// MAIN COMPONENT
+// ===========================
+
+export function FeaturedProject({
+  title,
+  brand,
+  productCategory,
+  version,
+  createdAt,
+  lastModifiedAt,
+  signedUrl,
+  scriptId,
+  versionId,
+  favourite,
+  onView,
+  onEdit,
+}: FeaturedProjectProps) {
+  const theme = useTheme();
+  const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  // State management
+  const [isHovered, setIsHovered] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDialogLoading, setIsDialogLoading] = useState(false);
+  const [localKeyVisualData, setLocalKeyVisualData] =
+    useState<KeyVisualData | null>(null);
+  const [currentImageSrc, setCurrentImageSrc] = useState("/placeHolder.webp");
+  const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
+
+  // Parallel data fetching
+  const { data, isLoading, refetch } = useScriptDashboardAnalysis<ApiResponse>(
     scriptId,
     versionId,
-    favourite,
-    onView,
-    onEdit,
-  }) => {
-    const theme = useTheme();
-    const [isHovered, setIsHovered] = useState(false);
-    const [isImageLoading, setIsImageLoading] = useState(false);
-    const [imageError, setImageError] = useState(false);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [isDialogLoading, setIsDialogLoading] = useState(false);
-    const [currentImageSrc, setCurrentImageSrc] =
-      useState<string>("/placeHolder.webp");
-    const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(
-      null
-    );
+    "actorInfo"
+  );
 
-    const [localKeyVisualData, setLocalKeyVisualData] = useState<{
-      signedUrl?: string;
-      thumbnailPath?: string;
-      versions?: {
-        current: {
-          version: number;
-          signedUrl: string;
-          thumbnailPath: string;
-          isCurrent: boolean;
-          destinationPath?: string;
-          lastEditedAt?: string | null;
-        };
-        archived: Record<number, unknown>;
-        totalVersions?: number;
-        totalEdits?: number;
-        editHistory?: unknown[];
-      };
-    } | null>(null);
-
-    const { user } = useAuthStore();
-    const queryClient = useQueryClient();
-
-    const { data, error, isLoading, refetch } =
-      useScriptDashboardAnalysis<ApiResponse>(scriptId, versionId, "actorInfo");
-
-    const detectImageAspectRatio = useCallback(
-      (imgElement: HTMLImageElement) => {
-        if (imgElement.naturalWidth && imgElement.naturalHeight) {
-          const ratio = imgElement.naturalWidth / imgElement.naturalHeight;
-          setImageAspectRatio(ratio);
-          logger.debug(
-            "FeaturedProject: Image aspect ratio detected:",
-            ratio,
-            ratio >= 1 ? "landscape (cover)" : "portrait (contain)"
-          );
-        }
-      },
-      []
-    );
-
-    const canEditKeyVisual = useMemo(() => {
-      return !!(
-        (localKeyVisualData &&
-          (localKeyVisualData.signedUrl || localKeyVisualData.thumbnailPath)) ||
-        (data && (data.keyVisualSignedUrl || data.keyVisualThumbnailPath)) ||
-        (signedUrl &&
-          signedUrl.trim() !== "" &&
-          signedUrl !== "/placeHolder.webp") ||
-        (currentImageSrc && currentImageSrc !== "/placeHolder.webp")
+  // Detect image aspect ratio
+  const detectImageAspectRatio = useCallback((imgElement: HTMLImageElement) => {
+    if (imgElement.naturalWidth && imgElement.naturalHeight) {
+      const ratio = imgElement.naturalWidth / imgElement.naturalHeight;
+      setImageAspectRatio(ratio);
+      logger.debug(
+        "Image aspect ratio detected:",
+        ratio,
+        ratio >= 1 ? "landscape (cover)" : "portrait (contain)"
       );
-    }, [localKeyVisualData, data, signedUrl, currentImageSrc]);
+    }
+  }, []);
 
-    const shouldShowEditButton = canEditKeyVisual && !isImageLoading;
-    const isEditButtonDisabled =
-      isImageLoading || (!localKeyVisualData && isLoading);
+  // Check if edit is available
+  const canEditKeyVisual = useMemo(() => {
+    return !!(
+      (localKeyVisualData &&
+        (localKeyVisualData.signedUrl || localKeyVisualData.thumbnailPath)) ||
+      (data &&
+        ((data as any).keyVisualSignedUrl ||
+          (data as any).keyVisualThumbnailPath)) ||
+      (signedUrl &&
+        signedUrl.trim() !== "" &&
+        signedUrl !== "/placeHolder.webp") ||
+      (currentImageSrc && currentImageSrc !== "/placeHolder.webp")
+    );
+  }, [localKeyVisualData, data, signedUrl, currentImageSrc]);
 
-    useEffect(() => {
-      logger.debug("FeaturedProject: Data effect triggered", {
-        data,
-        signedUrl,
-        isLoading,
-      });
+  const shouldShowEditButton = canEditKeyVisual && !isImageLoading;
+  const isEditButtonDisabled =
+    isImageLoading || (!localKeyVisualData && isLoading);
 
-      if (data) {
-        const newKeyVisualData = {
-          signedUrl: data.keyVisualSignedUrl || signedUrl || undefined,
-          thumbnailPath: data.keyVisualThumbnailPath || signedUrl || undefined,
-          versions: data.keyVisualVersions
-            ? {
-                current: {
-                  version: data.keyVisualVersions.current.version,
-                  signedUrl: data.keyVisualVersions.current.signedUrl,
-                  thumbnailPath: data.keyVisualVersions.current.thumbnailPath,
-                  isCurrent: data.keyVisualVersions.current.isCurrent,
-                  destinationPath:
-                    data.keyVisualVersions.current.destinationPath,
-                  lastEditedAt: data.keyVisualVersions.current.lastEditedAt,
-                },
-                archived: data.keyVisualVersions.archived,
-                totalVersions: data.keyVisualVersions.totalVersions,
-                totalEdits: data.keyVisualVersions.totalEdits,
-                editHistory: data.keyVisualVersions.editHistory,
-              }
-            : undefined,
-        };
+  // Effect 1: Update key visual data from API (parallel with image loading)
+  useEffect(() => {
+    if (data) {
+      const newKeyVisualData = {
+        signedUrl: (data as any).keyVisualSignedUrl || signedUrl || undefined,
+        thumbnailPath:
+          (data as any).keyVisualThumbnailPath || signedUrl || undefined,
+        versions: (data as any).keyVisualVersions || undefined,
+      };
 
-        setLocalKeyVisualData(newKeyVisualData);
-        logger.debug(
-          "FeaturedProject: Updated keyVisual data from API:",
-          newKeyVisualData
-        );
+      setLocalKeyVisualData(newKeyVisualData);
 
-        const thumbnailUrl = newKeyVisualData.thumbnailPath;
-        const highResUrl =
-          newKeyVisualData.versions?.current?.signedUrl ||
-          newKeyVisualData.signedUrl;
+      // Progressive image loading: show thumbnail first, then high-res
+      const thumbnailUrl = newKeyVisualData.thumbnailPath;
+      const highResUrl =
+        newKeyVisualData.versions?.current?.signedUrl ||
+        newKeyVisualData.signedUrl;
 
-        if (thumbnailUrl) {
-          setCurrentImageSrc(thumbnailUrl);
-          setIsImageLoading(false);
+      if (thumbnailUrl) {
+        setCurrentImageSrc(thumbnailUrl);
+        setIsImageLoading(false);
 
-          const thumbImg = new Image();
-          thumbImg.onload = () => detectImageAspectRatio(thumbImg);
-          thumbImg.src = thumbnailUrl;
+        // Detect aspect ratio from thumbnail
+        const thumbImg = new Image();
+        thumbImg.onload = () => detectImageAspectRatio(thumbImg);
+        thumbImg.src = thumbnailUrl;
 
-          if (highResUrl && highResUrl !== thumbnailUrl) {
-            setIsImageLoading(true);
-            const img = new Image();
-            img.onload = () => {
+        // Preload high-res in background
+        if (highResUrl && highResUrl !== thumbnailUrl) {
+          setIsImageLoading(true);
+          const img = new Image();
+          img.onload = () => {
+            startTransition(() => {
               setCurrentImageSrc(highResUrl);
               setIsImageLoading(false);
               detectImageAspectRatio(img);
-            };
-            img.onerror = () => setIsImageLoading(false);
-            img.src = highResUrl;
-          }
-        } else if (highResUrl) {
-          setIsImageLoading(true);
-          setCurrentImageSrc(highResUrl);
-        } else {
-          setIsImageLoading(false);
-          setCurrentImageSrc("/placeHolder.webp");
+            });
+          };
+          img.onerror = () => setIsImageLoading(false);
+          img.src = highResUrl;
         }
-      } else if (!isLoading && !data) {
-        setIsImageLoading(false);
+      } else if (highResUrl) {
+        setIsImageLoading(true);
+        setCurrentImageSrc(highResUrl);
       }
-    }, [data, signedUrl, isLoading, detectImageAspectRatio]);
+    }
+  }, [data, signedUrl, detectImageAspectRatio]);
 
-    useEffect(() => {
-      if (
-        !data &&
-        !localKeyVisualData &&
-        signedUrl &&
-        signedUrl.trim() !== "" &&
-        signedUrl !== "/placeHolder.webp"
-      ) {
-        const fallbackData = {
-          signedUrl: signedUrl,
-          thumbnailPath: signedUrl,
-          versions: {
-            current: {
-              version: 1,
-              signedUrl: signedUrl,
-              thumbnailPath: signedUrl,
-              isCurrent: true,
-              destinationPath: signedUrl,
-              lastEditedAt: new Date().toISOString(),
-            },
-            archived: {},
-            totalVersions: 1,
-            totalEdits: 0,
-            editHistory: [],
+  // Effect 2: Fallback data when no API data
+  useEffect(() => {
+    if (
+      !data &&
+      !localKeyVisualData &&
+      signedUrl &&
+      signedUrl.trim() !== "" &&
+      signedUrl !== "/placeHolder.webp"
+    ) {
+      setLocalKeyVisualData({
+        signedUrl: signedUrl,
+        thumbnailPath: signedUrl,
+        versions: {
+          current: {
+            version: 1,
+            signedUrl: signedUrl,
+            thumbnailPath: signedUrl,
+            isCurrent: true,
+            destinationPath: signedUrl,
+            lastEditedAt: new Date().toISOString(),
           },
-        };
-
-        logger.debug(
-          "FeaturedProject: Using fallback data from props:",
-          fallbackData
-        );
-        setLocalKeyVisualData(fallbackData);
-
-        const img = new Image();
-        img.onload = () => detectImageAspectRatio(img);
-        img.src = signedUrl;
-      }
-    }, [data, signedUrl, localKeyVisualData, detectImageAspectRatio]);
-
-    useEffect(() => {
-      setImageError(false);
-      setLocalKeyVisualData(null);
-      setImageAspectRatio(null);
-
-      const immediateUrl =
-        signedUrl && signedUrl.trim() !== "" ? signedUrl : "/placeHolder.webp";
-
-      const shouldLoadFromApi = !signedUrl || signedUrl.trim() === "";
-      setIsImageLoading(shouldLoadFromApi);
-
-      setCurrentImageSrc(immediateUrl);
-      logger.debug(
-        `FeaturedProject: Script changed to ${scriptId}, showing:`,
-        immediateUrl,
-        `shouldLoadFromApi: ${shouldLoadFromApi}`
-      );
-    }, [scriptId, signedUrl, user?.uid]);
-
-    useEffect(() => {
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === "Escape" && isEditDialogOpen) {
-          handleCloseEditDialog();
-        }
-      };
-
-      if (isEditDialogOpen) {
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-      }
-    }, [isEditDialogOpen]);
-
-    useEffect(() => {
-      const currentElement = document.querySelector(
-        `[data-script-id="${scriptId}"]`
-      );
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) {
-            refetch();
-          }
+          archived: {},
+          totalVersions: 1,
+          totalEdits: 0,
+          editHistory: [],
         },
-        { threshold: 0.1 }
-      );
-
-      if (currentElement) {
-        observer.observe(currentElement);
-      }
-
-      return () => {
-        if (currentElement) {
-          observer.unobserve(currentElement);
-        }
-      };
-    }, [scriptId, refetch, user?.uid]);
-
-    useEffect(() => {
-      logger.debug("FeaturedProject: Edit availability check", {
-        hasLocalData: !!localKeyVisualData,
-        hasApiData: !!data,
-        hasSignedUrl: !!signedUrl,
-        currentSrc: currentImageSrc,
-        canEdit: canEditKeyVisual,
       });
-    }, [
-      localKeyVisualData,
-      data,
-      signedUrl,
-      currentImageSrc,
-      canEditKeyVisual,
-    ]);
 
-    const getTimeAgo = (timestamp: number): string => {
-      try {
-        const now = new Date();
-        const date = new Date(timestamp);
-        const diffInSeconds = Math.floor(
-          (now.getTime() - date.getTime()) / 1000
-        );
+      const img = new Image();
+      img.onload = () => detectImageAspectRatio(img);
+      img.src = signedUrl;
+    }
+  }, [data, signedUrl, localKeyVisualData, detectImageAspectRatio]);
 
-        if (diffInSeconds < 60) return `${diffInSeconds} seconds ago`;
-        if (diffInSeconds < 3600)
-          return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-        if (diffInSeconds < 86400)
-          return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-        if (diffInSeconds < 2592000)
-          return `${Math.floor(diffInSeconds / 86400)} days ago`;
-        if (diffInSeconds < 31536000)
-          return `${Math.floor(diffInSeconds / 2592000)} months ago`;
-        return `${Math.floor(diffInSeconds / 31536000)} years ago`;
-      } catch (e) {
-        logger.error("FeaturedProject: Error calculating time ago:", e);
-        return "Unknown time";
+  // Effect 3: Reset on script change
+  useEffect(() => {
+    setImageError(false);
+    setLocalKeyVisualData(null);
+    setImageAspectRatio(null);
+
+    const immediateUrl =
+      signedUrl && signedUrl.trim() !== "" ? signedUrl : "/placeHolder.webp";
+    setCurrentImageSrc(immediateUrl);
+    logger.debug(`Script changed to ${scriptId}, showing:`, immediateUrl);
+  }, [scriptId, signedUrl]);
+
+  // Effect 4: Intersection Observer for visibility-based refetch
+  useEffect(() => {
+    const currentElement = document.querySelector(
+      `[data-script-id="${scriptId}"]`
+    );
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          refetch();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (currentElement) {
+      observer.observe(currentElement);
+    }
+
+    return () => {
+      if (currentElement) {
+        observer.unobserve(currentElement);
+      }
+    };
+  }, [scriptId, refetch]);
+
+  // Effect 5: Keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isEditDialogOpen) {
+        setIsEditDialogOpen(false);
+        setIsDialogLoading(false);
       }
     };
 
-    const formatDate = (timestamp: number): string => {
-      try {
-        return new Date(timestamp).toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        });
-      } catch (e) {
-        logger.error("FeaturedProject: Error formatting date:", e);
-        return "Invalid date";
-      }
-    };
+    if (isEditDialogOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [isEditDialogOpen]);
 
-    const handleViewClick = (e: React.MouseEvent<HTMLButtonElement>): void => {
-      e.preventDefault();
-      e.stopPropagation();
-      onView();
-    };
+  // Event handlers
+  const handleViewClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onView();
+  };
 
-    const handleEditClick = (e: React.MouseEvent<HTMLButtonElement>): void => {
-      e.preventDefault();
-      e.stopPropagation();
-      onEdit();
-    };
+  const handleEditClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onEdit();
+  };
 
-    const handleImageClick = (e: React.MouseEvent): void => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (localKeyVisualData) {
-        setIsDialogLoading(true);
-        setIsEditDialogOpen(true);
-        setTimeout(() => setIsDialogLoading(false), 100);
-      }
-    };
-
-    const handleEditImageClick = (
-      e: React.MouseEvent<HTMLButtonElement>
-    ): void => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      if (
-        !localKeyVisualData &&
-        (signedUrl || currentImageSrc !== "/placeHolder.webp")
-      ) {
-        const fallbackData = {
-          signedUrl: signedUrl || currentImageSrc,
-          thumbnailPath: signedUrl || currentImageSrc,
-          versions: {
-            current: {
-              version: 1,
-              signedUrl: signedUrl || currentImageSrc,
-              thumbnailPath: signedUrl || currentImageSrc,
-              isCurrent: true,
-              destinationPath: signedUrl || currentImageSrc,
-              lastEditedAt: new Date().toISOString(),
-            },
-            archived: {},
-            totalVersions: 1,
-            totalEdits: 0,
-            editHistory: [],
-          },
-        };
-
-        logger.debug(
-          "FeaturedProject: Creating fallback data for edit dialog:",
-          fallbackData
-        );
-        setLocalKeyVisualData(fallbackData);
-      }
-
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (localKeyVisualData) {
       setIsDialogLoading(true);
       setIsEditDialogOpen(true);
       setTimeout(() => setIsDialogLoading(false), 100);
-    };
+    }
+  };
 
-    const handleCloseEditDialog = (): void => {
-      setIsEditDialogOpen(false);
-      setIsDialogLoading(false);
+  const handleEditImageClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      setTimeout(() => {
-        logger.debug(
-          "FeaturedProject: Dialog closed, refreshing API data now..."
-        );
-        refetch();
-        queryClient.invalidateQueries({ queryKey: ["scripts"] });
-      }, 500);
-    };
-
-    const handleKeyVisualUpdate = useCallback(
-      (updatedImageData: {
-        newCurrentImagePath?: string;
-        signedUrl?: string;
-        newThumbnailPath?: string;
-        thumbnailPath?: string;
-        newCurrentVersion?: number;
-        versions?: {
-          current?: { version: number };
-          archived?: Record<number, unknown>;
-          totalVersions?: number;
-          totalEdits?: number;
-          editHistory?: unknown[];
-        };
-      }) => {
-        logger.debug(
-          "FeaturedProject: KeyVisual updated with data:",
-          updatedImageData
-        );
-
-        const newHighResUrl =
-          updatedImageData.newCurrentImagePath || updatedImageData.signedUrl;
-        const newThumbnailPath =
-          updatedImageData.newThumbnailPath || updatedImageData.thumbnailPath;
-
-        logger.debug(
-          "FeaturedProject: Extracted URLs - highRes:",
-          newHighResUrl,
-          "thumbnail:",
-          newThumbnailPath
-        );
-
-        const newKeyVisualData = {
-          signedUrl: newHighResUrl,
-          thumbnailPath: newThumbnailPath,
-          versions: {
-            current: {
-              version:
-                updatedImageData.newCurrentVersion ||
-                updatedImageData.versions?.current?.version ||
-                1,
-              signedUrl: newHighResUrl || "",
-              thumbnailPath: newThumbnailPath || "",
-              isCurrent: true,
-              destinationPath: newHighResUrl || "",
-              lastEditedAt: new Date().toISOString(),
-            },
-            archived: updatedImageData.versions?.archived || {},
-            totalVersions: updatedImageData.versions?.totalVersions || 1,
-            totalEdits: updatedImageData.versions?.totalEdits || 1,
-            editHistory: updatedImageData.versions?.editHistory || [],
+    if (
+      !localKeyVisualData &&
+      (signedUrl || currentImageSrc !== "/placeHolder.webp")
+    ) {
+      setLocalKeyVisualData({
+        signedUrl: signedUrl || currentImageSrc,
+        thumbnailPath: signedUrl || currentImageSrc,
+        versions: {
+          current: {
+            version: 1,
+            signedUrl: signedUrl || currentImageSrc,
+            thumbnailPath: signedUrl || currentImageSrc,
+            isCurrent: true,
+            destinationPath: signedUrl || currentImageSrc,
+            lastEditedAt: new Date().toISOString(),
           },
-        };
-
-        logger.debug(
-          "FeaturedProject: Setting keyVisual data to trigger ShotImageViewer high-res loading:",
-          newKeyVisualData
-        );
-        setLocalKeyVisualData(newKeyVisualData);
-
-        logger.debug(
-          "FeaturedProject: Edit completed, NOT refreshing API data to avoid interfering with ShotImageViewer"
-        );
-      },
-      []
-    );
-
-    const handleDataRefresh = useCallback(() => {
-      refetch();
-    }, [refetch]);
-
-    const extractActors = (): Actor[] => {
-      if (!data) return [];
-
-      const actors: Actor[] = [];
-
-      Object.entries(data).forEach(([key, value]) => {
-        if (
-          key === "keyVisualSignedUrl" ||
-          key === "keyVisualThumbnailPath" ||
-          key === "keyVisualVersions"
-        )
-          return;
-
-        if (value && typeof value === "object" && "actorName" in value) {
-          const apiActor = value as ApiActorData;
-
-          const actor: Actor = {
-            actorName: apiActor.actorName,
-            actorId: apiActor.actorId,
-            actorVersionId: apiActor.actorVersionId,
-            actorArchetype: apiActor.actorArchetype,
-            actorType: apiActor.actorType,
-            sceneIds: apiActor.sceneIds,
-            gender: apiActor.gender,
-            celebrity: {
-              celebrityName: "",
-              celebrityDetails: {},
-              isCelebrity: apiActor.celebrity?.isCelebrity || "No",
-            },
-            signedUrl: apiActor.signedUrl || "",
-            signedProfileUrl: apiActor.signedProfileUrl || undefined,
-            faceDetection: apiActor.faceDetection || undefined,
-            thumbnailPath: apiActor.thumbnailPath,
-            versions: apiActor.versions,
-          };
-
-          actors.push(actor);
-        }
+          archived: {},
+          totalVersions: 1,
+          totalEdits: 0,
+          editHistory: [],
+        },
       });
+    }
 
-      return actors;
-    };
+    setIsDialogLoading(true);
+    setIsEditDialogOpen(true);
+    setTimeout(() => setIsDialogLoading(false), 100);
+  };
 
-    const renderActorAvatars = () => {
-      if (!data) {
-        return null;
-      }
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+    setIsDialogLoading(false);
 
-      const actors = extractActors();
+    setTimeout(() => {
+      refetch();
+      queryClient.invalidateQueries({
+        queryKey: ["scriptDashboardAnalysis", scriptId, versionId, user?.uid],
+      });
+    }, 500);
+  };
 
-      if (actors.length === 0) {
-        return null;
-      }
+  const handleKeyVisualUpdate = useCallback(() => {
+    // Don't interfere with ShotImageViewer's internal updates
+  }, []);
 
-      return <ActorAvatars actors={actors} />;
-    };
+  const handleDataRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
-    return (
-      <>
-        <Paper
-          elevation={isHovered ? 8 : 3}
-          sx={styles.paper(theme)}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          data-script-id={scriptId}
-        >
-          <Box sx={styles.imageContainer(theme)} onClick={handleImageClick}>
-            {isImageLoading && (
-              <Box sx={styles.imageLoader}>
-                {/* ✅ Use primary color (Gold/Bronze) */}
-                <CircularProgress size={40} color="primary" />
-              </Box>
-            )}
+  const handleImageError = () => {
+    logger.error("Image failed to load");
+    setImageError(true);
+    setIsImageLoading(false);
+    setCurrentImageSrc("/placeHolder.webp");
+  };
 
-            <Box
-              component="img"
-              src={currentImageSrc}
-              alt={title || "Project thumbnail"}
-              sx={{
-                ...styles.image(imageAspectRatio),
-                opacity: isImageLoading ? 0.7 : 1,
-                filter: isImageLoading ? "blur(2px)" : "none",
-                transition: "opacity 0.3s ease, filter 0.3s ease",
-              }}
-              onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                logger.error(
-                  "FeaturedProject: Image failed to load, setting error state"
-                );
-                setImageError(true);
-                setIsImageLoading(false);
-                e.currentTarget.src = "/placeHolder.webp";
-              }}
-              onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                logger.debug(
-                  "FeaturedProject: Image onLoad triggered for:",
-                  currentImageSrc
-                );
-                setIsImageLoading(false);
-                detectImageAspectRatio(e.currentTarget);
-              }}
-            />
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    logger.debug("Image loaded:", currentImageSrc);
+    setIsImageLoading(false);
+    detectImageAspectRatio(e.currentTarget);
+  };
 
-            {brand && (
-              <Chip
-                icon={<TagIcon />}
-                label={`${brand}${
-                  productCategory ? ` · ${productCategory}` : ""
-                }`}
-                size="small"
-                sx={styles.brandChip(theme)}
-              />
-            )}
+  return (
+    <>
+      <Paper
+        elevation={isHovered ? 8 : 3}
+        sx={styles.paper(theme)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        data-script-id={scriptId}
+      >
+        <Box sx={styles.imageContainer(theme)} onClick={handleImageClick}>
+          {isImageLoading && (
+            <Box sx={styles.imageLoader}>
+              <CircularProgress size={40} color="primary" />
+            </Box>
+          )}
 
+          <OptimizedImage
+            src={currentImageSrc}
+            alt={title || "Project thumbnail"}
+            aspectRatio={imageAspectRatio}
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+            isLoading={isImageLoading}
+          />
+
+          {brand && (
             <Chip
-              label={`${version || "N/A"}`}
+              icon={<TagIcon />}
+              label={`${brand}${productCategory ? ` · ${productCategory}` : ""}`}
               size="small"
-              sx={styles.versionChip(theme)}
+              sx={styles.brandChip(theme)}
             />
+          )}
 
-            {shouldShowEditButton && (
-              <Fade in={isHovered} timeout={200}>
-                <Tooltip
-                  title={
-                    isImageLoading
-                      ? "Loading high-resolution image..."
-                      : localKeyVisualData
-                        ? "Edit Key Visual"
-                        : isLoading
-                          ? "Loading editor..."
-                          : "Edit Key Visual"
-                  }
-                  arrow
+          <Chip
+            label={version || "N/A"}
+            size="small"
+            sx={styles.versionChip(theme)}
+          />
+
+          {shouldShowEditButton && (
+            <Fade in={isHovered} timeout={200}>
+              <Tooltip
+                title={
+                  isImageLoading
+                    ? "Loading high-resolution image..."
+                    : localKeyVisualData
+                      ? "Edit Key Visual"
+                      : isLoading
+                        ? "Loading editor..."
+                        : "Edit Key Visual"
+                }
+                arrow
+              >
+                <IconButton
+                  onClick={handleEditImageClick}
+                  sx={{
+                    ...styles.editImageButton(theme),
+                    opacity: isEditButtonDisabled ? 0.5 : 1,
+                    cursor: isEditButtonDisabled ? "wait" : "pointer",
+                  }}
+                  aria-label="Edit key visual"
+                  disabled={isEditButtonDisabled}
                 >
-                  <IconButton
-                    onClick={handleEditImageClick}
-                    sx={{
-                      ...styles.editImageButton(theme),
-                      opacity: isEditButtonDisabled ? 0.5 : 1,
-                      cursor: isEditButtonDisabled ? "wait" : "pointer",
-                    }}
-                    aria-label="Edit key visual"
-                    disabled={isEditButtonDisabled}
-                  >
-                    <ImageEditIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-                </Tooltip>
-              </Fade>
-            )}
-          </Box>
+                  <ImageEditIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            </Fade>
+          )}
+        </Box>
 
-          <Fade in={true} timeout={500}>
-            <Box sx={styles.overlay(theme)}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                {title || "Untitled Project"}
-              </Typography>
+        <Fade in={true} timeout={500}>
+          <Box sx={styles.overlay(theme)}>
+            <Typography variant="h6" fontWeight="bold" gutterBottom>
+              {title || "Untitled Project"}
+            </Typography>
 
-              <Box sx={styles.metaContainer}>
-                <Box>
-                  <Box sx={styles.metadata(theme)}>
-                    <TimeIcon fontSize="small" />
-                    {/* ✅ FIXED: Removed hardcoded color, uses inherited theme color */}
-                    <Typography variant="caption">
-                      Created: {formatDate(createdAt)}
-                    </Typography>
-                  </Box>
+            <Box sx={styles.metaContainer}>
+              <Box>
+                <Box sx={styles.metadata(theme)}>
+                  <TimeIcon fontSize="small" />
+                  <Typography variant="caption">
+                    Created: {formatDate(createdAt)}
+                  </Typography>
+                </Box>
 
-                  <Box sx={styles.metadata(theme)}>
-                    <TimeIcon fontSize="small" />
-                    <Typography variant="caption" sx={{ fontWeight: "medium" }}>
-                      Updated: {getTimeAgo(lastModifiedAt)}
-                    </Typography>
-                  </Box>
+                <Box sx={styles.metadata(theme)}>
+                  <TimeIcon fontSize="small" />
+                  <Typography variant="caption" sx={{ fontWeight: "medium" }}>
+                    Updated: {getTimeAgo(lastModifiedAt)}
+                  </Typography>
                 </Box>
               </Box>
             </Box>
-          </Fade>
-
-          <Box sx={styles.actionButtons}>
-            {renderActorAvatars()}
-            <Tooltip title="View Details" arrow>
-              <IconButton
-                onClick={handleViewClick}
-                sx={styles.actionButton(theme)}
-                aria-label="View project details"
-              >
-                <ViewIcon sx={{ fontSize: 20 }} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Edit Script" arrow>
-              <IconButton
-                onClick={handleEditClick}
-                sx={styles.actionButton(theme)}
-                aria-label="Edit project"
-              >
-                <EditIcon sx={{ fontSize: 20 }} />
-              </IconButton>
-            </Tooltip>
-            <FavoriteButton scriptId={scriptId} initialFavorite={favourite} />
           </Box>
-        </Paper>
+        </Fade>
 
-        <Dialog
-          open={isEditDialogOpen}
-          onClose={handleCloseEditDialog}
-          maxWidth={false}
-          sx={styles.dialog}
-        >
-          <DialogTitle sx={styles.dialogTitle(theme)}>
-            <Typography variant="h6">Edit Key Visual</Typography>
+        <Box sx={styles.actionButtons}>
+          <Suspense fallback={null}>
+            <ActorsSection data={data} />
+          </Suspense>
+          <Tooltip title="View Details" arrow>
             <IconButton
-              onClick={handleCloseEditDialog}
-              size="small"
-              aria-label="Close dialog"
+              onClick={handleViewClick}
+              sx={styles.actionButton(theme)}
+              aria-label="View project details"
             >
-              <CloseIcon />
+              <ViewIcon sx={{ fontSize: 20 }} />
             </IconButton>
-          </DialogTitle>
-          <DialogContent sx={styles.dialogContent(theme)}>
+          </Tooltip>
+          <Tooltip title="Edit Script" arrow>
+            <IconButton
+              onClick={handleEditClick}
+              sx={styles.actionButton(theme)}
+              aria-label="Edit project"
+            >
+              <EditIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Tooltip>
+          <FavoriteButton scriptId={scriptId} initialFavorite={favourite} />
+        </Box>
+      </Paper>
+
+      {/* KeyVisual Edit Dialog */}
+      <Dialog
+        open={isEditDialogOpen}
+        onClose={handleCloseEditDialog}
+        maxWidth={false}
+        sx={styles.dialog}
+      >
+        <DialogTitle sx={styles.dialogTitle(theme)}>
+          <Typography variant="h6">Edit Key Visual</Typography>
+          <IconButton
+            onClick={handleCloseEditDialog}
+            size="small"
+            aria-label="Close dialog"
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={styles.dialogContent(theme)}>
+          <Suspense
+            fallback={
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flex: 1,
+                }}
+              >
+                <CircularProgress size={40} color="primary" />
+              </Box>
+            }
+          >
             {isDialogLoading ? (
               <Box
                 sx={{
@@ -924,7 +889,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
                   flex: 1,
                 }}
               >
-                {/* ✅ Use primary color (Gold/Bronze) */}
                 <CircularProgress size={40} color="primary" />
               </Box>
             ) : localKeyVisualData ? (
@@ -936,7 +900,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
                   imageData={{
                     signedUrl: localKeyVisualData.signedUrl,
                     thumbnailPath: localKeyVisualData.thumbnailPath,
-                    versions: localKeyVisualData.versions as never,
+                    versions: localKeyVisualData.versions as any,
                   }}
                   onImageUpdate={handleKeyVisualUpdate}
                   onDataRefresh={handleDataRefresh}
@@ -956,16 +920,17 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
                 </Button>
               </Box>
             )}
-          </DialogContent>
-        </Dialog>
-      </>
-    );
-  }
-);
+          </Suspense>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 FeaturedProject.displayName = "FeaturedProject";
 
-export const FeaturedProjectSkeleton: React.FC = () => {
+// Enhanced Skeleton component
+export function FeaturedProjectSkeleton() {
   const theme = useTheme();
   const [pulse, setPulse] = useState(true);
 
@@ -1036,6 +1001,6 @@ export const FeaturedProjectSkeleton: React.FC = () => {
       </Box>
     </Paper>
   );
-};
+}
 
 FeaturedProjectSkeleton.displayName = "FeaturedProjectSkeleton";
