@@ -207,7 +207,7 @@ interface UpscaleImageResponse {
     };
 }
 
-interface OptimizePromptRequest {
+export interface OptimizePromptRequest {
     scriptId: string;
     versionId: string;
     type: 'shots' | 'actor' | 'location' | 'keyVisual';
@@ -267,7 +267,7 @@ interface OptimizePromptResponse {
     type: string;
 }
 
-interface OptimisedEditImageRequest {
+export interface OptimisedEditImageRequest {
     scriptId: string;
     versionId: string;
     prompt: string;
