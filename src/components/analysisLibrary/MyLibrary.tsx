@@ -1,3 +1,4 @@
+// src/components/analysisLibrary/MyLibrary.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -9,6 +10,7 @@ import { ProjectGrid } from "./ProjectGrid";
 import { FeaturedProject, FeaturedProjectSkeleton } from "./FeaturedProject";
 import type { Script } from "@/types/scripts";
 import { useAuthStore } from "@/store/authStore";
+import logger from "@/utils/logger";
 
 // ===========================
 // MAIN COMPONENT
@@ -22,22 +24,21 @@ const MyLibrary: React.FC = () => {
 
   // Reset cache and selected script when user changes
   useEffect(() => {
+    logger.debug("MyLibrary: User changed, resetting selected script");
     // Clear selected script when user changes
     setSelectedScript(null);
 
-    // Return cleanup function to invalidate queries when component unmounts or user changes
+    // Cleanup function to invalidate queries when component unmounts
     return () => {
-      if (selectedScript) {
-        queryClient.invalidateQueries({
-          queryKey: ["scriptDashboardAnalysis"],
-        });
-      }
+      queryClient.invalidateQueries({
+        queryKey: ["scriptDashboardAnalysis"],
+      });
     };
-  }, [user?.uid, queryClient, selectedScript]);
+  }, [user?.uid, queryClient]); // FIXED: Removed selectedScript from dependencies
 
   const handleViewScript = (script: Script): void => {
     if (!script?.scriptId || !script?.currentVersion) {
-      console.error("Invalid script data for viewing");
+      logger.error("MyLibrary: Invalid script data for viewing");
       return;
     }
     router.push(
@@ -47,7 +48,7 @@ const MyLibrary: React.FC = () => {
 
   const handleEditScript = (script: Script): void => {
     if (!script?.scriptId || !script?.currentVersion) {
-      console.error("Invalid script data for editing");
+      logger.error("MyLibrary: Invalid script data for editing");
       return;
     }
     router.push(
@@ -56,7 +57,9 @@ const MyLibrary: React.FC = () => {
   };
 
   const renderFeaturedProject = () => {
+    // Show skeleton while waiting for script selection
     if (!selectedScript) {
+      logger.debug("MyLibrary: No selected script, showing skeleton");
       return <FeaturedProjectSkeleton />;
     }
 
@@ -70,12 +73,15 @@ const MyLibrary: React.FC = () => {
       thumbnailPath,
       scriptId,
       currentVersion,
-      favourite = false, // Safe default for optional property
+      favourite = false,
     } = selectedScript;
 
-    // Ensure required properties exist
-    if (!scriptId || !currentVersion || !versions) {
-      console.error("Missing required script properties");
+    // Validate required properties
+    if (!scriptId || !currentVersion) {
+      logger.error("MyLibrary: Missing required script properties", {
+        scriptId,
+        currentVersion,
+      });
       return <FeaturedProjectSkeleton />;
     }
 
@@ -86,6 +92,12 @@ const MyLibrary: React.FC = () => {
     const modifiedTimestamp = lastModifiedAt?._seconds
       ? lastModifiedAt._seconds * 1000
       : Date.now();
+
+    logger.debug("MyLibrary: Rendering FeaturedProject", {
+      scriptId,
+      currentVersion,
+      thumbnailPath,
+    });
 
     return (
       <FeaturedProject

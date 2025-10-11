@@ -1,3 +1,4 @@
+// src/components/analysisLibrary/ProjectGrid.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -10,6 +11,7 @@ import { Pagination } from "./Pagination";
 import type { Script } from "@/types/scripts";
 import { useAuthStore } from "@/store/authStore";
 import CustomToast from "@/components/common/CustomToast";
+import logger from "@/utils/logger";
 
 // ===========================
 // TYPE DEFINITIONS
@@ -45,7 +47,7 @@ const getSavedPreferences = (): Record<string, unknown> | null => {
     const savedPrefs = localStorage.getItem("scriptGridPreferences");
     return savedPrefs ? JSON.parse(savedPrefs) : null;
   } catch (error) {
-    console.error("Error reading preferences from localStorage:", error);
+    logger.error("Error reading preferences from localStorage:", error);
     return null;
   }
 };
@@ -72,7 +74,7 @@ const savePreferences = (prefs: {
       })
     );
   } catch (error) {
-    console.error("Error saving preferences to localStorage:", error);
+    logger.error("Error saving preferences to localStorage:", error);
   }
 };
 
@@ -114,10 +116,6 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
       initialIsFavourite,
     });
 
-    // Auth store with type safety
-    const { user } = useAuthStore();
-    const userId = user?.uid;
-
     // Pagination state management
     const [paginationState, setPaginationState] = useState<PaginationState>({
       currentPage,
@@ -153,8 +151,27 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
       isLoading,
     ]);
 
+    // CRITICAL FIX: Auto-select first script when scripts load
+    useEffect(() => {
+      logger.debug("ProjectGrid: Script selection effect", {
+        scriptsLength: scripts.length,
+        hasSelectedScript: !!selectedScript,
+        isLoading,
+        firstScriptId: scripts[0]?.scriptId,
+      });
+
+      // Only auto-select if we don't have a selection and scripts are loaded
+      if (!isLoading && scripts.length > 0 && !selectedScript) {
+        const firstScript = scripts[0];
+        logger.debug("ProjectGrid: Auto-selecting first script", {
+          scriptId: firstScript.scriptId,
+          scriptTitle: firstScript.scriptTitle,
+        });
+        onScriptSelect(firstScript);
+      }
+    }, [scripts, selectedScript, isLoading, onScriptSelect]);
+
     // Check if the currently selected script still exists in the scripts list
-    // If not, select a new one or clear the selection
     useEffect(() => {
       if (!isLoading && selectedScript) {
         const scriptStillExists = scripts.some(
@@ -162,8 +179,10 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
         );
 
         if (!scriptStillExists) {
+          logger.debug(
+            "ProjectGrid: Selected script no longer exists, selecting new one"
+          );
           // Selected script no longer exists (probably deleted)
-          // Select first available script or clear if none available
           if (scripts.length > 0) {
             onScriptSelect(scripts[0]);
           } else {
@@ -177,11 +196,15 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
     useEffect(() => {
       if (scripts.length === 0 && !isLoading) {
         if (allCount === 0) {
+          logger.debug(
+            "ProjectGrid: No scripts available, redirecting to script analysis"
+          );
           router.push("/dashboard/script-analysis");
           return;
         }
 
         if (isFavourite) {
+          logger.debug("ProjectGrid: No favourites, switching to all scripts");
           updateQueryParams?.({
             isFavourite: false,
             pageNumber: 1,
@@ -189,11 +212,6 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
           CustomToast.info(
             "Please select some Favourites from your library first!"
           );
-        }
-      } else if (scripts.length > 0 && !selectedScript) {
-        const firstScript = scripts[0];
-        if (firstScript) {
-          onScriptSelect(firstScript);
         }
       }
     }, [
@@ -257,7 +275,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
 
     // Safe render with null checks
     if (!updateQueryParams) {
-      return null; // Or some error state UI
+      return null;
     }
 
     return (

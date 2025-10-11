@@ -1,3 +1,4 @@
+// src/components/analysisLibrary/FeaturedProject.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -35,6 +36,7 @@ import type { Actor, ApiResponse, ApiActorData } from "@/types/overview/types";
 import type { SxProps } from "@mui/system";
 import { useAuthStore } from "@/store/authStore";
 import { useQueryClient } from "@tanstack/react-query";
+import logger from "@/utils/logger";
 
 interface FeaturedProjectProps {
   title: string;
@@ -251,11 +253,18 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       signedUrl?: string;
       thumbnailPath?: string;
       versions?: {
-        current: any;
-        archived: Record<number, any>;
+        current: {
+          version: number;
+          signedUrl: string;
+          thumbnailPath: string;
+          isCurrent: boolean;
+          destinationPath?: string;
+          lastEditedAt?: string | null;
+        };
+        archived: Record<number, unknown>;
         totalVersions?: number;
         totalEdits?: number;
-        editHistory?: any[];
+        editHistory?: unknown[];
       };
     } | null>(null);
 
@@ -272,8 +281,8 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
         if (imgElement.naturalWidth && imgElement.naturalHeight) {
           const ratio = imgElement.naturalWidth / imgElement.naturalHeight;
           setImageAspectRatio(ratio);
-          console.log(
-            "Image aspect ratio detected:",
+          logger.debug(
+            "FeaturedProject: Image aspect ratio detected:",
             ratio,
             ratio >= 1 ? "landscape (cover)" : "portrait (contain)"
           );
@@ -281,13 +290,16 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       },
       []
     );
+
     const canEditKeyVisual = useMemo(() => {
       // Check if we have any valid image source (in order of preference)
       return !!(
         (localKeyVisualData &&
           (localKeyVisualData.signedUrl || localKeyVisualData.thumbnailPath)) ||
         (data && (data.keyVisualSignedUrl || data.keyVisualThumbnailPath)) ||
-        (signedUrl && signedUrl !== "/placeHolder.webp") ||
+        (signedUrl &&
+          signedUrl.trim() !== "" &&
+          signedUrl !== "/placeHolder.webp") ||
         (currentImageSrc && currentImageSrc !== "/placeHolder.webp")
       );
     }, [localKeyVisualData, data, signedUrl, currentImageSrc]);
@@ -296,11 +308,12 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
     const isEditButtonDisabled =
       isImageLoading || (!localKeyVisualData && isLoading);
 
-    // FIXED: Split into two separate effects to avoid circular dependencies
+    // FIXED: Main data effect - handles API data when available
     useEffect(() => {
-      console.log("FeaturedProject: Data effect triggered", {
+      logger.debug("FeaturedProject: Data effect triggered", {
         data,
         signedUrl,
+        isLoading,
       });
 
       if (data) {
@@ -308,11 +321,27 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
         const newKeyVisualData = {
           signedUrl: data.keyVisualSignedUrl || signedUrl || undefined,
           thumbnailPath: data.keyVisualThumbnailPath || signedUrl || undefined,
-          versions: data.keyVisualVersions || undefined,
+          versions: data.keyVisualVersions
+            ? {
+                current: {
+                  version: data.keyVisualVersions.current.version,
+                  signedUrl: data.keyVisualVersions.current.signedUrl,
+                  thumbnailPath: data.keyVisualVersions.current.thumbnailPath,
+                  isCurrent: data.keyVisualVersions.current.isCurrent,
+                  destinationPath:
+                    data.keyVisualVersions.current.destinationPath,
+                  lastEditedAt: data.keyVisualVersions.current.lastEditedAt,
+                },
+                archived: data.keyVisualVersions.archived,
+                totalVersions: data.keyVisualVersions.totalVersions,
+                totalEdits: data.keyVisualVersions.totalEdits,
+                editHistory: data.keyVisualVersions.editHistory,
+              }
+            : undefined,
         };
 
         setLocalKeyVisualData(newKeyVisualData);
-        console.log(
+        logger.debug(
           "FeaturedProject: Updated keyVisual data from API:",
           newKeyVisualData
         );
@@ -346,9 +375,16 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
         } else if (highResUrl) {
           setIsImageLoading(true);
           setCurrentImageSrc(highResUrl);
+        } else {
+          // FIXED: API returned no image data
+          setIsImageLoading(false);
+          setCurrentImageSrc("/placeHolder.webp");
         }
+      } else if (!isLoading && !data) {
+        // FIXED: API finished loading but returned no data
+        setIsImageLoading(false);
       }
-    }, [data, signedUrl]);
+    }, [data, signedUrl, isLoading, detectImageAspectRatio]);
 
     // FIXED: Separate effect for fallback data (only runs when no API data AND no local data)
     useEffect(() => {
@@ -357,6 +393,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
         !data &&
         !localKeyVisualData &&
         signedUrl &&
+        signedUrl.trim() !== "" &&
         signedUrl !== "/placeHolder.webp"
       ) {
         const fallbackData = {
@@ -378,7 +415,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           },
         };
 
-        console.log(
+        logger.debug(
           "FeaturedProject: Using fallback data from props:",
           fallbackData
         );
@@ -389,21 +426,27 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
         img.onload = () => detectImageAspectRatio(img);
         img.src = signedUrl;
       }
-    }, [data, signedUrl]);
+    }, [data, signedUrl, localKeyVisualData, detectImageAspectRatio]);
 
-    // Reset when scriptId changes - show signedUrl immediately
+    // FIXED: Reset when scriptId changes - properly handle empty strings
     useEffect(() => {
       setImageError(false);
-      setIsImageLoading(false);
       setLocalKeyVisualData(null);
-      setImageAspectRatio(null); // Reset aspect ratio
+      setImageAspectRatio(null);
 
-      // Immediately show signedUrl prop (usually thumbnail) for instant feedback
-      const immediateUrl = signedUrl || "/placeHolder.webp";
+      // FIXED: Handle empty strings properly and set loading state
+      const immediateUrl =
+        signedUrl && signedUrl.trim() !== "" ? signedUrl : "/placeHolder.webp";
+
+      // Set loading state if we're expecting API data
+      const shouldLoadFromApi = !signedUrl || signedUrl.trim() === "";
+      setIsImageLoading(shouldLoadFromApi);
+
       setCurrentImageSrc(immediateUrl);
-      console.log(
+      logger.debug(
         `FeaturedProject: Script changed to ${scriptId}, showing:`,
-        immediateUrl
+        immediateUrl,
+        `shouldLoadFromApi: ${shouldLoadFromApi}`
       );
     }, [scriptId, signedUrl, user?.uid]);
 
@@ -450,7 +493,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
     // ENHANCED: Ensure edit button appears as soon as any image data is available
     useEffect(() => {
       // Force re-evaluation of canEditKeyVisual when key dependencies change
-      console.log("FeaturedProject: Edit availability check", {
+      logger.debug("FeaturedProject: Edit availability check", {
         hasLocalData: !!localKeyVisualData,
         hasApiData: !!data,
         hasSignedUrl: !!signedUrl,
@@ -485,7 +528,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           return `${Math.floor(diffInSeconds / 2592000)} months ago`;
         return `${Math.floor(diffInSeconds / 31536000)} years ago`;
       } catch (e) {
-        console.error("Error calculating time ago:", e);
+        logger.error("FeaturedProject: Error calculating time ago:", e);
         return "Unknown time";
       }
     };
@@ -499,7 +542,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           day: "numeric",
         });
       } catch (e) {
-        console.error("Error formatting date:", e);
+        logger.error("FeaturedProject: Error formatting date:", e);
         return "Invalid date";
       }
     };
@@ -557,7 +600,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           },
         };
 
-        console.log(
+        logger.debug(
           "FeaturedProject: Creating fallback data for edit dialog:",
           fallbackData
         );
@@ -575,7 +618,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
 
       // Refresh API data when dialog closes to sync any changes
       setTimeout(() => {
-        console.log(
+        logger.debug(
           "FeaturedProject: Dialog closed, refreshing API data now..."
         );
         refetch();
@@ -583,59 +626,75 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       }, 500);
     };
 
-    // CRITICAL: Enhanced keyVisual update handler - DON'T interfere with ShotImageViewer
-    const handleKeyVisualUpdate = useCallback((updatedImageData: any) => {
-      console.log(
-        "FeaturedProject: KeyVisual updated with data:",
-        updatedImageData
-      );
+    // CRITICAL: Enhanced keyVisual update handler
+    const handleKeyVisualUpdate = useCallback(
+      (updatedImageData: {
+        newCurrentImagePath?: string;
+        signedUrl?: string;
+        newThumbnailPath?: string;
+        thumbnailPath?: string;
+        newCurrentVersion?: number;
+        versions?: {
+          current?: { version: number };
+          archived?: Record<number, unknown>;
+          totalVersions?: number;
+          totalEdits?: number;
+          editHistory?: unknown[];
+        };
+      }) => {
+        logger.debug(
+          "FeaturedProject: KeyVisual updated with data:",
+          updatedImageData
+        );
 
-      // Extract URLs from the API response
-      const newHighResUrl =
-        updatedImageData.newCurrentImagePath || updatedImageData.signedUrl;
-      const newThumbnailPath =
-        updatedImageData.newThumbnailPath || updatedImageData.thumbnailPath;
+        // Extract URLs from the API response
+        const newHighResUrl =
+          updatedImageData.newCurrentImagePath || updatedImageData.signedUrl;
+        const newThumbnailPath =
+          updatedImageData.newThumbnailPath || updatedImageData.thumbnailPath;
 
-      console.log(
-        "FeaturedProject: Extracted URLs - highRes:",
-        newHighResUrl,
-        "thumbnail:",
-        newThumbnailPath
-      );
+        logger.debug(
+          "FeaturedProject: Extracted URLs - highRes:",
+          newHighResUrl,
+          "thumbnail:",
+          newThumbnailPath
+        );
 
-      // Create data structure that will trigger ShotImageViewer's high-res loading
-      const newKeyVisualData = {
-        signedUrl: newHighResUrl,
-        thumbnailPath: newThumbnailPath,
-        versions: {
-          current: {
-            version:
-              updatedImageData.newCurrentVersion ||
-              updatedImageData.versions?.current?.version,
-            signedUrl: newHighResUrl,
-            thumbnailPath: newThumbnailPath,
-            isCurrent: true,
-            destinationPath: newHighResUrl,
-            lastEditedAt: new Date().toISOString(),
+        // Create data structure that will trigger ShotImageViewer's high-res loading
+        const newKeyVisualData = {
+          signedUrl: newHighResUrl,
+          thumbnailPath: newThumbnailPath,
+          versions: {
+            current: {
+              version:
+                updatedImageData.newCurrentVersion ||
+                updatedImageData.versions?.current?.version ||
+                1,
+              signedUrl: newHighResUrl || "",
+              thumbnailPath: newThumbnailPath || "",
+              isCurrent: true,
+              destinationPath: newHighResUrl || "",
+              lastEditedAt: new Date().toISOString(),
+            },
+            archived: updatedImageData.versions?.archived || {},
+            totalVersions: updatedImageData.versions?.totalVersions || 1,
+            totalEdits: updatedImageData.versions?.totalEdits || 1,
+            editHistory: updatedImageData.versions?.editHistory || [],
           },
-          archived: updatedImageData.versions?.archived || {},
-          totalVersions: updatedImageData.versions?.totalVersions || 1,
-          totalEdits: updatedImageData.versions?.totalEdits || 1,
-          editHistory: updatedImageData.versions?.editHistory || [],
-        },
-      };
+        };
 
-      console.log(
-        "FeaturedProject: Setting keyVisual data to trigger ShotImageViewer high-res loading:",
-        newKeyVisualData
-      );
-      setLocalKeyVisualData(newKeyVisualData);
+        logger.debug(
+          "FeaturedProject: Setting keyVisual data to trigger ShotImageViewer high-res loading:",
+          newKeyVisualData
+        );
+        setLocalKeyVisualData(newKeyVisualData);
 
-      // DON'T refresh API data while dialog is open - it interferes with ShotImageViewer!
-      console.log(
-        "FeaturedProject: Edit completed, NOT refreshing API data to avoid interfering with ShotImageViewer"
-      );
-    }, []);
+        logger.debug(
+          "FeaturedProject: Edit completed, NOT refreshing API data to avoid interfering with ShotImageViewer"
+        );
+      },
+      []
+    );
 
     // Handle data refresh
     const handleDataRefresh = useCallback(() => {
@@ -728,7 +787,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
                 transition: "opacity 0.3s ease, filter 0.3s ease",
               }}
               onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                console.error(
+                logger.error(
                   "FeaturedProject: Image failed to load, setting error state"
                 );
                 setImageError(true);
@@ -736,7 +795,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
                 e.currentTarget.src = "/placeHolder.webp";
               }}
               onLoad={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                console.log(
+                logger.debug(
                   "FeaturedProject: Image onLoad triggered for:",
                   currentImageSrc
                 );
@@ -843,7 +902,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           </Box>
         </Paper>
 
-        {/* KeyVisual Edit Dialog */}
+        {/* Edit Dialog */}
         <Dialog
           open={isEditDialogOpen}
           onClose={handleCloseEditDialog}
@@ -851,26 +910,15 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           sx={styles.dialog}
         >
           <DialogTitle sx={styles.dialogTitle}>
-            <Box>
-              <Typography variant="h6" component="span">
-                Edit Key Visual
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                {title}
-              </Typography>
-            </Box>
+            <Typography variant="h6">Edit Key Visual</Typography>
             <IconButton
               onClick={handleCloseEditDialog}
               size="small"
-              sx={{
-                color: "text.secondary",
-                "&:hover": { color: "text.primary" },
-              }}
+              aria-label="Close dialog"
             >
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-
           <DialogContent sx={styles.dialogContent}>
             {isDialogLoading ? (
               <Box
@@ -892,7 +940,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
                   imageData={{
                     signedUrl: localKeyVisualData.signedUrl,
                     thumbnailPath: localKeyVisualData.thumbnailPath,
-                    versions: localKeyVisualData.versions as any,
+                    versions: localKeyVisualData.versions as never,
                   }}
                   onImageUpdate={handleKeyVisualUpdate}
                   onDataRefresh={handleDataRefresh}
