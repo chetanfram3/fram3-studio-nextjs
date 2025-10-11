@@ -6,6 +6,7 @@ import {
   VisibilityOutlined as ViewIcon,
   InfoOutlined as InfoIcon,
 } from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
 import { FavoriteButton } from "./FavouriteButton";
 import type { Script } from "@/types";
 
@@ -24,10 +25,10 @@ export function ScriptCard({
   onViewDetails,
   onInfoClick,
 }: ScriptCardProps) {
+  const theme = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const [imageAspectRatio, setImageAspectRatio] = useState<number | null>(null);
 
-  // Function to detect image aspect ratio
   const detectImageAspectRatio = useCallback((imgElement: HTMLImageElement) => {
     if (imgElement.naturalWidth && imgElement.naturalHeight) {
       const ratio = imgElement.naturalWidth / imgElement.naturalHeight;
@@ -40,7 +41,6 @@ export function ScriptCard({
     }
   }, []);
 
-  // Smart object-fit style based on aspect ratio
   const getImageStyle = () => ({
     position: "absolute" as const,
     top: 0,
@@ -51,8 +51,8 @@ export function ScriptCard({
       imageAspectRatio !== null && imageAspectRatio >= 1
         ? "cover"
         : ("contain" as const),
-    transition: "transform 0.4s ease-in-out", // Smooth transition for zoom effect
-    transform: isHovered ? "scale(1.08)" : "scale(1)", // Zoom effect on hover
+    transition: "transform 0.4s ease-in-out",
+    transform: isHovered ? "scale(1.08)" : "scale(1)",
   });
 
   return (
@@ -60,8 +60,8 @@ export function ScriptCard({
       sx={{
         position: "relative",
         cursor: "pointer",
-        border: (theme) =>
-          isSelected ? `2px solid ${theme.palette.secondary.dark}` : "none",
+        // ✅ FIXED: Use primary color for selected border (Gold/Bronze)
+        border: isSelected ? `2px solid ${theme.palette.primary.main}` : "none",
         borderRadius: 2,
         overflow: "hidden",
         "&:hover": {
@@ -78,8 +78,9 @@ export function ScriptCard({
           position: "relative",
           paddingTop: "56.25%", // 16:9 Aspect Ratio
           width: "100%",
-          overflow: "hidden", // Important to contain the scaled image
-          backgroundColor: "black", // Black background for object-fit: contain
+          overflow: "hidden",
+          // ✅ FIXED: Use theme background instead of hardcoded 'black'
+          backgroundColor: theme.palette.background.default,
         }}
       >
         <Box
@@ -102,8 +103,13 @@ export function ScriptCard({
           left: 0,
           right: 0,
           p: 2,
-          background: "rgba(0, 0, 0, 0.7)",
-          color: "white",
+          // ✅ FIXED: Use theme-aware gradient
+          background:
+            theme.palette.mode === "dark"
+              ? "rgba(0, 0, 0, 0.7)"
+              : "rgba(0, 0, 0, 0.6)",
+          // ✅ FIXED: Use theme text color instead of hardcoded 'white'
+          color: theme.palette.text.primary,
         }}
       >
         <Typography variant="subtitle1" fontWeight="bold" noWrap>
@@ -111,7 +117,8 @@ export function ScriptCard({
         </Typography>
         <Typography
           variant="caption"
-          color="grey.300"
+          // ✅ FIXED: Use theme secondary text color instead of hardcoded grey.300
+          color="text.secondary"
           sx={{ display: "block" }}
         >
           v{script.versions[0]?.versionNumber || 1}
@@ -121,7 +128,8 @@ export function ScriptCard({
         >
           <Tooltip title="Version details">
             <IconButton
-              color="secondary"
+              // ✅ Use primary color (Gold/Bronze)
+              color="primary"
               onClick={(e) => {
                 e.stopPropagation();
                 onInfoClick();
@@ -132,7 +140,8 @@ export function ScriptCard({
           </Tooltip>
           <Tooltip title="View Details">
             <IconButton
-              color="secondary"
+              // ✅ Use primary color (Gold/Bronze)
+              color="primary"
               onClick={(e) => {
                 e.stopPropagation();
                 onViewDetails();
@@ -152,6 +161,8 @@ export function ScriptCard({
 }
 
 export function SkeletonCard() {
+  const theme = useTheme();
+
   return (
     <Box
       sx={{
@@ -167,7 +178,8 @@ export function SkeletonCard() {
           position: "relative",
           paddingTop: "56.25%", // 16:9 Aspect Ratio
           width: "100%",
-          backgroundColor: "black", // Black background for consistency
+          // ✅ FIXED: Use theme background instead of hardcoded 'black'
+          backgroundColor: theme.palette.background.default,
         }}
       >
         {/* Main image skeleton */}
@@ -192,24 +204,18 @@ export function SkeletonCard() {
           left: 0,
           right: 0,
           p: 2,
-          background: "rgba(0, 0, 0, 0.7)",
+          // ✅ FIXED: Use theme-aware gradient
+          background:
+            theme.palette.mode === "dark"
+              ? "rgba(0, 0, 0, 0.7)"
+              : "rgba(0, 0, 0, 0.6)",
         }}
       >
         {/* Title skeleton */}
-        <Skeleton
-          variant="text"
-          width="70%"
-          height={28}
-          sx={{ mb: 1, bgcolor: "grey.300" }}
-        />
+        <Skeleton variant="text" width="70%" height={28} sx={{ mb: 1 }} />
 
         {/* Version number skeleton */}
-        <Skeleton
-          variant="text"
-          width="30%"
-          height={20}
-          sx={{ mb: 2, bgcolor: "grey.300" }}
-        />
+        <Skeleton variant="text" width="30%" height={20} sx={{ mb: 2 }} />
 
         {/* Action buttons skeleton */}
         <Box
@@ -225,13 +231,15 @@ export function SkeletonCard() {
             variant="circular"
             width={24}
             height={24}
-            sx={{ bgcolor: "secondary.main" }}
+            // ✅ Use primary color for skeleton
+            sx={{ bgcolor: theme.palette.primary.main }}
           />
           <Skeleton
             variant="circular"
             width={24}
             height={24}
-            sx={{ bgcolor: "secondary.main" }}
+            // ✅ Use primary color for skeleton
+            sx={{ bgcolor: theme.palette.primary.main }}
           />
         </Box>
       </Box>

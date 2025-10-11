@@ -28,6 +28,7 @@ import {
   CloseOutlined as CloseIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
 import { FavoriteButton } from "./FavouriteButton";
 import { useScriptDashboardAnalysis } from "@/hooks/scripts/useScriptDashboardAnalysis";
 import { ActorAvatars } from "@/components/common/ActorInfoAvatar";
@@ -53,28 +54,30 @@ interface FeaturedProjectProps {
   onEdit: () => void;
 }
 
-// Enhanced styles object with animations and visual improvements
+// ✅ FIXED: Theme-aware styles with proper color usage
 const styles = {
   paper: (theme: Theme): SxProps => ({
     position: "relative",
     borderRadius: 2,
     overflow: "hidden",
     mb: 4,
-    border: `2px solid ${theme.palette.secondary.main}`,
+    // ✅ Use primary color for border (Gold in dark, Bronze in light)
+    border: `2px solid ${theme.palette.primary.main}`,
     transition: "transform 0.3s ease, box-shadow 0.3s ease",
     "&:hover": {
       transform: "translateY(-5px)",
       boxShadow: theme.shadows[10],
     },
   }),
-  imageContainer: {
+  imageContainer: (theme: Theme): SxProps => ({
     position: "relative",
     paddingTop: "56.25%", // 16:9 Aspect Ratio
     width: "100%",
     overflow: "hidden",
     cursor: "pointer",
-    backgroundColor: "black", // Black background for object-fit: contain
-  },
+    // ✅ FIXED: Use theme background instead of hardcoded 'black'
+    backgroundColor: theme.palette.background.default,
+  }),
   image: (aspectRatio: number | null) => ({
     position: "absolute",
     top: 0,
@@ -94,18 +97,22 @@ const styles = {
     transform: "translate(-50%, -50%)",
     zIndex: 2,
   },
-  overlay: {
+  overlay: (theme: Theme): SxProps => ({
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     p: 3,
+    // ✅ FIXED: Use theme-aware gradient
     background:
-      "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0.4) 100%)",
-    color: "white",
+      theme.palette.mode === "dark"
+        ? "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0.4) 100%)"
+        : "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.3) 100%)",
+    // ✅ FIXED: Use theme text color instead of hardcoded 'white'
+    color: theme.palette.text.primary,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
-  },
+  }),
   actionButtons: {
     position: "absolute",
     bottom: 16,
@@ -115,14 +122,17 @@ const styles = {
     alignItems: "center",
   },
   actionButton: (theme: Theme): SxProps => ({
-    color: "white",
+    // ✅ FIXED: Use theme text color instead of hardcoded 'white'
+    color: theme.palette.text.primary,
     width: 42,
     height: 42,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    // ✅ FIXED: Use theme background with alpha instead of hardcoded rgba
+    backgroundColor: alpha(theme.palette.background.paper, 0.5),
     backdropFilter: "blur(5px)",
     transition: "all 0.2s ease",
     "&:hover": {
-      backgroundColor: theme.palette.divider,
+      // ✅ Use primary color for hover (Gold/Bronze)
+      backgroundColor: alpha(theme.palette.primary.main, 0.8),
       transform: "scale(1.1)",
     },
   }),
@@ -130,14 +140,17 @@ const styles = {
     position: "absolute",
     top: 16,
     right: 60,
-    color: "white",
+    // ✅ FIXED: Use theme text color instead of hardcoded 'white'
+    color: theme.palette.text.primary,
     width: 36,
     height: 36,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    // ✅ FIXED: Use theme background with alpha instead of hardcoded rgba
+    backgroundColor: alpha(theme.palette.background.paper, 0.5),
     backdropFilter: "blur(5px)",
     transition: "all 0.2s ease",
     "&:hover": {
-      backgroundColor: alpha(theme.palette.secondary.main, 0.8),
+      // ✅ Use primary color for hover
+      backgroundColor: alpha(theme.palette.primary.main, 0.8),
       transform: "scale(1.1)",
     },
   }),
@@ -146,18 +159,26 @@ const styles = {
     top: 16,
     left: 16,
     backdropFilter: "blur(5px)",
+    // ✅ Use primary color for text
     color: theme.palette.primary.main,
-    background: alpha(theme.palette.primary.contrastText, 0.4),
+    // ✅ FIXED: Use theme background with alpha
+    background: alpha(theme.palette.background.paper, 0.7),
     fontWeight: "bold",
+    // ✅ FIXED: Use brand fonts
+    fontFamily: getCurrentBrand().fonts.body,
   }),
   versionChip: (theme: Theme): SxProps => ({
     position: "absolute",
     top: 16,
     right: 16,
     backdropFilter: "blur(5px)",
+    // ✅ Use primary color for text
     color: theme.palette.primary.main,
-    background: alpha(theme.palette.primary.contrastText, 0.4),
+    // ✅ FIXED: Use theme background with alpha
+    background: alpha(theme.palette.background.paper, 0.7),
     fontWeight: "bold",
+    // ✅ FIXED: Use brand fonts
+    fontFamily: getCurrentBrand().fonts.body,
   }),
   metaContainer: {
     display: "flex",
@@ -165,12 +186,14 @@ const styles = {
     alignItems: "flex-start",
     mt: 1,
   },
-  metadata: {
+  metadata: (theme: Theme): SxProps => ({
     display: "flex",
     alignItems: "center",
     gap: 0.5,
     mt: 0.5,
-  },
+    // ✅ FIXED: Use theme secondary text color instead of hardcoded grey.300
+    color: theme.palette.text.secondary,
+  }),
   dialog: {
     "& .MuiDialog-paper": {
       maxWidth: "min(90vw, 1600px)",
@@ -181,15 +204,16 @@ const styles = {
       borderRadius: 1,
     },
   },
-  dialogContent: {
+  dialogContent: (theme: Theme): SxProps => ({
     p: 1,
     overflow: "hidden",
     height: "100%",
     display: "flex",
     flexDirection: "column",
-    backgroundColor: "background.default",
-  },
-  shotImageViewerContainer: {
+    // ✅ FIXED: Use theme background
+    backgroundColor: theme.palette.background.default,
+  }),
+  shotImageViewerContainer: (theme: Theme): SxProps => ({
     flex: 1,
     display: "flex",
     flexDirection: "column",
@@ -198,18 +222,19 @@ const styles = {
     position: "relative",
     borderRadius: 1,
     border: 1,
-    borderColor: "divider",
-  },
-  dialogTitle: {
+    // ✅ FIXED: Use theme divider
+    borderColor: theme.palette.divider,
+  }),
+  dialogTitle: (theme: Theme): SxProps => ({
     py: 1.5,
     px: 2,
-    backgroundColor: "background.default",
+    backgroundColor: theme.palette.background.default,
     borderBottom: 1,
-    borderColor: "divider",
+    borderColor: theme.palette.divider,
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-  },
+  }),
   emptyStateContainer: {
     p: 4,
     textAlign: "center" as const,
@@ -248,7 +273,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       null
     );
 
-    // Use the correct type that matches ShotImageViewer's imageData prop
     const [localKeyVisualData, setLocalKeyVisualData] = useState<{
       signedUrl?: string;
       thumbnailPath?: string;
@@ -271,11 +295,9 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
     const { user } = useAuthStore();
     const queryClient = useQueryClient();
 
-    // Fetch data with optimized stale time
     const { data, error, isLoading, refetch } =
       useScriptDashboardAnalysis<ApiResponse>(scriptId, versionId, "actorInfo");
 
-    // Function to detect image aspect ratio
     const detectImageAspectRatio = useCallback(
       (imgElement: HTMLImageElement) => {
         if (imgElement.naturalWidth && imgElement.naturalHeight) {
@@ -292,7 +314,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
     );
 
     const canEditKeyVisual = useMemo(() => {
-      // Check if we have any valid image source (in order of preference)
       return !!(
         (localKeyVisualData &&
           (localKeyVisualData.signedUrl || localKeyVisualData.thumbnailPath)) ||
@@ -308,7 +329,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
     const isEditButtonDisabled =
       isImageLoading || (!localKeyVisualData && isLoading);
 
-    // FIXED: Main data effect - handles API data when available
     useEffect(() => {
       logger.debug("FeaturedProject: Data effect triggered", {
         data,
@@ -317,7 +337,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       });
 
       if (data) {
-        // Use API data when available
         const newKeyVisualData = {
           signedUrl: data.keyVisualSignedUrl || signedUrl || undefined,
           thumbnailPath: data.keyVisualThumbnailPath || signedUrl || undefined,
@@ -346,7 +365,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           newKeyVisualData
         );
 
-        // Handle image progression
         const thumbnailUrl = newKeyVisualData.thumbnailPath;
         const highResUrl =
           newKeyVisualData.versions?.current?.signedUrl ||
@@ -356,7 +374,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           setCurrentImageSrc(thumbnailUrl);
           setIsImageLoading(false);
 
-          // Detect aspect ratio from thumbnail
           const thumbImg = new Image();
           thumbImg.onload = () => detectImageAspectRatio(thumbImg);
           thumbImg.src = thumbnailUrl;
@@ -376,19 +393,15 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           setIsImageLoading(true);
           setCurrentImageSrc(highResUrl);
         } else {
-          // FIXED: API returned no image data
           setIsImageLoading(false);
           setCurrentImageSrc("/placeHolder.webp");
         }
       } else if (!isLoading && !data) {
-        // FIXED: API finished loading but returned no data
         setIsImageLoading(false);
       }
     }, [data, signedUrl, isLoading, detectImageAspectRatio]);
 
-    // FIXED: Separate effect for fallback data (only runs when no API data AND no local data)
     useEffect(() => {
-      // Only create fallback if we have no API data and no local data
       if (
         !data &&
         !localKeyVisualData &&
@@ -421,24 +434,20 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
         );
         setLocalKeyVisualData(fallbackData);
 
-        // Detect aspect ratio from fallback image
         const img = new Image();
         img.onload = () => detectImageAspectRatio(img);
         img.src = signedUrl;
       }
     }, [data, signedUrl, localKeyVisualData, detectImageAspectRatio]);
 
-    // FIXED: Reset when scriptId changes - properly handle empty strings
     useEffect(() => {
       setImageError(false);
       setLocalKeyVisualData(null);
       setImageAspectRatio(null);
 
-      // FIXED: Handle empty strings properly and set loading state
       const immediateUrl =
         signedUrl && signedUrl.trim() !== "" ? signedUrl : "/placeHolder.webp";
 
-      // Set loading state if we're expecting API data
       const shouldLoadFromApi = !signedUrl || signedUrl.trim() === "";
       setIsImageLoading(shouldLoadFromApi);
 
@@ -450,7 +459,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       );
     }, [scriptId, signedUrl, user?.uid]);
 
-    // Keyboard shortcut for better UX
     useEffect(() => {
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === "Escape" && isEditDialogOpen) {
@@ -464,7 +472,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       }
     }, [isEditDialogOpen]);
 
-    // Force refetch when component becomes visible
     useEffect(() => {
       const currentElement = document.querySelector(
         `[data-script-id="${scriptId}"]`
@@ -490,9 +497,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       };
     }, [scriptId, refetch, user?.uid]);
 
-    // ENHANCED: Ensure edit button appears as soon as any image data is available
     useEffect(() => {
-      // Force re-evaluation of canEditKeyVisual when key dependencies change
       logger.debug("FeaturedProject: Edit availability check", {
         hasLocalData: !!localKeyVisualData,
         hasApiData: !!data,
@@ -508,7 +513,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       canEditKeyVisual,
     ]);
 
-    // Calculate time since last modification
     const getTimeAgo = (timestamp: number): string => {
       try {
         const now = new Date();
@@ -533,7 +537,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       }
     };
 
-    // Safe date formatting with fallback
     const formatDate = (timestamp: number): string => {
       try {
         return new Date(timestamp).toLocaleDateString(undefined, {
@@ -547,7 +550,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       }
     };
 
-    // Event handlers
     const handleViewClick = (e: React.MouseEvent<HTMLButtonElement>): void => {
       e.preventDefault();
       e.stopPropagation();
@@ -576,7 +578,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       e.preventDefault();
       e.stopPropagation();
 
-      // Enhanced: Create minimal data structure if none exists
       if (
         !localKeyVisualData &&
         (signedUrl || currentImageSrc !== "/placeHolder.webp")
@@ -616,7 +617,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       setIsEditDialogOpen(false);
       setIsDialogLoading(false);
 
-      // Refresh API data when dialog closes to sync any changes
       setTimeout(() => {
         logger.debug(
           "FeaturedProject: Dialog closed, refreshing API data now..."
@@ -626,7 +626,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       }, 500);
     };
 
-    // CRITICAL: Enhanced keyVisual update handler
     const handleKeyVisualUpdate = useCallback(
       (updatedImageData: {
         newCurrentImagePath?: string;
@@ -647,7 +646,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           updatedImageData
         );
 
-        // Extract URLs from the API response
         const newHighResUrl =
           updatedImageData.newCurrentImagePath || updatedImageData.signedUrl;
         const newThumbnailPath =
@@ -660,7 +658,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           newThumbnailPath
         );
 
-        // Create data structure that will trigger ShotImageViewer's high-res loading
         const newKeyVisualData = {
           signedUrl: newHighResUrl,
           thumbnailPath: newThumbnailPath,
@@ -696,12 +693,10 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       []
     );
 
-    // Handle data refresh
     const handleDataRefresh = useCallback(() => {
       refetch();
     }, [refetch]);
 
-    // Extract actors from the API response
     const extractActors = (): Actor[] => {
       if (!data) return [];
 
@@ -745,7 +740,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
       return actors;
     };
 
-    // Render actor avatars
     const renderActorAvatars = () => {
       if (!data) {
         return null;
@@ -769,10 +763,11 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           onMouseLeave={() => setIsHovered(false)}
           data-script-id={scriptId}
         >
-          <Box sx={styles.imageContainer} onClick={handleImageClick}>
+          <Box sx={styles.imageContainer(theme)} onClick={handleImageClick}>
             {isImageLoading && (
               <Box sx={styles.imageLoader}>
-                <CircularProgress size={40} color="secondary" />
+                {/* ✅ Use primary color (Gold/Bronze) */}
+                <CircularProgress size={40} color="primary" />
               </Box>
             )}
 
@@ -853,21 +848,22 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           </Box>
 
           <Fade in={true} timeout={500}>
-            <Box sx={styles.overlay}>
+            <Box sx={styles.overlay(theme)}>
               <Typography variant="h6" fontWeight="bold" gutterBottom>
                 {title || "Untitled Project"}
               </Typography>
 
               <Box sx={styles.metaContainer}>
                 <Box>
-                  <Box sx={styles.metadata}>
+                  <Box sx={styles.metadata(theme)}>
                     <TimeIcon fontSize="small" />
-                    <Typography variant="caption" color="grey.300">
+                    {/* ✅ FIXED: Removed hardcoded color, uses inherited theme color */}
+                    <Typography variant="caption">
                       Created: {formatDate(createdAt)}
                     </Typography>
                   </Box>
 
-                  <Box sx={styles.metadata}>
+                  <Box sx={styles.metadata(theme)}>
                     <TimeIcon fontSize="small" />
                     <Typography variant="caption" sx={{ fontWeight: "medium" }}>
                       Updated: {getTimeAgo(lastModifiedAt)}
@@ -902,14 +898,13 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
           </Box>
         </Paper>
 
-        {/* Edit Dialog */}
         <Dialog
           open={isEditDialogOpen}
           onClose={handleCloseEditDialog}
           maxWidth={false}
           sx={styles.dialog}
         >
-          <DialogTitle sx={styles.dialogTitle}>
+          <DialogTitle sx={styles.dialogTitle(theme)}>
             <Typography variant="h6">Edit Key Visual</Typography>
             <IconButton
               onClick={handleCloseEditDialog}
@@ -919,7 +914,7 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-          <DialogContent sx={styles.dialogContent}>
+          <DialogContent sx={styles.dialogContent(theme)}>
             {isDialogLoading ? (
               <Box
                 sx={{
@@ -929,10 +924,11 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
                   flex: 1,
                 }}
               >
-                <CircularProgress size={40} color="secondary" />
+                {/* ✅ Use primary color (Gold/Bronze) */}
+                <CircularProgress size={40} color="primary" />
               </Box>
             ) : localKeyVisualData ? (
-              <Box sx={styles.shotImageViewerContainer}>
+              <Box sx={styles.shotImageViewerContainer(theme)}>
                 <ShotImageViewer
                   scriptId={scriptId}
                   versionId={versionId}
@@ -969,7 +965,6 @@ export const FeaturedProject: React.FC<FeaturedProjectProps> = React.memo(
 
 FeaturedProject.displayName = "FeaturedProject";
 
-// Enhanced Skeleton component with smooth animations
 export const FeaturedProjectSkeleton: React.FC = () => {
   const theme = useTheme();
   const [pulse, setPulse] = useState(true);
@@ -983,7 +978,7 @@ export const FeaturedProjectSkeleton: React.FC = () => {
 
   return (
     <Paper elevation={3} sx={styles.paper(theme)}>
-      <Box sx={styles.imageContainer}>
+      <Box sx={styles.imageContainer(theme)}>
         <Skeleton
           variant="rectangular"
           animation="wave"
@@ -1021,7 +1016,7 @@ export const FeaturedProjectSkeleton: React.FC = () => {
         />
       </Box>
 
-      <Box sx={styles.overlay}>
+      <Box sx={styles.overlay(theme)}>
         <Skeleton width="60%" height={32} sx={{ mb: 1 }} />
 
         <Box sx={styles.metaContainer}>

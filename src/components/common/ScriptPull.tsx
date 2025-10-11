@@ -31,6 +31,8 @@ import {
   Search as SearchIcon,
   FileCopy as CopyIcon,
 } from "@mui/icons-material";
+import { getCurrentBrand } from "@/config/brandConfig";
+import { useThemeMode } from "@/theme";
 import { useAuthStore } from "@/store/authStore";
 import { useSubscription } from "@/hooks/auth/useSubscription";
 import { auth } from "@/lib/firebase";
@@ -160,6 +162,8 @@ export default function ScriptPullFrom({
   const { user } = useAuthStore();
   const { isAdmin } = useSubscription();
   const theme = useTheme();
+  const brand = getCurrentBrand();
+  const { isDarkMode } = useThemeMode();
   const router = useRouter();
 
   // Early return if not admin
@@ -436,17 +440,16 @@ export default function ScriptPullFrom({
         fullWidth={fullWidth}
         className={className}
         sx={{
-          bgcolor: variant === "contained" ? "secondary.main" : undefined,
+          // ✅ FIXED: Use primary color (Gold/Bronze)
+          bgcolor: variant === "contained" ? "primary.main" : "transparent",
           color:
-            variant === "contained"
-              ? "secondary.contrastText"
-              : "secondary.main",
-          borderColor: variant === "outlined" ? "secondary.main" : undefined,
+            variant === "contained" ? "primary.contrastText" : "primary.main",
+          borderColor: variant === "outlined" ? "primary.main" : undefined,
           "&:hover": {
             bgcolor:
               variant === "contained"
-                ? "secondary.dark"
-                : alpha(theme.palette.secondary.main, 0.1),
+                ? "primary.dark"
+                : alpha(theme.palette.primary.main, 0.1),
           },
           px: 2,
           py: variant === "text" ? 0.75 : undefined,
@@ -470,8 +473,22 @@ export default function ScriptPullFrom({
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 1,
-            bgcolor: "background.default",
+            backgroundColor: "background.paper",
+            backgroundImage: "none !important", // Disable MUI's elevation overlay
+            borderRadius: `${brand.borderRadius * 1.5}px`,
+            border: 2,
+            // ✅ FIXED: Use primary color for border (Gold/Bronze)
+            borderColor: "primary.main",
+            boxShadow: theme.shadows[24],
+          },
+        }}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: isDarkMode
+                ? "rgba(0, 0, 0, 0.85)"
+                : "rgba(0, 0, 0, 0.7)",
+            },
           },
         }}
       >
@@ -481,12 +498,17 @@ export default function ScriptPullFrom({
             justifyContent: "space-between",
             alignItems: "center",
             pb: 1,
-            bgcolor: "background.default",
+            fontFamily: brand.fonts.heading,
+            fontWeight: 600,
+            pt: 3,
+            // ✅ FIXED: Use theme colors
+            bgcolor: "background.paper",
             borderBottom: 1,
             borderColor: "divider",
           }}
         >
-          <Typography variant="h6" color="secondary.main">
+          {/* ✅ FIXED: Use primary color (Gold/Bronze) */}
+          <Typography variant="h6" color="primary.main">
             Pull Script From User
           </Typography>
           <IconButton
@@ -499,7 +521,15 @@ export default function ScriptPullFrom({
           </IconButton>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ pt: 2, bgcolor: "background.default" }}>
+        <DialogContent
+          dividers
+          sx={{
+            pt: 2,
+            pb: 3,
+            // ✅ FIXED: Use theme background
+            bgcolor: "background.paper",
+          }}
+        >
           {!isLoading ? (
             <Stack spacing={3}>
               {/* User Selection */}
@@ -507,7 +537,11 @@ export default function ScriptPullFrom({
                 <Typography
                   variant="subtitle2"
                   gutterBottom
-                  sx={{ color: "secondary.main", fontWeight: 600 }}
+                  sx={{
+                    // ✅ FIXED: Use primary color (Gold/Bronze)
+                    color: "primary.main",
+                    fontWeight: 600,
+                  }}
                 >
                   Source User Selection
                 </Typography>
@@ -531,11 +565,12 @@ export default function ScriptPullFrom({
                       sx={{
                         "& .MuiOutlinedInput-root": {
                           "&.Mui-focused fieldset": {
-                            borderColor: "secondary.main",
+                            // ✅ FIXED: Use primary color (Gold/Bronze)
+                            borderColor: "primary.main",
                           },
                         },
                         "& .MuiInputLabel-root.Mui-focused": {
-                          color: "secondary.main",
+                          color: "primary.main",
                         },
                       }}
                       InputProps={{
@@ -600,14 +635,19 @@ export default function ScriptPullFrom({
                 />
               </Box>
 
-              <Divider sx={{ borderColor: "secondary.main", opacity: 0.3 }} />
+              {/* ✅ FIXED: Use primary color for divider */}
+              <Divider sx={{ borderColor: "primary.main", opacity: 0.3 }} />
 
               {/* Script Details */}
               <Box>
                 <Typography
                   variant="subtitle2"
                   gutterBottom
-                  sx={{ color: "secondary.main", fontWeight: 600 }}
+                  sx={{
+                    // ✅ FIXED: Use primary color (Gold/Bronze)
+                    color: "primary.main",
+                    fontWeight: 600,
+                  }}
                 >
                   Script Details
                 </Typography>
@@ -622,11 +662,12 @@ export default function ScriptPullFrom({
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         "&.Mui-focused fieldset": {
-                          borderColor: "secondary.main",
+                          // ✅ FIXED: Use primary color (Gold/Bronze)
+                          borderColor: "primary.main",
                         },
                       },
                       "& .MuiInputLabel-root.Mui-focused": {
-                        color: "secondary.main",
+                        color: "primary.main",
                       },
                     }}
                   />
@@ -641,11 +682,12 @@ export default function ScriptPullFrom({
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         "&.Mui-focused fieldset": {
-                          borderColor: "secondary.main",
+                          // ✅ FIXED: Use primary color (Gold/Bronze)
+                          borderColor: "primary.main",
                         },
                       },
                       "& .MuiInputLabel-root.Mui-focused": {
-                        color: "secondary.main",
+                        color: "primary.main",
                       },
                     }}
                   />
@@ -660,7 +702,8 @@ export default function ScriptPullFrom({
                     bgcolor: "background.paper",
                     borderRadius: 1,
                     border: 1,
-                    borderColor: "secondary.main",
+                    // ✅ FIXED: Use primary color for border (Gold/Bronze)
+                    borderColor: "primary.main",
                     borderStyle: "solid",
                     borderWidth: 1,
                     opacity: 0.8,
@@ -669,7 +712,11 @@ export default function ScriptPullFrom({
                   <Typography
                     variant="subtitle2"
                     gutterBottom
-                    sx={{ color: "secondary.main", fontWeight: 600 }}
+                    sx={{
+                      // ✅ FIXED: Use primary color (Gold/Bronze)
+                      color: "primary.main",
+                      fontWeight: 600,
+                    }}
                   >
                     Pulling from:
                   </Typography>
@@ -722,6 +769,8 @@ export default function ScriptPullFrom({
                 <LinearProgress
                   variant="determinate"
                   value={progress}
+                  // ✅ FIXED: Use primary color (Gold/Bronze)
+                  color="primary"
                   sx={{
                     height: 8,
                     borderRadius: 4,
@@ -746,17 +795,25 @@ export default function ScriptPullFrom({
           )}
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2, bgcolor: "background.default" }}>
+        <DialogActions
+          sx={{
+            px: 3,
+            py: 2,
+            // ✅ FIXED: Use theme background
+            bgcolor: "background.paper",
+          }}
+        >
           <Button
             variant="outlined"
             onClick={handleClose}
             disabled={isLoading}
             sx={{
-              borderColor: "secondary.main",
-              color: "secondary.main",
+              // ✅ FIXED: Use primary color (Gold/Bronze)
+              borderColor: "primary.main",
+              color: "primary.main",
               "&:hover": {
-                borderColor: "secondary.dark",
-                bgcolor: alpha(theme.palette.secondary.main, 0.08),
+                borderColor: "primary.dark",
+                bgcolor: alpha(theme.palette.primary.main, 0.08),
               },
             }}
           >
@@ -767,7 +824,8 @@ export default function ScriptPullFrom({
             onClick={handlePullFrom}
             disabled={!sourceScriptId.trim() || !sourceUser || isLoading}
             startIcon={!isLoading && <DownloadIcon sx={{ fontSize: 16 }} />}
-            color="secondary"
+            // ✅ FIXED: Use primary color (Gold/Bronze)
+            color="primary"
             sx={{ minWidth: 120 }}
           >
             {isLoading ? (

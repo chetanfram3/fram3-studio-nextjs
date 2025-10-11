@@ -14,12 +14,15 @@ import {
   Box,
   Alert,
   CircularProgress,
+  useTheme,
 } from "@mui/material";
 import {
   VisibilityOutlined as ViewIcon,
   DeleteOutlineOutlined as DeleteIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
+import { getCurrentBrand } from "@/config/brandConfig";
+import { useThemeMode } from "@/theme";
 import { useVersionDelete } from "@/hooks/useVersionDelete";
 import DeleteVersionDialog from "./DeleteVersionDialog";
 import CustomToast from "@/components/common/CustomToast";
@@ -62,7 +65,11 @@ export default function VersionsDialog({
   script,
   onClose,
 }: VersionsDialogProps) {
+  const theme = useTheme();
+  const brand = getCurrentBrand();
+  const { isDarkMode } = useThemeMode();
   const router = useRouter();
+
   const [deleteVersion, setDeleteVersion] = useState<{
     versionId: string;
     versionNumber: number;
@@ -93,8 +100,8 @@ export default function VersionsDialog({
 
     if (success) {
       setDeleteVersion(null);
-      setIsSuccess(true); // Show success message
-      setTimeout(() => setIsSuccess(false), 3000); // Hide success message after 3 seconds
+      setIsSuccess(true);
+      setTimeout(() => setIsSuccess(false), 3000);
       onClose();
     }
   };
@@ -106,29 +113,86 @@ export default function VersionsDialog({
         onClose={onClose}
         maxWidth="sm"
         fullWidth
-        sx={{
-          "& .MuiPaper-root": {
-            backgroundColor: "black",
-            borderTop: (theme) => `4px solid ${theme.palette.secondary.main}`,
+        PaperProps={{
+          sx: {
+            backgroundColor: "background.paper",
+            backgroundImage: "none !important", // Disable MUI's elevation overlay
+            borderRadius: `${brand.borderRadius * 1.5}px`,
+            border: 2,
+            // ✅ FIXED: Use primary color for border (Gold/Bronze)
+            borderColor: "primary.main",
+            boxShadow: theme.shadows[24],
+          },
+        }}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: isDarkMode
+                ? "rgba(0, 0, 0, 0.85)"
+                : "rgba(0, 0, 0, 0.7)",
+            },
           },
         }}
       >
-        <DialogTitle>
-          <Typography variant="h6" component="div" color="white">
+        <DialogTitle
+          sx={{
+            fontFamily: brand.fonts.heading,
+            fontWeight: 600,
+            pt: 3,
+            pb: 2,
+            // ✅ FIXED: Use theme text color
+            color: "text.primary",
+          }}
+        >
+          <Typography variant="h6" component="div">
             Script Versions
           </Typography>
-          <Typography variant="subtitle2" color="grey.500">
+          <Typography
+            variant="subtitle2"
+            // ✅ FIXED: Use theme secondary text color
+            color="text.secondary"
+          >
             {script.scriptTitle}
           </Typography>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ pt: 2, pb: 3 }}>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert
+              severity="error"
+              sx={{
+                mb: 2,
+                bgcolor:
+                  theme.palette.mode === "dark" ? "error.dark" : "error.light",
+                color:
+                  theme.palette.mode === "dark"
+                    ? "error.contrastText"
+                    : "error.dark",
+                "& .MuiAlert-icon": {
+                  color: "inherit",
+                },
+              }}
+            >
               {error}
             </Alert>
           )}
           {isSuccess && (
-            <Alert severity="success" sx={{ mb: 2 }}>
+            <Alert
+              severity="success"
+              sx={{
+                mb: 2,
+                bgcolor:
+                  theme.palette.mode === "dark"
+                    ? "success.dark"
+                    : "success.light",
+                color:
+                  theme.palette.mode === "dark"
+                    ? "success.contrastText"
+                    : "success.dark",
+                "& .MuiAlert-icon": {
+                  color: "inherit",
+                },
+              }}
+            >
               Version deleted successfully!
             </Alert>
           )}
@@ -139,6 +203,15 @@ export default function VersionsDialog({
                 <ListItem
                   key={version.versionId}
                   divider
+                  sx={{
+                    // ✅ FIXED: Use theme background for hover
+                    "&:hover": {
+                      bgcolor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(255, 255, 255, 0.05)"
+                          : "rgba(0, 0, 0, 0.02)",
+                    },
+                  }}
                   secondaryAction={
                     <Box>
                       <IconButton
@@ -148,6 +221,7 @@ export default function VersionsDialog({
                             version.versionId
                           )
                         }
+                        // ✅ FIXED: Use primary color (Gold/Bronze)
                         color="primary"
                       >
                         <ViewIcon />
@@ -180,7 +254,8 @@ export default function VersionsDialog({
                           display: "flex",
                           alignItems: "center",
                           gap: 1,
-                          color: "white",
+                          // ✅ FIXED: Use theme text color
+                          color: "text.primary",
                         }}
                       >
                         Version {version.versionNumber}
@@ -195,7 +270,10 @@ export default function VersionsDialog({
                       </Typography>
                     }
                     secondary={`Created ${formatDate(version.createdAt._seconds)}`}
-                    secondaryTypographyProps={{ color: "grey.500" }}
+                    secondaryTypographyProps={{
+                      // ✅ FIXED: Use theme secondary text color
+                      color: "text.secondary",
+                    }}
                   />
                 </ListItem>
               ))}

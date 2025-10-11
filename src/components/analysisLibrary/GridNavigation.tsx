@@ -120,153 +120,136 @@ export function GridNavigation({
           gap: 2,
         }}
       >
+        {/* Mobile: Compact controls */}
         {isMobile ? (
-          // Mobile View - Compact Controls
           <>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {/* Sort Menu Button */}
+              <IconButton
+                onClick={handleSortMenuOpen}
+                size="small"
+                sx={{
+                  // ✅ Use primary color (Gold/Bronze)
+                  color: theme.palette.primary.main,
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  },
+                }}
+              >
+                <FilterIcon fontSize="small" />
+              </IconButton>
+
+              {/* Page Size Menu Button */}
+              <IconButton
+                onClick={handlePageSizeMenuOpen}
+                size="small"
+                sx={{
+                  // ✅ Use primary color (Gold/Bronze)
+                  color: theme.palette.primary.main,
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  },
+                }}
+              >
+                <MoreIcon fontSize="small" />
+              </IconButton>
+
               {/* Favourite Toggle */}
               <IconButton
                 onClick={() => onFavouriteChange(!isFavourite)}
                 size="small"
                 sx={{
-                  borderRadius: 1,
+                  color: isFavourite
+                    ? theme.palette.primary.main
+                    : "text.secondary",
+                  bgcolor: isFavourite
+                    ? alpha(theme.palette.primary.main, 0.1)
+                    : "transparent",
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  },
                 }}
               >
                 {isFavourite ? (
-                  <StarIcon
-                    sx={{
-                      color: theme.palette.secondary.main,
-                      fontSize: "1.2rem",
-                    }}
-                  />
+                  <StarIcon fontSize="small" />
                 ) : (
-                  <StarBorderIcon
-                    sx={{
-                      fontSize: "1.2rem",
-                      color: "text.secondary",
-                    }}
-                  />
+                  <StarBorderIcon fontSize="small" />
                 )}
-              </IconButton>
-
-              {/* Page Size Menu Button */}
-              <IconButton
-                size="small"
-                onClick={handlePageSizeMenuOpen}
-                sx={{ borderRadius: 1 }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 500,
-                    fontSize: "0.75rem",
-                    color: theme.palette.secondary.main,
-                    mr: 0.5,
-                  }}
-                >
-                  {pageSize}
-                </Typography>
-                <FilterIcon
-                  sx={{ fontSize: "1rem", color: "text.secondary" }}
-                />
-              </IconButton>
-
-              {/* Sort Menu Button */}
-              <IconButton
-                size="small"
-                onClick={handleSortMenuOpen}
-                sx={{ borderRadius: 1 }}
-              >
-                <SortIcon
-                  sx={{ fontSize: "1.2rem", color: "text.secondary" }}
-                />
               </IconButton>
             </Box>
 
-            {/* Item count on mobile */}
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                fontWeight: 500,
-                fontSize: "0.75rem",
-              }}
-            >
+            <Typography variant="caption" color="text.secondary">
               {startItem}-{endItem} of {totalCount}
             </Typography>
           </>
         ) : (
-          // Desktop View - Full Controls
           <>
-            <Select
-              value={`${pageSize}`}
-              onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              size="small"
-              sx={{
-                minWidth: 120,
-                borderRadius: 1,
-                "& .MuiSelect-select": {
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  py: 0.5,
-                },
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: alpha("#000", 0.12),
-                },
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: theme.palette.secondary.main,
-                },
-                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                  borderColor: theme.palette.secondary.main,
-                },
-              }}
-              startAdornment={
-                <SortIcon
-                  sx={{
-                    color: theme.palette.secondary.main,
-                    mr: 1,
-                    fontSize: "1.2rem",
-                  }}
-                />
-              }
-            >
-              {[4, 8, 12, 16, 20].map((size) => (
-                <MenuItem key={size} value={size}>
-                  {`${size} per page`}
-                </MenuItem>
-              ))}
-            </Select>
+            {/* Desktop: Full controls */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Show:
+              </Typography>
+              <Select
+                value={pageSize}
+                onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                size="small"
+                sx={{
+                  minWidth: 80,
+                  "& .MuiOutlinedInput-notchedOutline": {
+                    // ✅ Use primary color (Gold/Bronze)
+                    borderColor: theme.palette.primary.main,
+                  },
+                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.dark,
+                  },
+                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.main,
+                  },
+                }}
+              >
+                {[4, 8, 12, 16, 20].map((size) => (
+                  <MenuItem key={size} value={size}>
+                    {size}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
 
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Divider orientation="vertical" flexItem />
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Sort by:
+              </Typography>
+
               {/* Sort by Date */}
-              <Tooltip title="Sort by Date">
+              <Tooltip
+                title={`Sort by Date ${sortField === "createdAt" && sortOrder === "asc" ? "descending" : "ascending"}`}
+              >
                 <IconButton
-                  color={sortField === "createdAt" ? "secondary" : "default"}
+                  onClick={() =>
+                    handleSortChange(
+                      `createdAt-${sortField === "createdAt" && sortOrder === "asc" ? "desc" : "asc"}`
+                    )
+                  }
                   sx={{
                     borderRadius: 1,
                     transition: "all 0.2s ease",
                     "&:hover": {
-                      bgcolor: alpha(
-                        sortField === "createdAt"
-                          ? theme.palette.secondary.main
-                          : theme.palette.secondary.light,
-                        0.1
-                      ),
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      transform: "scale(1.05)",
                     },
                   }}
-                  onClick={() =>
-                    handleSortChange(
-                      `createdAt-${sortOrder === "asc" ? "desc" : "asc"}`
-                    )
-                  }
                 >
                   <DateIcon
                     sx={{
                       fontSize: "1.2rem",
+                      // ✅ Use primary color when active (Gold/Bronze)
                       color:
                         sortField === "createdAt"
-                          ? theme.palette.secondary.main
+                          ? theme.palette.primary.main
                           : "inherit",
                     }}
                   />
@@ -276,7 +259,7 @@ export function GridNavigation({
                         sx={{
                           fontSize: "1rem",
                           ml: 0.5,
-                          color: theme.palette.secondary.main,
+                          color: theme.palette.primary.main,
                         }}
                       />
                     ) : (
@@ -284,7 +267,7 @@ export function GridNavigation({
                         sx={{
                           fontSize: "1rem",
                           ml: 0.5,
-                          color: theme.palette.secondary.main,
+                          color: theme.palette.primary.main,
                         }}
                       />
                     ))}
@@ -292,33 +275,31 @@ export function GridNavigation({
               </Tooltip>
 
               {/* Sort by Title */}
-              <Tooltip title="Sort by Title">
+              <Tooltip
+                title={`Sort by Title ${sortField === "title" && sortOrder === "asc" ? "descending" : "ascending"}`}
+              >
                 <IconButton
-                  color={sortField === "title" ? "secondary" : "default"}
+                  onClick={() =>
+                    handleSortChange(
+                      `title-${sortField === "title" && sortOrder === "asc" ? "desc" : "asc"}`
+                    )
+                  }
                   sx={{
                     borderRadius: 1,
                     transition: "all 0.2s ease",
                     "&:hover": {
-                      bgcolor: alpha(
-                        sortField === "title"
-                          ? theme.palette.secondary.main
-                          : theme.palette.secondary.light,
-                        0.1
-                      ),
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      transform: "scale(1.05)",
                     },
                   }}
-                  onClick={() =>
-                    handleSortChange(
-                      `title-${sortOrder === "asc" ? "desc" : "asc"}`
-                    )
-                  }
                 >
                   <TitleIcon
                     sx={{
                       fontSize: "1.2rem",
+                      // ✅ Use primary color when active (Gold/Bronze)
                       color:
                         sortField === "title"
-                          ? theme.palette.secondary.main
+                          ? theme.palette.primary.main
                           : "inherit",
                     }}
                   />
@@ -328,7 +309,7 @@ export function GridNavigation({
                         sx={{
                           fontSize: "1rem",
                           ml: 0.5,
-                          color: theme.palette.secondary.main,
+                          color: theme.palette.primary.main,
                         }}
                       />
                     ) : (
@@ -336,7 +317,7 @@ export function GridNavigation({
                         sx={{
                           fontSize: "1rem",
                           ml: 0.5,
-                          color: theme.palette.secondary.main,
+                          color: theme.palette.primary.main,
                         }}
                       />
                     ))}
@@ -351,7 +332,7 @@ export function GridNavigation({
                     borderRadius: 1,
                     transition: "all 0.2s ease",
                     "&:hover": {
-                      bgcolor: alpha(theme.palette.secondary.light, 0.1),
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
                       transform: "scale(1.05)",
                     },
                   }}
@@ -359,7 +340,8 @@ export function GridNavigation({
                   {isFavourite ? (
                     <StarIcon
                       sx={{
-                        color: theme.palette.secondary.main,
+                        // ✅ Use primary color (Gold/Bronze)
+                        color: theme.palette.primary.main,
                         fontSize: "1.2rem",
                         filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))",
                       }}
@@ -409,7 +391,8 @@ export function GridNavigation({
           count={totalPages}
           page={currentPage}
           onChange={(_, page) => onPageChange(page)}
-          color="secondary"
+          // ✅ Use primary color (Gold/Bronze)
+          color="primary"
           size={isMobile ? "small" : "medium"}
           showFirstButton={!isMobile}
           showLastButton={!isMobile}
@@ -426,16 +409,18 @@ export function GridNavigation({
               height: isMobile ? 24 : 32,
               transition: "all 0.2s ease",
               "&:hover": {
-                bgcolor: alpha(theme.palette.secondary.main, 0.08),
-                color: theme.palette.secondary.dark,
+                // ✅ Use primary color hover (Gold/Bronze)
+                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                color: theme.palette.primary.dark,
               },
             },
             "& .Mui-selected": {
-              bgcolor: theme.palette.secondary.main,
-              color: "white",
+              // ✅ Use primary color for selected (Gold/Bronze)
+              bgcolor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
               fontWeight: 600,
               "&:hover": {
-                bgcolor: theme.palette.secondary.dark,
+                bgcolor: theme.palette.primary.dark,
               },
             },
             "& .MuiPaginationItem-ellipsis": {
@@ -478,11 +463,12 @@ export function GridNavigation({
           }
           sx={{
             py: 1.5,
+            // ✅ Use primary color when active (Gold/Bronze)
             color:
               sortField === "createdAt"
-                ? theme.palette.secondary.main
+                ? theme.palette.primary.main
                 : "inherit",
-            "&:hover": { bgcolor: alpha(theme.palette.secondary.main, 0.08) },
+            "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.08) },
           }}
         >
           <DateIcon sx={{ mr: 1, fontSize: "1.1rem" }} />
@@ -506,9 +492,10 @@ export function GridNavigation({
           }
           sx={{
             py: 1.5,
+            // ✅ Use primary color when active (Gold/Bronze)
             color:
-              sortField === "title" ? theme.palette.secondary.main : "inherit",
-            "&:hover": { bgcolor: alpha(theme.palette.secondary.main, 0.08) },
+              sortField === "title" ? theme.palette.primary.main : "inherit",
+            "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.08) },
           }}
         >
           <TitleIcon sx={{ mr: 1, fontSize: "1.1rem" }} />
@@ -560,10 +547,10 @@ export function GridNavigation({
             selected={pageSize === size}
             sx={{
               py: 1.5,
-              color:
-                pageSize === size ? theme.palette.secondary.main : "inherit",
+              // ✅ Use primary color when selected (Gold/Bronze)
+              color: pageSize === size ? theme.palette.primary.main : "inherit",
               fontWeight: pageSize === size ? 600 : 400,
-              "&:hover": { bgcolor: alpha(theme.palette.secondary.main, 0.08) },
+              "&:hover": { bgcolor: alpha(theme.palette.primary.main, 0.08) },
             }}
           >
             <Typography variant="body2">{size} items</Typography>
