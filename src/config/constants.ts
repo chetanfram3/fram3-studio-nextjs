@@ -54,3 +54,26 @@ export const MIN_PASSWORD_LENGTH = 8;
 export const MOBILE_BREAKPOINT = 600;
 export const TABLET_BREAKPOINT = 900;
 export const DESKTOP_BREAKPOINT = 1200;
+
+export const processorSteps = {
+  images: ["processActorImages", "processLocationImages", "keyVisualProcessor"],
+  scenes: ["processScenesAndShots"],
+  audio: ["audioProcessor"],
+  video: ["videoProcessor"]
+} as const;
+
+export enum PlanLevel {
+  STARTER = 0,
+  PRO = 1,
+  PREMIUM = 2,
+  ULTRA = 3,
+  ENTERPRISE = 10
+}
+
+export const PLAN_TO_LEVEL: Record<string, PlanLevel> = {
+  'starter': PlanLevel.STARTER,
+  'pro': PlanLevel.PRO,
+  'premium': PlanLevel.PREMIUM,
+  'ultra': PlanLevel.ULTRA,
+  'enterprise': PlanLevel.ENTERPRISE
+};
