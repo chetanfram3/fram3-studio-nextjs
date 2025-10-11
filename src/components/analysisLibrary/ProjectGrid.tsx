@@ -1,8 +1,15 @@
 // src/components/analysisLibrary/ProjectGrid.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Box } from "@mui/material";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  Suspense,
+  startTransition,
+} from "react";
+import { Box, CircularProgress } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useScripts } from "@/hooks/scripts/useScripts";
 import { GridList } from "./GridList";
@@ -32,6 +39,13 @@ interface PaginationState {
   isFavourite: boolean;
 }
 
+interface UserPreferences {
+  pageSize?: number;
+  sortField?: string;
+  sortOrder?: string;
+  isFavourite?: boolean;
+}
+
 // ===========================
 // HELPER FUNCTIONS
 // ===========================
@@ -56,12 +70,7 @@ const getSavedPreferences = (): Record<string, unknown> | null => {
  * Save preferences to localStorage
  * Only runs on client-side
  */
-const savePreferences = (prefs: {
-  pageSize?: number;
-  sortField?: string;
-  sortOrder?: string;
-  isFavourite?: boolean;
-}): void => {
+const savePreferences = (prefs: UserPreferences): void => {
   if (typeof window === "undefined") return;
 
   try {
@@ -73,51 +82,76 @@ const savePreferences = (prefs: {
         ...prefs,
       })
     );
+    logger.debug("Preferences saved to localStorage:", prefs);
   } catch (error) {
     logger.error("Error saving preferences to localStorage:", error);
   }
 };
 
 // ===========================
+// LOADING FALLBACK COMPONENT
+// ===========================
+
+function GridLoadingFallback() {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 400,
+        width: "100%",
+      }}
+    >
+      <CircularProgress size={40} color="primary" />
+    </Box>
+  );
+}
+
+// ===========================
 // MAIN COMPONENT
 // ===========================
 
-export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
-  ({ selectedScript, onScriptSelect }) => {
-    const router = useRouter();
+export function ProjectGrid({
+  selectedScript,
+  onScriptSelect,
+}: ProjectGridProps) {
+  const router = useRouter();
+  const { user } = useAuthStore();
 
-    // Get saved preferences or defaults (client-side only)
-    const savedPrefs = getSavedPreferences();
+  // Get saved preferences or defaults (client-side only)
+  const savedPrefs = useMemo(() => getSavedPreferences(), []);
 
-    // Initial query parameters with persistence
-    const initialPageSize = (savedPrefs?.pageSize as number) || 4;
-    const initialSortField = (savedPrefs?.sortField as string) || "createdAt";
-    const initialSortOrder = (savedPrefs?.sortOrder as string) || "desc";
-    const initialIsFavourite = (savedPrefs?.isFavourite as boolean) || false;
+  // Initial query parameters with persistence
+  const initialPageSize = (savedPrefs?.pageSize as number) || 4;
+  const initialSortField = (savedPrefs?.sortField as string) || "createdAt";
+  const initialSortOrder = (savedPrefs?.sortOrder as string) || "desc";
+  const initialIsFavourite = (savedPrefs?.isFavourite as boolean) || false;
 
-    // Use scripts hook with persisted defaults
-    const {
-      scripts = [],
-      totalCount = 0,
-      totalPages = 1,
-      currentPage = 1,
-      pageSize = initialPageSize,
-      sortField = initialSortField,
-      sortOrder = initialSortOrder,
-      isFavourite = initialIsFavourite,
-      allCount = 0,
-      isLoading = false,
-      updateQueryParams,
-      refetch,
-    } = useScripts({
-      initialPageSize,
-      initialSortField,
-      initialSortOrder,
-      initialIsFavourite,
-    });
+  // Use scripts hook with persisted defaults
+  const {
+    scripts = [],
+    totalCount = 0,
+    totalPages = 1,
+    currentPage = 1,
+    pageSize = initialPageSize,
+    sortField = initialSortField,
+    sortOrder = initialSortOrder,
+    isFavourite = initialIsFavourite,
+    allCount = 0,
+    isLoading = false,
+    updateQueryParams,
+    refetch,
+  } = useScripts({
+    initialPageSize,
+    initialSortField,
+    initialSortOrder,
+    initialIsFavourite,
+  });
 
-    // Pagination state management
-    const [paginationState, setPaginationState] = useState<PaginationState>({
+  // Pagination state management with useMemo for optimization
+  const paginationState = useMemo<PaginationState>(
+    () => ({
       currentPage,
       totalPages,
       totalCount,
@@ -125,22 +159,8 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
       sortField,
       sortOrder,
       isFavourite,
-    });
-
-    // Effect to update pagination state
-    useEffect(() => {
-      if (!isLoading) {
-        setPaginationState({
-          currentPage,
-          totalPages,
-          totalCount,
-          pageSize,
-          sortField,
-          sortOrder,
-          isFavourite,
-        });
-      }
-    }, [
+    }),
+    [
       currentPage,
       totalPages,
       totalCount,
@@ -148,104 +168,98 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
       sortField,
       sortOrder,
       isFavourite,
-      isLoading,
-    ]);
+    ]
+  );
 
-    // CRITICAL FIX: Auto-select first script when scripts load
-    useEffect(() => {
-      logger.debug("ProjectGrid: Script selection effect", {
-        scriptsLength: scripts.length,
-        hasSelectedScript: !!selectedScript,
-        isLoading,
-        firstScriptId: scripts[0]?.scriptId,
-      });
+  // Check if the currently selected script still exists in the scripts list
+  useEffect(() => {
+    if (!isLoading && selectedScript) {
+      const scriptStillExists = scripts.some(
+        (script) => script.scriptId === selectedScript.scriptId
+      );
 
-      // Only auto-select if we don't have a selection and scripts are loaded
-      if (!isLoading && scripts.length > 0 && !selectedScript) {
-        const firstScript = scripts[0];
-        logger.debug("ProjectGrid: Auto-selecting first script", {
-          scriptId: firstScript.scriptId,
-          scriptTitle: firstScript.scriptTitle,
-        });
-        onScriptSelect(firstScript);
-      }
-    }, [scripts, selectedScript, isLoading, onScriptSelect]);
-
-    // Check if the currently selected script still exists in the scripts list
-    useEffect(() => {
-      if (!isLoading && selectedScript) {
-        const scriptStillExists = scripts.some(
-          (script) => script.scriptId === selectedScript.scriptId
-        );
-
-        if (!scriptStillExists) {
-          logger.debug(
-            "ProjectGrid: Selected script no longer exists, selecting new one"
-          );
-          // Selected script no longer exists (probably deleted)
+      if (!scriptStillExists) {
+        // Selected script no longer exists (probably deleted)
+        // Select first available script or clear if none available
+        startTransition(() => {
           if (scripts.length > 0) {
             onScriptSelect(scripts[0]);
           } else {
             onScriptSelect(null);
           }
-        }
+        });
       }
-    }, [scripts, selectedScript, isLoading, onScriptSelect]);
+    }
+  }, [scripts, selectedScript, isLoading, onScriptSelect]);
 
-    // Effect to handle script selection and navigation
-    useEffect(() => {
-      if (scripts.length === 0 && !isLoading) {
-        if (allCount === 0) {
-          logger.debug(
-            "ProjectGrid: No scripts available, redirecting to script analysis"
-          );
-          router.push("/dashboard/script-analysis");
-          return;
-        }
-
-        if (isFavourite) {
-          logger.debug("ProjectGrid: No favourites, switching to all scripts");
-          updateQueryParams?.({
-            isFavourite: false,
-            pageNumber: 1,
-          });
-          CustomToast.info(
-            "Please select some Favourites from your library first!"
-          );
-        }
+  // Effect to handle script selection and navigation
+  useEffect(() => {
+    if (scripts.length === 0 && !isLoading) {
+      if (allCount === 0) {
+        router.push("/dashboard/script-analysis");
+        return;
       }
-    }, [
-      scripts,
-      selectedScript,
-      currentPage,
-      allCount,
-      isFavourite,
-      isLoading,
-      onScriptSelect,
-      router,
-      updateQueryParams,
-    ]);
 
-    // Handler functions with type safety
-    const handlePageChange = (newPage: number): void => {
+      if (isFavourite && updateQueryParams) {
+        updateQueryParams({
+          isFavourite: false,
+          pageNumber: 1,
+        });
+        CustomToast.info(
+          "Please select some Favourites from your library first!"
+        );
+      }
+    } else if (scripts.length > 0 && !selectedScript) {
+      const firstScript = scripts[0];
+      if (firstScript) {
+        startTransition(() => {
+          onScriptSelect(firstScript);
+        });
+      }
+    }
+  }, [
+    scripts,
+    selectedScript,
+    currentPage,
+    allCount,
+    isFavourite,
+    isLoading,
+    onScriptSelect,
+    router,
+    updateQueryParams,
+  ]);
+
+  // Handler functions with type safety and optimization
+  const handlePageChange = useCallback(
+    (newPage: number): void => {
       if (updateQueryParams && newPage > 0) {
-        updateQueryParams({ pageNumber: newPage });
+        startTransition(() => {
+          updateQueryParams({ pageNumber: newPage });
+        });
       }
-    };
+    },
+    [updateQueryParams]
+  );
 
-    const handlePageSizeChange = (newPageSize: number): void => {
+  const handlePageSizeChange = useCallback(
+    (newPageSize: number): void => {
       if (updateQueryParams && newPageSize > 0) {
         // Save preference to localStorage
         savePreferences({ pageSize: newPageSize });
 
-        updateQueryParams({
-          pageSize: newPageSize,
-          pageNumber: 1,
+        startTransition(() => {
+          updateQueryParams({
+            pageSize: newPageSize,
+            pageNumber: 1,
+          });
         });
       }
-    };
+    },
+    [updateQueryParams]
+  );
 
-    const handleSortChange = (field: string, order: string): void => {
+  const handleSortChange = useCallback(
+    (field: string, order: string): void => {
       if (updateQueryParams && field && order) {
         // Save preferences to localStorage
         savePreferences({
@@ -253,33 +267,44 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
           sortOrder: order,
         });
 
-        updateQueryParams({
-          sortField: field,
-          sortOrder: order,
-          pageNumber: 1,
+        startTransition(() => {
+          updateQueryParams({
+            sortField: field,
+            sortOrder: order,
+            pageNumber: 1,
+          });
         });
       }
-    };
+    },
+    [updateQueryParams]
+  );
 
-    const handleFavouriteChange = (newIsFavourite: boolean): void => {
+  const handleFavouriteChange = useCallback(
+    (newIsFavourite: boolean): void => {
       if (updateQueryParams) {
         // Save preference to localStorage
         savePreferences({ isFavourite: newIsFavourite });
 
-        updateQueryParams({
-          isFavourite: newIsFavourite,
-          pageNumber: 1,
+        startTransition(() => {
+          updateQueryParams({
+            isFavourite: newIsFavourite,
+            pageNumber: 1,
+          });
         });
       }
-    };
+    },
+    [updateQueryParams]
+  );
 
-    // Safe render with null checks
-    if (!updateQueryParams) {
-      return null;
-    }
+  // Safe render with null checks
+  if (!updateQueryParams) {
+    logger.warn("ProjectGrid: updateQueryParams is undefined");
+    return null;
+  }
 
-    return (
-      <Box>
+  return (
+    <Box>
+      <Suspense fallback={<GridLoadingFallback />}>
         <GridList
           scripts={scripts}
           isLoading={isLoading}
@@ -287,13 +312,17 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
           onScriptSelect={onScriptSelect}
           pageSize={pageSize}
         />
+      </Suspense>
 
+      <Suspense fallback={null}>
         <Pagination
           currentPage={paginationState.currentPage}
           totalPages={Math.max(paginationState.totalPages, 1)}
           onPageChange={handlePageChange}
         />
+      </Suspense>
 
+      <Suspense fallback={null}>
         <GridNavigation
           isLoading={isLoading}
           currentPage={paginationState.currentPage}
@@ -308,10 +337,10 @@ export const ProjectGrid: React.FC<ProjectGridProps> = React.memo(
           onSortChange={handleSortChange}
           onFavouriteChange={handleFavouriteChange}
         />
-      </Box>
-    );
-  }
-);
+      </Suspense>
+    </Box>
+  );
+}
 
 ProjectGrid.displayName = "ProjectGrid";
 
