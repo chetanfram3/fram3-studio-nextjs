@@ -288,7 +288,7 @@ export interface OptimisedEditImageRequest {
     promptType?: string;
 }
 
-interface OptimisedEditImageResponse {
+export interface OptimisedEditImageResponse {
     newCurrentImagePath: string;
     newThumbnailPath: string;
     sourceVersion: number;
@@ -310,6 +310,86 @@ interface OptimisedEditImageResponse {
         type: string;
     };
 }
+
+export type OptimizePromptParams = OptimizePromptRequest;
+
+// Export EditImageParams type
+export interface EditImageParams {
+    scriptId: string;
+    versionId: string;
+    prompt: string;
+    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    sourceVersion?: number;
+    additionalImageUrls?: string[];
+    temperature?: number;
+    topP?: number;
+    options?: {
+        modelTier?: string;
+    };
+    // Shot-specific fields
+    sceneId?: number;
+    shotId?: number;
+    // Actor-specific fields
+    actorId?: number;
+    actorVersionId?: number;
+    // Location-specific fields
+    locationId?: number;
+    locationVersionId?: number;
+    promptType?: string;
+}
+
+
+
+// Export OptimizationResult type (this is the same as OptimizePromptResponse)
+export type OptimizationResult = OptimizePromptResponse;
+
+// Export EditImageParams type - extends OptimisedEditImageRequest with options
+export interface EditImageParams {
+    scriptId: string;
+    versionId: string;
+    prompt: string;
+    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    sourceVersion?: number;
+    additionalImageUrls?: string[];
+    temperature?: number;
+    topP?: number;
+    options?: {
+        modelTier?: string;
+    };
+    // Shot-specific fields
+    sceneId?: number;
+    shotId?: number;
+    // Actor-specific fields
+    actorId?: number;
+    actorVersionId?: number;
+    // Location-specific fields
+    locationId?: number;
+    locationVersionId?: number;
+    promptType?: string;
+}
+
+export interface GenerateImageParams {
+    scriptId: string;
+    versionId: string;
+    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    prompt: string;
+    aspectRatio: string;
+    modelTier?: number | string;
+    fineTuneId?: string;
+    seed?: number;
+    // Shot-specific fields
+    sceneId?: number;
+    shotId?: number;
+    // Actor-specific fields
+    actorId?: number;
+    actorVersionId?: number;
+    // Location-specific fields
+    locationId?: number;
+    locationVersionId?: number;
+    promptType?: string;
+}
+
+export type UpscaleImageParams = UpscaleImageRequest;
 
 async function optimisedEditImageService(request: OptimisedEditImageRequest): Promise<OptimisedEditImageResponse> {
     const token = await auth.currentUser?.getIdToken();
