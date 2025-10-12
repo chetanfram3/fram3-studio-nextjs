@@ -40,9 +40,6 @@ function OptimizedCardImage({
   isHovered,
   onLoad,
 }: OptimizedCardImageProps) {
-  // Check if external URL
-  const isExternalImage = false;
-
   const getImageStyle = () => ({
     position: "absolute" as const,
     top: 0,
@@ -54,19 +51,6 @@ function OptimizedCardImage({
     transition: "transform 0.4s ease-in-out",
     transform: isHovered ? "scale(1.08)" : "scale(1)",
   });
-
-  // Use regular img for external signed URLs
-  if (isExternalImage || !src || src === "/placeHolder.webp") {
-    return (
-      <Box
-        component="img"
-        src={src || "/placeHolder.webp"}
-        alt={alt}
-        onLoad={onLoad}
-        sx={getImageStyle()}
-      />
-    );
-  }
 
   // Use Next.js Image for local images
   return (

@@ -357,9 +357,6 @@ function OptimizedImage({
   onLoad,
   isLoading,
 }: OptimizedImageProps) {
-  // Check if this is an external URL
-  const isExternalImage = false;
-
   if (!src || src === "/placeHolder.webp") {
     return (
       <Box
@@ -367,25 +364,6 @@ function OptimizedImage({
         src="/placeHolder.webp"
         alt={alt}
         sx={styles.image(aspectRatio)}
-      />
-    );
-  }
-
-  // Use regular img for external signed URLs
-  if (isExternalImage) {
-    return (
-      <Box
-        component="img"
-        src={src}
-        alt={alt}
-        onError={onError}
-        onLoad={onLoad}
-        sx={{
-          ...styles.image(aspectRatio),
-          opacity: isLoading ? 0.7 : 1,
-          filter: isLoading ? "blur(2px)" : "none",
-          transition: "opacity 0.3s ease, filter 0.3s ease",
-        }}
       />
     );
   }
