@@ -166,11 +166,6 @@ export default function ScriptPullFrom({
   const { isDarkMode } = useThemeMode();
   const router = useRouter();
 
-  // Early return if not admin
-  if (!isAdmin) {
-    return null;
-  }
-
   // Dialog State
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -362,7 +357,8 @@ export default function ScriptPullFrom({
         router.push(
           `/scripts/${result.data.scriptId}/versions/${result.data.versionId}`
         );
-        handleClose();
+        setOpen(false);
+        resetForm();
       }, 1500);
     } catch (err) {
       console.error("Error pulling script:", err);
@@ -383,7 +379,13 @@ export default function ScriptPullFrom({
     onComplete,
     onError,
     router,
+    resetForm,
   ]);
+
+  // Early return if not admin
+  if (!isAdmin) {
+    return null;
+  }
 
   const getStageColor = (
     stage: string
