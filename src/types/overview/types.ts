@@ -289,3 +289,5 @@ export interface ApiResponse {
     keyVisualVersions: ImageVersions | null;
     [key: string]: ApiActorData | string | ImageVersions | null;
 }
+
+export type PromptType = "image" | "video" | "actor" | "location";
