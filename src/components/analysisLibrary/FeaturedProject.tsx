@@ -358,8 +358,7 @@ function OptimizedImage({
   isLoading,
 }: OptimizedImageProps) {
   // Check if this is an external URL
-  const isExternalImage =
-    src.startsWith("https://storage.googleapis.com") || src.startsWith("http");
+  const isExternalImage = false;
 
   if (!src || src === "/placeHolder.webp") {
     return (

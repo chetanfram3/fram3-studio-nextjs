@@ -1,7 +1,24 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { Box, Alert, Typography, Button } from "@mui/material";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  Suspense,
+  startTransition,
+} from "react";
+import {
+  Box,
+  Alert,
+  Typography,
+  Button,
+  CircularProgress,
+  Skeleton,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
 import { format } from "date-fns";
 import { ImageVersion } from "@/types/storyBoard/types";
 import {
@@ -14,8 +31,9 @@ import { ImageDisplayCore, ImageViewerConfig } from "./ImageDisplayCore";
 import { ImageVersionModal } from "./ImageVersionOverlay";
 import { ImageUpscaleOverlay } from "./ImageUpscaleOverlay";
 import { ImageEditOverlay } from "./ImageEditOverlay";
-import { ImageGenerationOverlay } from "./ImageGenerationOverlay"; // NEW: Import the generation overlay
+import { ImageGenerationOverlay } from "./ImageGenerationOverlay";
 import { ImageVersionNavigation } from "./ImageVersionNavigation";
+import logger from "@/utils/logger";
 
 // Types
 export type ImageType = "shots" | "keyVisual" | "actor" | "location";
@@ -29,6 +47,7 @@ export interface ImageData {
     archived: Record<number, ImageVersion>;
     totalVersions?: number;
     totalEdits?: number;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     editHistory?: any[];
   };
 }
@@ -40,7 +59,6 @@ interface ImageViewerContainerProps {
   onDataRefresh?: () => void;
   className?: string;
   style?: React.CSSProperties;
-  // Enhanced callback support
   onLoadingChange?: (isLoading: boolean) => void;
   onError?: (errorMessage: string) => void;
 }
@@ -50,6 +68,16 @@ const HIGH_RES_LOAD_TIMEOUT = 10000; // 10 seconds
 const IMAGE_LOAD_RETRY_DELAY = 1000; // 1 second
 const MAX_RETRY_ATTEMPTS = 3;
 
+/**
+ * ImageViewerContainer - Optimized image viewer with version management
+ *
+ * Performance optimizations applied:
+ * - React 19 compiler auto-optimization (removed unnecessary React.memo)
+ * - startTransition for non-urgent UI updates
+ * - Suspense boundaries for progressive loading
+ * - Theme-aware styling (no hardcoded colors)
+ * - Logger instead of console.log
+ */
 export function ImageViewerContainer({
   config,
   imageData,
@@ -60,22 +88,34 @@ export function ImageViewerContainer({
   onLoadingChange,
   onError,
 }: ImageViewerContainerProps) {
-  // State
+  const theme = useTheme();
+  const brand = getCurrentBrand();
+
+  // State - organized by category
   const [imageLoaded, setImageLoaded] = useState(false);
   const [currentImageSrc, setCurrentImageSrc] =
     useState<string>("/placeHolder.webp");
   const [currentlyViewingVersion, setCurrentlyViewingVersion] = useState<
     ImageVersion | undefined
   >();
+
+  // UI State
   const [showOverlays, setShowOverlays] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [generateMode, setGenerateMode] = useState(false); // NEW: Generate mode state
+  const [generateMode, setGenerateMode] = useState(false);
   const [versionsMode, setVersionsMode] = useState(false);
   const [historyMode, setHistoryMode] = useState(false);
   const [upscaleMode, setUpscaleMode] = useState(false);
+  const [additionalImagesMode, setAdditionalImagesMode] = useState(false);
+
+  // Transition State
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [nextImageSrc, setNextImageSrc] = useState<string>("");
-  const [additionalImagesMode, setAdditionalImagesMode] = useState(false);
+  const [wipeDirection, setWipeDirection] = useState<
+    "left-to-right" | "right-to-left"
+  >("left-to-right");
+
+  // Image State
   const [imageElement, setImageElement] = useState<HTMLImageElement | null>(
     null
   );
@@ -83,20 +123,19 @@ export function ImageViewerContainer({
     width: number;
     height: number;
   } | null>(null);
-  const [overlayIsEditing, setOverlayIsEditing] = useState(false);
-  const [overlayIsGenerating, setOverlayIsGenerating] = useState(false); // NEW: Overlay generating state
-  const [overlayIsUpscaling, setOverlayIsUpscaling] = useState(false);
   const [additionalImageUrls, setAdditionalImageUrls] = useState<string[]>([]);
-  const [wipeDirection, setWipeDirection] = useState<
-    "left-to-right" | "right-to-left"
-  >("left-to-right");
 
-  // Enhanced loading state management
+  // Overlay States
+  const [overlayIsEditing, setOverlayIsEditing] = useState(false);
+  const [overlayIsGenerating, setOverlayIsGenerating] = useState(false);
+  const [overlayIsUpscaling, setOverlayIsUpscaling] = useState(false);
+
+  // Loading States
   const [isLoadingHighRes, setIsLoadingHighRes] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryAttempts, setRetryAttempts] = useState(0);
 
-  // Refs for cleanup and timeout handling
+  // Refs for cleanup
   const highResTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const currentImageRef = useRef<HTMLImageElement | undefined>(undefined);
   const retryTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -125,43 +164,34 @@ export function ImageViewerContainer({
         locationVersionId: config.locationVersionId,
         promptType: config.promptType || "wideShotLocationSetPrompt",
       };
-    } else {
-      return baseParams;
     }
+    return baseParams;
   }, [config]);
 
   // Hooks
   const {
-    editImageAsync,
     restoreVersionAsync,
-    generateImageAsync, // NEW: Include generate function
     isEditing,
-    isGenerating, // NEW: Include generating state
+    isGenerating,
     isRestoring,
     isUpscaling,
-    error: imageEditorError,
     resetEditMutation,
-    resetGenerateMutation, // NEW: Include generate reset
+    resetGenerateMutation,
     resetRestoreMutation,
     resetUpscaleMutation,
-  } = useImageEditor();
+  } = useImageEditor(hookParams);
 
   const {
     data: imageVersionsData,
     isLoading: isLoadingVersions,
-    error: versionsError,
     refetch: refetchVersions,
   } = useImageVersions(hookParams, true);
 
-  const {
-    data: imageHistoryData,
-    isLoading: isLoadingHistory,
-    error: historyError,
-  } = useImageHistory(hookParams, historyMode);
+  const { data: imageHistoryData, isLoading: isLoadingHistory } =
+    useImageHistory(hookParams, historyMode);
 
-  // Calculate aspect ratio
+  // Compute aspect ratio with close match logic
   const aspectRatioValue = useMemo(() => {
-    // Helper function to check if image ratio closely matches a target ratio
     const isCloseMatch = (
       imageRatio: number,
       targetRatio: number,
@@ -170,39 +200,31 @@ export function ImageViewerContainer({
       return Math.abs(imageRatio - targetRatio) / targetRatio <= tolerance;
     };
 
-    // If explicitly set to auto, always use image dimensions
     if (config.aspectRatio === "auto") {
       if (imageDimensions) {
         return imageDimensions.width / imageDimensions.height;
       }
-      return 16 / 9; // default fallback
+      return 16 / 9;
     }
 
-    // If we have image dimensions, check for close matches
     if (imageDimensions) {
       const imageRatio = imageDimensions.width / imageDimensions.height;
 
       switch (config.aspectRatio) {
         case "16:9": {
           const targetRatio = 16 / 9;
-          // If image is close to 16:9 (within 2%), use exact 16:9
-          // Otherwise use auto (image's natural ratio)
           return isCloseMatch(imageRatio, targetRatio)
             ? targetRatio
             : imageRatio;
         }
         case "9:16": {
           const targetRatio = 9 / 16;
-          // If image is close to 9:16 (within 2%), use exact 9:16
-          // Otherwise use auto (image's natural ratio)
           return isCloseMatch(imageRatio, targetRatio)
             ? targetRatio
             : imageRatio;
         }
         case "1:1": {
           const targetRatio = 1;
-          // If image is close to 1:1 (within 2%), use exact 1:1
-          // Otherwise use auto (image's natural ratio)
           return isCloseMatch(imageRatio, targetRatio)
             ? targetRatio
             : imageRatio;
@@ -212,7 +234,6 @@ export function ImageViewerContainer({
       }
     }
 
-    // Fallback to exact ratios if no image dimensions available yet
     switch (config.aspectRatio) {
       case "16:9":
         return 16 / 9;
@@ -225,6 +246,7 @@ export function ImageViewerContainer({
     }
   }, [config.aspectRatio, imageDimensions]);
 
+  // Stable image data to prevent unnecessary re-renders
   const stableImageData = useMemo(() => {
     if (!imageData) return null;
 
@@ -263,7 +285,7 @@ export function ImageViewerContainer({
     imageData?.versions?.editHistory,
   ]);
 
-  // Get all versions sorted by version number (descending)
+  // Get all versions sorted
   const allVersions = imageData?.versions
     ? [
         imageData.versions.current,
@@ -273,8 +295,13 @@ export function ImageViewerContainer({
 
   const viewingVersion =
     currentlyViewingVersion || imageData?.versions?.current;
+  const hasMultipleVersions = allVersions.length > 1;
+  const totalVersions =
+    imageData?.versions?.totalVersions || imageVersionsData?.totalVersions || 0;
+  const totalEdits =
+    imageData?.versions?.totalEdits || imageVersionsData?.totalEdits || 0;
 
-  // Enhanced cleanup function
+  // Cleanup function
   const cleanupImageLoading = useCallback(() => {
     if (highResTimeoutRef.current) {
       clearTimeout(highResTimeoutRef.current);
@@ -291,7 +318,7 @@ export function ImageViewerContainer({
     }
   }, []);
 
-  // Enhanced image loading with timeout and retry logic
+  // Enhanced image loading with timeout and retry
   const loadHighResImage = useCallback(
     (
       imageUrl: string,
@@ -300,344 +327,96 @@ export function ImageViewerContainer({
     ) => {
       if (!mountedRef.current) return;
 
-      // Clean up any existing loading
-      cleanupImageLoading();
-
-      console.log("🖼️ Starting high-res image load:", imageUrl);
+      logger.info("Loading high-res image", { url: imageUrl });
       setIsLoadingHighRes(true);
       setLoadError(null);
 
-      // Notify parent of loading state change
       if (onLoadingChange) {
         onLoadingChange(true);
       }
 
+      cleanupImageLoading();
+
       const img = new Image();
       currentImageRef.current = img;
 
-      // Set up timeout
       highResTimeoutRef.current = setTimeout(() => {
         if (!mountedRef.current) return;
-        console.warn("⏰ High-res image load timeout for:", imageUrl);
 
-        img.onload = null;
-        img.onerror = null;
-
+        const errorMsg = "Image load timeout";
+        logger.warn(errorMsg, { url: imageUrl, attempt: retryAttempts + 1 });
+        setLoadError(errorMsg);
         setIsLoadingHighRes(false);
-        setImageLoaded(true); // Consider current image as loaded
-        const timeoutError =
-          "High-resolution image load timed out. Showing available resolution.";
-        setLoadError(timeoutError);
 
-        // Notify parent of loading state and error
-        if (onLoadingChange) {
-          onLoadingChange(false);
-        }
-        if (onError) {
-          onError(timeoutError);
-        }
-
+        if (onLoadingChange) onLoadingChange(false);
+        if (onError) onError(errorMsg);
         if (onErrorCallback) onErrorCallback();
+
+        if (retryAttempts < MAX_RETRY_ATTEMPTS) {
+          retryTimeoutRef.current = setTimeout(() => {
+            if (!mountedRef.current) return;
+            setRetryAttempts((prev) => prev + 1);
+            loadHighResImage(imageUrl, onSuccess, onErrorCallback);
+          }, IMAGE_LOAD_RETRY_DELAY);
+        }
       }, HIGH_RES_LOAD_TIMEOUT);
 
       img.onload = () => {
         if (!mountedRef.current) return;
-        console.log("✅ High-res image loaded successfully:", imageUrl);
 
         cleanupImageLoading();
+        logger.info("High-res image loaded", { url: imageUrl });
+
         setCurrentImageSrc(imageUrl);
         setImageLoaded(true);
         setIsLoadingHighRes(false);
+        setLoadError(null);
         setRetryAttempts(0);
 
-        // Notify parent of successful load
-        if (onLoadingChange) {
-          onLoadingChange(false);
-        }
-
+        if (onLoadingChange) onLoadingChange(false);
         if (onSuccess) onSuccess();
       };
 
-      img.onerror = (error) => {
+      img.onerror = () => {
         if (!mountedRef.current) return;
-        console.error("❌ High-res image load error:", imageUrl, error);
 
         cleanupImageLoading();
+        const errorMsg = "Failed to load image";
+        logger.error(errorMsg, { url: imageUrl, attempt: retryAttempts + 1 });
+
+        setLoadError(errorMsg);
         setIsLoadingHighRes(false);
 
-        // Notify parent of loading state change
-        if (onLoadingChange) {
-          onLoadingChange(false);
-        }
+        if (onLoadingChange) onLoadingChange(false);
+        if (onError) onError(errorMsg);
+        if (onErrorCallback) onErrorCallback();
 
-        // Retry logic
         if (retryAttempts < MAX_RETRY_ATTEMPTS) {
-          const newAttempts = retryAttempts + 1;
-          setRetryAttempts(newAttempts);
-          const retryError = `Retrying image load (${newAttempts}/${MAX_RETRY_ATTEMPTS})...`;
-          setLoadError(retryError);
-
-          // Notify parent of retry error
-          if (onError) {
-            onError(retryError);
-          }
-
           retryTimeoutRef.current = setTimeout(() => {
-            if (mountedRef.current) {
-              loadHighResImage(imageUrl, onSuccess, onErrorCallback);
-            }
+            if (!mountedRef.current) return;
+            setRetryAttempts((prev) => prev + 1);
+            loadHighResImage(imageUrl, onSuccess, onErrorCallback);
           }, IMAGE_LOAD_RETRY_DELAY);
         } else {
-          setImageLoaded(true); // Consider current image as loaded even if high-res failed
           const finalError =
-            "Failed to load high-resolution image. Showing available resolution.";
+            "Maximum retry attempts reached. Showing available resolution.";
           setLoadError(finalError);
           setRetryAttempts(0);
 
-          // Notify parent of final error
-          if (onError) {
-            onError(finalError);
-          }
-
+          if (onError) onError(finalError);
           if (onErrorCallback) onErrorCallback();
         }
       };
 
-      // Start loading
       img.src = imageUrl;
     },
     [cleanupImageLoading, retryAttempts, onLoadingChange, onError]
   );
 
-  // Helper functions
-  const getImageAltText = () => {
-    const typeLabels = {
-      shots: `Shot ${config.shotId || "unknown"}`,
-      keyVisual: "Key Visual",
-      actor: `Actor ${config.actorId || "unknown"}`,
-      location: `Location ${config.locationId || "unknown"}`,
-    };
-
-    return `Preview of ${typeLabels[config.type]} ${
-      viewingVersion ? `(Version ${viewingVersion.version})` : ""
-    }`;
-  };
-
-  const getHistoryData = () => {
-    return (
-      imageHistoryData?.editHistory || imageData?.versions?.editHistory || []
-    );
-  };
-
-  const getItemName = () => {
-    const names = {
-      shots: "shot",
-      actor: "actor",
-      location: "location",
-      keyVisual: "key visual",
-    };
-    return names[config.type];
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "MMM dd, yyyy HH:mm");
-    } catch {
-      return "Unknown date";
-    }
-  };
-
-  // Component unmount cleanup
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      cleanupImageLoading();
-    };
-  }, [cleanupImageLoading]);
-
-  // ENHANCED: Initial image setup with proper cleanup
-  useEffect(() => {
-    if (!mountedRef.current) return;
-
-    console.log("🔄 ImageViewerContainer: imageData changed, resetting state");
-
-    // Clean up any existing loading
-    cleanupImageLoading();
-
-    // Reset all state
-    setImageLoaded(false);
-    setIsLoadingHighRes(false);
-    setLoadError(null);
-    setRetryAttempts(0);
-    setImageDimensions(null);
-    setOverlayIsUpscaling(false);
-    setOverlayIsEditing(false);
-    setOverlayIsGenerating(false); // NEW: Reset generating state
-    setEditMode(false);
-    setGenerateMode(false); // NEW: Reset generate mode
-    setVersionsMode(false);
-    setHistoryMode(false);
-    setUpscaleMode(false);
-
-    resetEditMutation();
-    resetGenerateMutation(); // NEW: Reset generate mutation
-    resetRestoreMutation();
-    resetUpscaleMutation();
-
-    // Set initial thumbnail
-    if (imageData?.versions?.current?.thumbnailPath) {
-      console.log("📸 Setting thumbnail from current version");
-      setCurrentImageSrc(imageData.versions.current.thumbnailPath);
-      setCurrentlyViewingVersion(imageData.versions.current);
-      setImageLoaded(true); // Thumbnail is considered loaded
-    } else if (imageData?.thumbnailPath) {
-      console.log("📸 Setting thumbnail from imageData");
-      setCurrentImageSrc(imageData.thumbnailPath);
-      setCurrentlyViewingVersion(undefined);
-      setImageLoaded(true); // Thumbnail is considered loaded
-    } else {
-      console.log("📸 No thumbnail available, using placeholder");
-      setCurrentImageSrc("/placeHolder.webp");
-      setCurrentlyViewingVersion(undefined);
-      setImageLoaded(true); // Placeholder is considered loaded
-    }
-  }, [
-    // Use specific values instead of the entire imageData object
-    imageData?.signedUrl,
-    imageData?.thumbnailPath,
-    imageData?.versions?.current?.version,
-    imageData?.versions?.current?.thumbnailPath,
-    imageData?.versions?.current?.signedUrl,
-    resetEditMutation,
-    resetGenerateMutation, // NEW: Include in dependencies
-    resetRestoreMutation,
-    resetUpscaleMutation,
-    cleanupImageLoading,
-  ]);
-
-  // ENHANCED: High-resolution image loading with robust error handling
-  useEffect(() => {
-    if (!mountedRef.current) return;
-
-    let imageUrl: string | undefined;
-
-    if (currentlyViewingVersion?.signedUrl) {
-      imageUrl = currentlyViewingVersion.signedUrl;
-    } else if (stableImageData?.signedUrl) {
-      imageUrl = stableImageData.signedUrl;
-    }
-
-    // Only attempt high-res loading if we have a different URL than current
-    if (
-      imageUrl &&
-      imageUrl !== currentImageSrc &&
-      imageUrl !== "/placeHolder.webp"
-    ) {
-      console.log("🚀 Attempting to load high-res image:", imageUrl);
-      loadHighResImage(imageUrl);
-    } else if (imageUrl === currentImageSrc) {
-      // URL matches current src, consider it loaded
-      setImageLoaded(true);
-      setIsLoadingHighRes(false);
-      setLoadError(null);
-    }
-
-    // If no high-res URL available, just mark as loaded
-    if (!imageUrl) {
-      setImageLoaded(true);
-      setIsLoadingHighRes(false);
-      setLoadError(null);
-    }
-  }, [
-    stableImageData?.signedUrl,
-    currentlyViewingVersion?.signedUrl,
-    currentImageSrc,
-    loadHighResImage,
-  ]);
-
-  // Event handlers
-  const handleVersionSelect = (
-    version: ImageVersion,
-    direction: "left-to-right" | "right-to-left" = "left-to-right",
-    skipThumbnail: boolean = false
-  ) => {
-    if (!mountedRef.current) return;
-    if (currentlyViewingVersion?.version === version.version) return;
-
-    console.log(`🔄 Switching to version ${version.version}`);
-
-    // Clean up any existing loading
-    cleanupImageLoading();
-
-    if (skipThumbnail && version.signedUrl) {
-      const img = new Image();
-      img.onload = () => {
-        if (!mountedRef.current) return;
-        setNextImageSrc(version.signedUrl);
-        setWipeDirection(direction);
-        setIsTransitioning(true);
-
-        setTimeout(() => {
-          if (!mountedRef.current) return;
-          setCurrentlyViewingVersion(version);
-          setCurrentImageSrc(version.signedUrl);
-          setImageLoaded(true);
-          setIsTransitioning(false);
-          setNextImageSrc("");
-          setIsLoadingHighRes(false);
-          setLoadError(null);
-        }, 800);
-      };
-      img.onerror = () => {
-        if (!mountedRef.current) return;
-        console.warn(
-          "⚠️ High-res version load failed, falling back to thumbnail"
-        );
-        handleVersionSelect(version, direction, false);
-      };
-      img.src = version.signedUrl;
-      return;
-    }
-
-    if (version.thumbnailPath) {
-      const img = new Image();
-      img.onload = () => {
-        if (!mountedRef.current) return;
-        setNextImageSrc(version.thumbnailPath);
-        setWipeDirection(direction);
-        setIsTransitioning(true);
-
-        setTimeout(() => {
-          if (!mountedRef.current) return;
-          setCurrentlyViewingVersion(version);
-          setCurrentImageSrc(version.thumbnailPath);
-          setImageLoaded(true);
-          setIsTransitioning(false);
-          setNextImageSrc("");
-          setIsLoadingHighRes(false);
-          setLoadError(null);
-
-          // Load high-res if available and different from thumbnail
-          if (
-            version.signedUrl &&
-            version.signedUrl !== version.thumbnailPath
-          ) {
-            loadHighResImage(version.signedUrl);
-          }
-        }, 800);
-      };
-      img.onerror = () => {
-        if (!mountedRef.current) return;
-        console.error("❌ Thumbnail load failed for version", version.version);
-        setImageLoaded(true); // Still mark as loaded to prevent infinite loading
-      };
-      img.src = version.thumbnailPath;
-    }
-  };
-
+  // Helper to update image data with new version
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateImageDataWithNewVersion = (editResult: any) => {
-    if (!onImageUpdate || !editResult) return;
+    if (!onImageUpdate) return;
 
     const newCurrentVersion: ImageVersion = {
       version: editResult.newCurrentVersion,
@@ -671,7 +450,7 @@ export function ImageViewerContainer({
             timestamp: new Date().toISOString(),
             fromVersion: editResult.sourceVersion,
             toVersion: editResult.newCurrentVersion,
-            editType: editResult.editType || "flux_pro_kontext", // NEW: Support different edit types
+            editType: editResult.editType || "flux_pro_kontext",
             previousPath: imageData?.versions?.current?.destinationPath || "",
             newPath: editResult.newCurrentImagePath,
           },
@@ -682,43 +461,189 @@ export function ImageViewerContainer({
     onImageUpdate(updatedImageData);
     setCurrentlyViewingVersion(newCurrentVersion);
     setCurrentImageSrc(editResult.newThumbnailPath);
-    setImageLoaded(true); // Thumbnail is loaded
+    setImageLoaded(true);
     setIsLoadingHighRes(false);
     setLoadError(null);
     refetchVersions();
   };
 
-  const handleEditComplete = (editResult: any) => {
-    updateImageDataWithNewVersion(editResult);
-    setEditMode(false);
-    setAdditionalImageUrls([]);
-    setAdditionalImagesMode(false);
+  // Component lifecycle
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      cleanupImageLoading();
+    };
+  }, [cleanupImageLoading]);
 
-    if (!onImageUpdate && onDataRefresh) {
-      onDataRefresh();
+  // Initial image setup
+  useEffect(() => {
+    if (!mountedRef.current) return;
+
+    logger.debug("Image data changed, resetting state");
+    cleanupImageLoading();
+
+    // Use startTransition for non-urgent state updates
+    startTransition(() => {
+      setImageLoaded(false);
+      setIsLoadingHighRes(false);
+      setLoadError(null);
+      setRetryAttempts(0);
+      setImageDimensions(null);
+      setOverlayIsUpscaling(false);
+      setOverlayIsEditing(false);
+      setOverlayIsGenerating(false);
+      setEditMode(false);
+      setGenerateMode(false);
+      setVersionsMode(false);
+      setHistoryMode(false);
+      setUpscaleMode(false);
+    });
+
+    resetEditMutation();
+    resetGenerateMutation();
+    resetRestoreMutation();
+    resetUpscaleMutation();
+
+    if (imageData?.versions?.current?.thumbnailPath) {
+      logger.debug("Setting thumbnail from current version");
+      setCurrentImageSrc(imageData.versions.current.thumbnailPath);
+      setCurrentlyViewingVersion(imageData.versions.current);
+      setImageLoaded(true);
+    } else if (imageData?.thumbnailPath) {
+      logger.debug("Setting thumbnail from imageData");
+      setCurrentImageSrc(imageData.thumbnailPath);
+      setCurrentlyViewingVersion(undefined);
+      setImageLoaded(true);
+    } else {
+      logger.debug("No thumbnail available, using placeholder");
+      setCurrentImageSrc("/placeHolder.webp");
+      setCurrentlyViewingVersion(undefined);
+      setImageLoaded(true);
     }
-  };
+  }, [
+    imageData?.signedUrl,
+    imageData?.thumbnailPath,
+    imageData?.versions?.current?.version,
+    imageData?.versions?.current?.thumbnailPath,
+    imageData?.versions?.current?.signedUrl,
+    resetEditMutation,
+    resetGenerateMutation,
+    resetRestoreMutation,
+    resetUpscaleMutation,
+    cleanupImageLoading,
+  ]);
 
-  // NEW: Handle generation complete
-  const handleGenerateComplete = (generateResult: any) => {
-    updateImageDataWithNewVersion(generateResult);
-    setGenerateMode(false);
+  // High-res image loading
+  useEffect(() => {
+    if (!mountedRef.current) return;
 
-    if (!onImageUpdate && onDataRefresh) {
-      onDataRefresh();
+    let imageUrl: string | undefined;
+
+    if (currentlyViewingVersion?.signedUrl) {
+      imageUrl = currentlyViewingVersion.signedUrl;
+    } else if (stableImageData?.signedUrl) {
+      imageUrl = stableImageData.signedUrl;
     }
+
+    if (
+      imageUrl &&
+      imageUrl !== currentImageSrc &&
+      imageUrl !== "/placeHolder.webp"
+    ) {
+      logger.debug("Attempting to load high-res image", { url: imageUrl });
+      loadHighResImage(imageUrl);
+    } else if (imageUrl === currentImageSrc) {
+      setImageLoaded(true);
+      setIsLoadingHighRes(false);
+      setLoadError(null);
+    }
+
+    if (!imageUrl) {
+      setImageLoaded(true);
+      setIsLoadingHighRes(false);
+      setLoadError(null);
+    }
+  }, [
+    stableImageData?.signedUrl,
+    currentlyViewingVersion?.signedUrl,
+    currentImageSrc,
+    loadHighResImage,
+  ]);
+
+  // Event handlers
+  const handleVersionSelect = (
+    version: ImageVersion,
+    direction: "left-to-right" | "right-to-left" = "left-to-right",
+    skipThumbnail: boolean = false
+  ) => {
+    if (
+      !mountedRef.current ||
+      currentlyViewingVersion?.version === version.version
+    )
+      return;
+
+    logger.info("Switching to version", { version: version.version });
+    cleanupImageLoading();
+
+    startTransition(() => {
+      if (skipThumbnail && version.signedUrl) {
+        const img = new Image();
+        img.onload = () => {
+          if (!mountedRef.current) return;
+          setNextImageSrc(version.signedUrl);
+          setWipeDirection(direction);
+          setIsTransitioning(true);
+
+          setTimeout(() => {
+            if (!mountedRef.current) return;
+            setCurrentImageSrc(version.signedUrl);
+            setCurrentlyViewingVersion(version);
+            setIsTransitioning(false);
+            setNextImageSrc("");
+            setImageLoaded(true);
+          }, 500);
+        };
+        img.src = version.signedUrl;
+      } else {
+        if (version.thumbnailPath) {
+          setNextImageSrc(version.thumbnailPath);
+          setWipeDirection(direction);
+          setIsTransitioning(true);
+
+          setTimeout(() => {
+            if (!mountedRef.current) return;
+            setCurrentImageSrc(version.thumbnailPath!);
+            setCurrentlyViewingVersion(version);
+            setIsTransitioning(false);
+            setNextImageSrc("");
+            setImageLoaded(true);
+
+            if (version.signedUrl) {
+              loadHighResImage(version.signedUrl);
+            }
+          }, 500);
+        } else {
+          setCurrentlyViewingVersion(version);
+          if (version.signedUrl) {
+            loadHighResImage(version.signedUrl);
+          }
+        }
+      }
+    });
   };
 
   const handleRestoreVersion = async (targetVersion: number) => {
     try {
       resetRestoreMutation();
 
-      const restoreParams: any = {
+      const restoreParams = {
         ...hookParams,
         targetVersion,
       };
 
-      const restoreResult = await restoreVersionAsync(restoreParams);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const restoreResult: any = await restoreVersionAsync(restoreParams);
 
       const restoredVersion = allVersions.find(
         (v) => v.version === targetVersion
@@ -770,24 +695,63 @@ export function ImageViewerContainer({
       if (onImageUpdate) {
         onImageUpdate(updatedImageData);
       }
-      setCurrentlyViewingVersion(newCurrentVersion);
-      setCurrentImageSrc(restoredVersion.thumbnailPath);
-      setImageLoaded(true); // Thumbnail is loaded
-      setIsLoadingHighRes(false);
-      setLoadError(null);
+
+      startTransition(() => {
+        setCurrentlyViewingVersion(newCurrentVersion);
+        setCurrentImageSrc(restoredVersion.thumbnailPath);
+        setImageLoaded(true);
+        setIsLoadingHighRes(false);
+        setLoadError(null);
+        setVersionsMode(false);
+        setHistoryMode(false);
+      });
+
       refetchVersions();
 
       if (!onImageUpdate && onDataRefresh) {
         onDataRefresh();
       }
     } catch (error) {
-      console.error("Error restoring version:", error);
+      logger.error("Error restoring version", { error });
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleEditComplete = (editResult: any) => {
+    updateImageDataWithNewVersion(editResult);
+
+    startTransition(() => {
+      setEditMode(false);
+      setAdditionalImageUrls([]);
+      setAdditionalImagesMode(false);
+    });
+
+    if (!onImageUpdate && onDataRefresh) {
+      onDataRefresh();
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleGenerateComplete = (generateResult: any) => {
+    updateImageDataWithNewVersion(generateResult);
+
+    startTransition(() => {
+      setGenerateMode(false);
+    });
+
+    if (!onImageUpdate && onDataRefresh) {
+      onDataRefresh();
+    }
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleUpscaleComplete = (upscaleResult: any) => {
     updateImageDataWithNewVersion(upscaleResult);
-    setUpscaleMode(false);
+
+    startTransition(() => {
+      setUpscaleMode(false);
+    });
+
     refetchVersions();
 
     if (!onImageUpdate && onDataRefresh) {
@@ -798,13 +762,17 @@ export function ImageViewerContainer({
   const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget;
     setImageElement(img);
-    setImageDimensions({
-      width: img.naturalWidth,
-      height: img.naturalHeight,
-    });
+    setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
     setImageLoaded(true);
-    setIsLoadingHighRes(false); // Clear loading state when image loads in UI
-    setLoadError(null);
+    setIsLoadingHighRes(false);
+  };
+
+  const handleRetry = () => {
+    const imageUrl = currentlyViewingVersion?.signedUrl || imageData?.signedUrl;
+    if (imageUrl) {
+      setRetryAttempts(0);
+      loadHighResImage(imageUrl);
+    }
   };
 
   const handleAdditionalImagesUpdate = (imageUrls: string[]) => {
@@ -812,41 +780,74 @@ export function ImageViewerContainer({
   };
 
   const handleVersionsClick = () => {
-    setVersionsMode(true);
-    setHistoryMode(false);
-    setEditMode(false);
-    setGenerateMode(false); // NEW: Close generate mode
-    setUpscaleMode(false);
+    startTransition(() => {
+      setVersionsMode(true);
+      setHistoryMode(false);
+      setEditMode(false);
+      setGenerateMode(false);
+      setUpscaleMode(false);
+    });
   };
 
   const handleHistoryClick = () => {
-    setHistoryMode(true);
-    setVersionsMode(false);
-    setEditMode(false);
-    setGenerateMode(false); // NEW: Close generate mode
-    setUpscaleMode(false);
+    startTransition(() => {
+      setHistoryMode(true);
+      setVersionsMode(false);
+      setEditMode(false);
+      setGenerateMode(false);
+      setUpscaleMode(false);
+    });
   };
 
-  // NEW: Handle generate button click
   const handleGenerateClick = () => {
-    setGenerateMode(true);
-    setEditMode(false);
-    setVersionsMode(false);
-    setHistoryMode(false);
-    setUpscaleMode(false);
+    startTransition(() => {
+      setGenerateMode(true);
+      setEditMode(false);
+      setVersionsMode(false);
+      setHistoryMode(false);
+      setUpscaleMode(false);
+    });
   };
 
-  // Derived values
-  const hasMultipleVersions = allVersions.length > 1;
-  const totalVersions =
-    imageData?.versions?.totalVersions || imageVersionsData?.totalVersions || 0;
-  const totalEdits =
-    imageData?.versions?.totalEdits || imageVersionsData?.totalEdits || 0;
-  const historyData = getHistoryData();
+  // Helper functions
+  const getImageAltText = () => {
+    const typeLabels = {
+      shots: `Shot ${config.shotId || "unknown"}`,
+      keyVisual: "Key Visual",
+      actor: `Actor ${config.actorId || "unknown"}`,
+      location: `Location ${config.locationId || "unknown"}`,
+    };
 
-  // Show loading state only when actually loading high-res and no error
+    return `Preview of ${typeLabels[config.type]} ${viewingVersion ? `(Version ${viewingVersion.version})` : ""}`;
+  };
+
+  const getHistoryData = () => {
+    return (
+      imageHistoryData?.editHistory || imageData?.versions?.editHistory || []
+    );
+  };
+
+  const getItemName = () => {
+    const names = {
+      shots: "shot",
+      actor: "actor",
+      location: "location",
+      keyVisual: "key visual",
+    };
+    return names[config.type];
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "MMM dd, yyyy HH:mm");
+    } catch {
+      return "Unknown date";
+    }
+  };
+
   const shouldShowLoadingIndicator = isLoadingHighRes && !loadError;
 
+  // Loading state
   if (!mountedRef.current || (!imageData && !currentImageSrc)) {
     return (
       <Box className={className} style={style}>
@@ -857,10 +858,11 @@ export function ImageViewerContainer({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "grey.50",
-            borderRadius: 1,
-            border: "2px dashed",
-            borderColor: "grey.300",
+            bgcolor: "background.paper",
+            borderRadius: `${brand.borderRadius}px`,
+            border: 2,
+            borderStyle: "dashed",
+            borderColor: "divider",
           }}
         >
           <Typography variant="body1" color="text.secondary">
@@ -877,84 +879,89 @@ export function ImageViewerContainer({
       style={style}
       sx={{
         position: "relative",
-        isolation: "isolate", // Prevent z-index issues
+        isolation: "isolate",
         ...style,
       }}
     >
-      {/* Main Image Display */}
-      <ImageDisplayCore
-        currentImageSrc={currentImageSrc}
-        nextImageSrc={nextImageSrc}
-        isTransitioning={isTransitioning}
-        wipeDirection={wipeDirection}
-        aspectRatio={aspectRatioValue}
-        imageLoaded={imageLoaded && !shouldShowLoadingIndicator}
-        hasSignedUrl={
-          !!(imageData?.signedUrl || currentlyViewingVersion?.signedUrl)
-        }
-        altText={getImageAltText()}
-        onImageLoad={handleImageLoad}
-        onMouseEnter={() => setShowOverlays(true)}
-        onMouseLeave={() => setShowOverlays(false)}
-        showOverlays={showOverlays}
-        hasMultipleVersions={hasMultipleVersions}
-        // Control states
-        editMode={editMode}
-        generateMode={generateMode} // NEW: Pass generate mode
-        upscaleMode={upscaleMode}
-        versionsMode={versionsMode}
-        historyMode={historyMode}
-        additionalImagesMode={additionalImagesMode}
-        // Action handlers
-        onEditClick={() => {
-          if (!mountedRef.current) return;
-          setEditMode(true);
-          setGenerateMode(false); // NEW: Close other modes
-          setVersionsMode(false);
-          setHistoryMode(false);
-          setUpscaleMode(false);
-        }}
-        onGenerateClick={handleGenerateClick} // NEW: Pass generate handler
-        onUpscaleClick={() => {
-          if (!mountedRef.current) return;
-          setUpscaleMode(true);
-          setEditMode(false);
-          setGenerateMode(false); // NEW: Close other modes
-          setVersionsMode(false);
-          setHistoryMode(false);
-        }}
-        onAdditionalImagesClick={() => {
-          if (!mountedRef.current) return;
-          setAdditionalImagesMode(!additionalImagesMode);
-          setEditMode(false);
-          setGenerateMode(false); // NEW: Close other modes
-          setVersionsMode(false);
-          setHistoryMode(false);
-          setUpscaleMode(false);
-        }}
-        onVersionsClick={handleVersionsClick}
-        onHistoryClick={handleHistoryClick}
-        totalVersions={totalVersions}
-        totalEdits={totalEdits}
-        isLoadingVersions={isLoadingVersions}
-        isLoadingHistory={isLoadingHistory}
-        // State flags
-        isEditing={isEditing}
-        isGenerating={isGenerating} // NEW: Pass generating state
-        isRestoring={isRestoring}
-        isUpscaling={isUpscaling}
-        overlayIsEditing={overlayIsEditing}
-        overlayIsGenerating={overlayIsGenerating} // NEW: Pass overlay generating state
-        overlayIsUpscaling={overlayIsUpscaling}
-        additionalImageUrls={additionalImageUrls}
-        viewingVersion={viewingVersion}
-        config={config}
-        // Enhanced loading states for better feedback
-        isLoadingHighRes={isLoadingHighRes}
-        hasLoadError={!!loadError}
-        loadErrorMessage={loadError}
-      />
+      {/* Main Image Display with Suspense */}
+      <Suspense fallback={<Skeleton variant="rectangular" height={400} />}>
+        <ImageDisplayCore
+          currentImageSrc={currentImageSrc}
+          nextImageSrc={nextImageSrc}
+          isTransitioning={isTransitioning}
+          wipeDirection={wipeDirection}
+          aspectRatio={aspectRatioValue}
+          imageLoaded={imageLoaded && !shouldShowLoadingIndicator}
+          hasSignedUrl={
+            !!(imageData?.signedUrl || currentlyViewingVersion?.signedUrl)
+          }
+          altText={getImageAltText()}
+          onImageLoad={handleImageLoad}
+          onMouseEnter={() => setShowOverlays(true)}
+          onMouseLeave={() => setShowOverlays(false)}
+          showOverlays={showOverlays}
+          hasMultipleVersions={hasMultipleVersions}
+          editMode={editMode}
+          generateMode={generateMode}
+          upscaleMode={upscaleMode}
+          versionsMode={versionsMode}
+          historyMode={historyMode}
+          additionalImagesMode={additionalImagesMode}
+          onEditClick={() => {
+            if (!mountedRef.current) return;
+            startTransition(() => {
+              setEditMode(true);
+              setGenerateMode(false);
+              setVersionsMode(false);
+              setHistoryMode(false);
+              setUpscaleMode(false);
+            });
+          }}
+          onGenerateClick={handleGenerateClick}
+          onUpscaleClick={() => {
+            if (!mountedRef.current) return;
+            startTransition(() => {
+              setUpscaleMode(true);
+              setEditMode(false);
+              setGenerateMode(false);
+              setVersionsMode(false);
+              setHistoryMode(false);
+            });
+          }}
+          onAdditionalImagesClick={() => {
+            if (!mountedRef.current) return;
+            startTransition(() => {
+              setAdditionalImagesMode(!additionalImagesMode);
+              setEditMode(false);
+              setGenerateMode(false);
+              setVersionsMode(false);
+              setHistoryMode(false);
+              setUpscaleMode(false);
+            });
+          }}
+          onVersionsClick={handleVersionsClick}
+          onHistoryClick={handleHistoryClick}
+          totalVersions={totalVersions}
+          totalEdits={totalEdits}
+          isLoadingVersions={isLoadingVersions}
+          isLoadingHistory={isLoadingHistory}
+          isEditing={isEditing}
+          isGenerating={isGenerating}
+          isRestoring={isRestoring}
+          isUpscaling={isUpscaling}
+          overlayIsEditing={overlayIsEditing}
+          overlayIsGenerating={overlayIsGenerating}
+          overlayIsUpscaling={overlayIsUpscaling}
+          additionalImageUrls={additionalImageUrls}
+          viewingVersion={viewingVersion}
+          config={config}
+          isLoadingHighRes={isLoadingHighRes}
+          hasLoadError={!!loadError}
+          loadErrorMessage={loadError || undefined}
+        />
+      </Suspense>
 
+      {/* Version Navigation */}
       {mountedRef.current && (
         <ImageVersionNavigation
           allVersions={allVersions}
@@ -969,305 +976,215 @@ export function ImageViewerContainer({
         />
       )}
 
-      {/* Version Modal with safe guards */}
+      {/* Version Modal with Suspense */}
       {mountedRef.current && (
-        <ImageVersionModal
-          open={versionsMode || historyMode}
-          onClose={() => {
-            if (mountedRef.current) {
-              setVersionsMode(false);
-              setHistoryMode(false);
-            }
-          }}
-          allVersions={allVersions}
-          currentlyViewingVersion={viewingVersion}
-          totalVersions={totalVersions}
-          totalEdits={totalEdits}
-          historyData={historyData}
-          isLoading={false}
-          isLoadingVersions={isLoadingVersions}
-          isLoadingHistory={isLoadingHistory}
-          isEditing={isEditing}
-          isRestoring={isRestoring}
-          isUpscaling={isUpscaling}
-          onVersionSelect={handleVersionSelect}
-          onRestoreVersion={handleRestoreVersion}
-          itemName={getItemName()}
-          formatDate={formatDate}
-        />
+        <Suspense fallback={null}>
+          <ImageVersionModal
+            open={versionsMode || historyMode}
+            onClose={() => {
+              if (mountedRef.current) {
+                startTransition(() => {
+                  setVersionsMode(false);
+                  setHistoryMode(false);
+                });
+              }
+            }}
+            allVersions={allVersions}
+            currentlyViewingVersion={viewingVersion}
+            totalVersions={totalVersions}
+            totalEdits={totalEdits}
+            historyData={getHistoryData()}
+            isLoading={false}
+            isLoadingVersions={isLoadingVersions}
+            isLoadingHistory={isLoadingHistory}
+            isEditing={isEditing}
+            isRestoring={isRestoring}
+            isUpscaling={isUpscaling}
+            onVersionSelect={handleVersionSelect}
+            onRestoreVersion={handleRestoreVersion}
+            itemName={getItemName()}
+            formatDate={formatDate}
+          />
+        </Suspense>
       )}
 
-      {/* Edit Overlay with mount checking */}
+      {/* Edit Overlay with Suspense */}
       {mountedRef.current && editMode && (
-        <ImageEditOverlay
-          scriptId={config.scriptId}
-          versionId={config.versionId}
-          type={config.type}
-          viewingVersion={viewingVersion}
-          sceneId={config.sceneId}
-          shotId={config.shotId}
-          actorId={config.actorId}
-          actorVersionId={config.actorVersionId}
-          locationId={config.locationId}
-          locationVersionId={config.locationVersionId}
-          promptType={config.promptType}
-          additionalImageUrls={additionalImageUrls}
-          onAdditionalImagesUpdate={handleAdditionalImagesUpdate}
-          additionalImagesMode={additionalImagesMode}
-          onAdditionalImagesModeToggle={() => {
-            if (mountedRef.current) {
-              setAdditionalImagesMode(!additionalImagesMode);
-            }
-          }}
-          onEditComplete={handleEditComplete}
-          onCancel={() => {
-            if (!mountedRef.current) return;
-            cleanupImageLoading();
-            setEditMode(false);
-            setAdditionalImageUrls([]);
-            setAdditionalImagesMode(false);
-            resetEditMutation();
-          }}
-          onDataRefresh={onDataRefresh}
-          onEditingStateChange={setOverlayIsEditing}
-          disabled={isEditing || isGenerating || isRestoring || isUpscaling} // NEW: Include isGenerating
-        />
+        <Suspense fallback={<CircularProgress color="primary" size={24} />}>
+          <ImageEditOverlay
+            scriptId={config.scriptId}
+            versionId={config.versionId}
+            type={config.type}
+            viewingVersion={viewingVersion}
+            sceneId={config.sceneId}
+            shotId={config.shotId}
+            actorId={config.actorId}
+            actorVersionId={config.actorVersionId}
+            locationId={config.locationId}
+            locationVersionId={config.locationVersionId}
+            promptType={config.promptType}
+            additionalImageUrls={additionalImageUrls}
+            onAdditionalImagesUpdate={handleAdditionalImagesUpdate}
+            additionalImagesMode={additionalImagesMode}
+            onAdditionalImagesModeToggle={() => {
+              if (mountedRef.current) {
+                startTransition(() => {
+                  setAdditionalImagesMode(!additionalImagesMode);
+                });
+              }
+            }}
+            onEditComplete={handleEditComplete}
+            onCancel={() => {
+              if (!mountedRef.current) return;
+              cleanupImageLoading();
+              startTransition(() => {
+                setEditMode(false);
+                setAdditionalImageUrls([]);
+                setAdditionalImagesMode(false);
+              });
+              resetEditMutation();
+            }}
+            onDataRefresh={onDataRefresh}
+            onEditingStateChange={setOverlayIsEditing}
+            disabled={isEditing || isGenerating || isRestoring || isUpscaling}
+          />
+        </Suspense>
       )}
 
-      {/* NEW: Generation Overlay with mount checking */}
+      {/* Generation Overlay with Suspense */}
       {mountedRef.current && generateMode && (
-        <ImageGenerationOverlay
-          scriptId={config.scriptId}
-          versionId={config.versionId}
-          type={config.type}
-          viewingVersion={viewingVersion}
-          sceneId={config.sceneId}
-          shotId={config.shotId}
-          actorId={config.actorId}
-          actorVersionId={config.actorVersionId}
-          locationId={config.locationId}
-          locationVersionId={config.locationVersionId}
-          promptType={config.promptType}
-          onGenerateComplete={handleGenerateComplete}
-          onCancel={() => {
-            if (mountedRef.current) {
-              setGenerateMode(false);
-            }
-          }}
-          onDataRefresh={onDataRefresh}
-          onGeneratingStateChange={setOverlayIsGenerating}
-          disabled={isEditing || isGenerating || isRestoring || isUpscaling}
-        />
+        <Suspense fallback={<CircularProgress color="primary" size={24} />}>
+          <ImageGenerationOverlay
+            scriptId={config.scriptId}
+            versionId={config.versionId}
+            type={config.type}
+            viewingVersion={viewingVersion}
+            sceneId={config.sceneId}
+            shotId={config.shotId}
+            actorId={config.actorId}
+            actorVersionId={config.actorVersionId}
+            locationId={config.locationId}
+            locationVersionId={config.locationVersionId}
+            promptType={config.promptType}
+            onGenerateComplete={handleGenerateComplete}
+            onCancel={() => {
+              if (mountedRef.current) {
+                startTransition(() => {
+                  setGenerateMode(false);
+                });
+              }
+            }}
+            onDataRefresh={onDataRefresh}
+            onGeneratingStateChange={setOverlayIsGenerating}
+            disabled={isEditing || isGenerating || isRestoring || isUpscaling}
+          />
+        </Suspense>
       )}
 
-      {/* Upscale Overlay with mount checking */}
+      {/* Upscale Overlay with Suspense */}
       {mountedRef.current && upscaleMode && (
-        <ImageUpscaleOverlay
-          scriptId={config.scriptId}
-          versionId={config.versionId}
-          type={config.type}
-          viewingVersion={viewingVersion}
-          sceneId={config.sceneId}
-          shotId={config.shotId}
-          actorId={config.actorId}
-          actorVersionId={config.actorVersionId}
-          locationId={config.locationId}
-          locationVersionId={config.locationVersionId}
-          promptType={config.promptType}
-          imageDimensions={imageDimensions}
-          onUpscaleComplete={handleUpscaleComplete}
-          onCancel={() => {
-            if (mountedRef.current) {
-              setUpscaleMode(false);
-            }
-          }}
-          onDataRefresh={onDataRefresh}
-          onUpscalingStateChange={setOverlayIsUpscaling}
-          disabled={isEditing || isGenerating || isRestoring || isUpscaling} // NEW: Include isGenerating
-        />
+        <Suspense fallback={<CircularProgress color="primary" size={24} />}>
+          <ImageUpscaleOverlay
+            scriptId={config.scriptId}
+            versionId={config.versionId}
+            type={config.type}
+            viewingVersion={viewingVersion}
+            sceneId={config.sceneId}
+            shotId={config.shotId}
+            actorId={config.actorId}
+            actorVersionId={config.actorVersionId}
+            locationId={config.locationId}
+            locationVersionId={config.locationVersionId}
+            promptType={config.promptType}
+            imageDimensions={imageDimensions}
+            onUpscaleComplete={handleUpscaleComplete}
+            onCancel={() => {
+              if (mountedRef.current) {
+                startTransition(() => {
+                  setUpscaleMode(false);
+                });
+              }
+            }}
+            onDataRefresh={onDataRefresh}
+            onUpscalingStateChange={setOverlayIsUpscaling}
+            disabled={isEditing || isGenerating || isRestoring || isUpscaling}
+          />
+        </Suspense>
       )}
 
-      {/* Additional Images Upload with mount checking */}
+      {/* Additional Images Upload */}
       {mountedRef.current && (
         <AdditionalImagesUpload
           isVisible={additionalImagesMode}
           onToggle={() => {
             if (mountedRef.current) {
-              setAdditionalImagesMode(!additionalImagesMode);
+              startTransition(() => {
+                setAdditionalImagesMode(!additionalImagesMode);
+              });
             }
           }}
           onImagesUpdate={handleAdditionalImagesUpdate}
-          disabled={isEditing || isGenerating || isRestoring} // NEW: Include isGenerating
+          disabled={isEditing || isGenerating || isRestoring}
           maxImages={3}
           maxSizeMB={10}
         />
       )}
 
-      {/* Enhanced loading and error indicators with better positioning */}
+      {/* Loading Indicator */}
       {shouldShowLoadingIndicator && (
-        <Alert
-          severity="info"
+        <Box
           sx={{
-            mt: 1,
-            position: "relative",
-            zIndex: 10,
-            animation: "fadeIn 0.3s ease-in-out",
-            "@keyframes fadeIn": {
-              from: { opacity: 0, transform: "translateY(-10px)" },
-              to: { opacity: 1, transform: "translateY(0)" },
-            },
+            position: "absolute",
+            top: 16,
+            right: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            bgcolor: "background.paper",
+            borderRadius: `${brand.borderRadius}px`,
+            px: 2,
+            py: 1,
+            boxShadow: theme.shadows[4],
+            border: 1,
+            borderColor: "primary.main",
           }}
         >
-          <Typography
-            variant="body2"
-            sx={{ display: "flex", alignItems: "center", gap: 1 }}
-          >
-            <Box
-              sx={{
-                width: 16,
-                height: 16,
-                border: "2px solid rgba(25, 118, 210, 0.3)",
-                borderTop: "2px solid",
-                borderTopColor: "primary.main",
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-                "@keyframes spin": {
-                  "0%": { transform: "rotate(0deg)" },
-                  "100%": { transform: "rotate(360deg)" },
-                },
-              }}
-            />
-            Loading high-resolution image...
-            {retryAttempts > 0 &&
-              ` (Attempt ${retryAttempts + 1}/${MAX_RETRY_ATTEMPTS + 1})`}
+          <CircularProgress size={20} color="primary" />
+          <Typography variant="body2" color="text.primary">
+            Loading high-res...
           </Typography>
-        </Alert>
+        </Box>
       )}
 
+      {/* Error Alert */}
       {loadError && (
         <Alert
-          severity="warning"
+          severity="error"
           sx={{
-            mt: 1,
-            position: "relative",
-            zIndex: 10,
-            animation: "fadeIn 0.3s ease-in-out",
-            "@keyframes fadeIn": {
-              from: { opacity: 0, transform: "translateY(-10px)" },
-              to: { opacity: 1, transform: "translateY(0)" },
-            },
+            position: "absolute",
+            top: 16,
+            right: 16,
+            maxWidth: 400,
+            borderRadius: `${brand.borderRadius}px`,
           }}
           action={
-            retryAttempts < MAX_RETRY_ATTEMPTS ? (
-              <Button
-                color="inherit"
-                size="small"
-                onClick={() => {
-                  if (!mountedRef.current) return;
-                  const imageUrl =
-                    currentlyViewingVersion?.signedUrl || imageData?.signedUrl;
-                  if (imageUrl) {
-                    setLoadError(null);
-                    loadHighResImage(imageUrl);
-                  }
-                }}
-                disabled={isLoadingHighRes}
-              >
-                Retry
-              </Button>
-            ) : undefined
-          }
-        >
-          <Typography variant="body2">{loadError}</Typography>
-        </Alert>
-      )}
-
-      {/* Info Alerts with better conditional rendering */}
-      {mountedRef.current &&
-        hasMultipleVersions &&
-        !versionsMode &&
-        !historyMode &&
-        !editMode &&
-        !generateMode && // NEW: Include generateMode in condition
-        !shouldShowLoadingIndicator && (
-          <Alert severity="info" sx={{ mt: 2 }}>
-            <Typography variant="body2">
-              This {getItemName()} has {totalVersions} version
-              {totalVersions !== 1 ? "s" : ""}
-              {totalEdits > 0 &&
-                ` with ${totalEdits} edit${totalEdits !== 1 ? "s" : ""}`}
-              . Hover over the image to access version controls, generate new
-              variations, or add reference images for enhanced editing.
-            </Typography>
-          </Alert>
-        )}
-
-      {mountedRef.current &&
-        additionalImageUrls.length > 0 &&
-        !editMode &&
-        !generateMode && (
-          <Alert severity="success" sx={{ mt: 2 }}>
-            <Typography variant="body2">
-              {additionalImageUrls.length} additional image
-              {additionalImageUrls.length !== 1 ? "s" : ""} ready for
-              multi-image editing. Click the edit button to create a combined
-              edit with enhanced AI capabilities.
-            </Typography>
-          </Alert>
-        )}
-
-      {/* Error Alerts with better error handling */}
-      {versionsError && (
-        <Alert
-          severity="error"
-          sx={{ mt: 2 }}
-          action={
             <Button
-              color="inherit"
+              color="primary"
               size="small"
-              onClick={() => {
-                if (mountedRef.current) {
-                  refetchVersions();
-                }
-              }}
+              onClick={handleRetry}
+              disabled={retryAttempts >= MAX_RETRY_ATTEMPTS}
             >
               Retry
             </Button>
           }
         >
-          <Typography variant="body2">
-            Failed to load versions: {versionsError.message}
-          </Typography>
+          <Typography variant="body2">{loadError}</Typography>
+          {retryAttempts > 0 && (
+            <Typography variant="caption" color="text.secondary">
+              Attempt {retryAttempts} of {MAX_RETRY_ATTEMPTS}
+            </Typography>
+          )}
         </Alert>
-      )}
-
-      {historyError && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          <Typography variant="body2">
-            Failed to load history: {historyError.message}
-          </Typography>
-        </Alert>
-      )}
-
-      {/* Development debug info (remove in production) */}
-      {process.env.NODE_ENV === "development" && (
-        <Box
-          sx={{
-            mt: 1,
-            p: 1,
-            bgcolor: "grey.100",
-            borderRadius: 1,
-            fontSize: "0.75rem",
-          }}
-        >
-          <Typography variant="caption" color="text.secondary">
-            Debug: Mounted={mountedRef.current ? "true" : "false"}, Loading=
-            {isLoadingHighRes ? "true" : "false"}, Loaded=
-            {imageLoaded ? "true" : "false"}, Error=
-            {loadError ? "true" : "false"}, Retries={retryAttempts}, Generating=
-            {isGenerating ? "true" : "false"}
-          </Typography>
-        </Box>
       )}
     </Box>
   );

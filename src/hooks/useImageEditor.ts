@@ -802,7 +802,7 @@ function getUpscaleSuccessMessage(data: UpscaleImageResponse): string {
 }
 
 // Main hook for image editing
-export function useImageEditor() {
+export function useImageEditor(hookParams: { scriptId: string; versionId: string; type: "shots" | "keyVisual" | "actor" | "location"; } | { sceneId: number | undefined; shotId: number | undefined; scriptId: string; versionId: string; type: "shots" | "keyVisual" | "actor" | "location"; } | { actorId: number | undefined; actorVersionId: number | undefined; scriptId: string; versionId: string; type: "shots" | "keyVisual" | "actor" | "location"; } | { locationId: number | undefined; locationVersionId: number | undefined; promptType: string; scriptId: string; versionId: string; type: "shots" | "keyVisual" | "actor" | "location"; }) {
     const queryClient = useQueryClient();
     const optimisedEditImageMutation = useMutation({
         mutationFn: optimisedEditImageService,

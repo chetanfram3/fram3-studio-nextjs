@@ -41,8 +41,7 @@ function OptimizedCardImage({
   onLoad,
 }: OptimizedCardImageProps) {
   // Check if external URL
-  const isExternalImage =
-    src.startsWith("https://storage.googleapis.com") || src.startsWith("http");
+  const isExternalImage = false;
 
   const getImageStyle = () => ({
     position: "absolute" as const,
