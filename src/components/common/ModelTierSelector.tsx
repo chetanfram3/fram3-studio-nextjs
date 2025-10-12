@@ -1,8 +1,8 @@
-// ModelTierSelector.tsx
+// ModelTierSelector.tsx - Fully theme-compliant with light/dark mode support
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Box,
   FormControl,
@@ -18,6 +18,8 @@ import {
   Circle as ProIcon,
   Zap as BasicIcon,
 } from "lucide-react";
+import { useTheme } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
 
 // Model tier enum (matches your backend)
 export const MODEL_TIERS = {
@@ -34,38 +36,44 @@ interface ModelTierOption {
   label: string;
   description: string;
   icon: React.ReactNode;
-  color: string;
+  colorLight: string; // Color for light mode
+  colorDark: string; // Color for dark mode
   isRecommended?: boolean;
 }
 
+// Theme-aware color definitions
 const modelTierOptions: ModelTierOption[] = [
   {
     value: MODEL_TIERS.BASIC,
     label: "Basic",
     description: "Standard quality, fast processing",
     icon: <BasicIcon size={16} />,
-    color: "#9e9e9e",
+    colorLight: "#78909c", // Pastel blue-grey
+    colorDark: "#9e9e9e", // Original grey
   },
   {
     value: MODEL_TIERS.PRO,
     label: "Pro",
     description: "Enhanced quality and features",
     icon: <ProIcon size={16} />,
-    color: "#2196f3",
+    colorLight: "#64b5f6", // Pastel blue
+    colorDark: "#2196f3", // Original blue
   },
   {
     value: MODEL_TIERS.PREMIUM,
     label: "Premium",
     description: "High quality, advanced features",
     icon: <PremiumIcon size={16} />,
-    color: "#ff9800",
+    colorLight: "#ffb74d", // Pastel orange
+    colorDark: "#ff9800", // Original orange
   },
   {
     value: MODEL_TIERS.ULTRA,
     label: "Ultra",
     description: "Maximum quality, cutting-edge AI",
     icon: <UltraIcon size={16} />,
-    color: "#9c27b0",
+    colorLight: "#ba68c8", // Pastel purple
+    colorDark: "#9c27b0", // Original purple
     isRecommended: true,
   },
 ];
@@ -85,9 +93,40 @@ export function ModelTierSelector({
   showDescription = true,
   compact = false,
 }: ModelTierSelectorProps) {
-  const handleChange = (event: SelectChangeEvent<ModelTier>) => {
-    onChange(event.target.value as ModelTier);
-  };
+  const theme = useTheme();
+  const brand = getCurrentBrand();
+  const isDarkMode = theme.palette.mode === "dark";
+
+  // Get theme-aware color for an option
+  const getOptionColor = useCallback(
+    (option: ModelTierOption) => {
+      return isDarkMode ? option.colorDark : option.colorLight;
+    },
+    [isDarkMode]
+  );
+
+  // Memoize options with theme-aware colors
+  const themedOptions = useMemo(
+    () =>
+      modelTierOptions.map((option) => ({
+        ...option,
+        color: getOptionColor(option),
+      })),
+    [getOptionColor]
+  );
+
+  const handleChange = useCallback(
+    (event: SelectChangeEvent<ModelTier>) => {
+      onChange(event.target.value as ModelTier);
+    },
+    [onChange]
+  );
+
+  // Memoize selected option
+  const selectedOption = useMemo(
+    () => themedOptions.find((opt) => opt.value === value),
+    [themedOptions, value]
+  );
 
   return (
     <Box sx={{ display: "inline-block", minWidth: compact ? 150 : 200 }}>
@@ -95,7 +134,7 @@ export function ModelTierSelector({
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ mb: 1, display: "block" }}
+          sx={{ mb: 1, display: "block", fontFamily: brand.fonts.body }}
         >
           AI Model Quality
         </Typography>
@@ -111,7 +150,8 @@ export function ModelTierSelector({
             backdropFilter: "blur(10px)",
             border: 1,
             borderColor: "divider",
-            borderRadius: 1,
+            borderRadius: `${brand.borderRadius}px`,
+            fontFamily: brand.fonts.body,
             "& .MuiOutlinedInput-notchedOutline": {
               border: "none",
             },
@@ -120,7 +160,7 @@ export function ModelTierSelector({
             },
             "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
               border: 1,
-              borderColor: "secondary.main",
+              borderColor: "primary.main",
             },
             "&:hover": {
               bgcolor: disabled ? "action.disabledBackground" : "action.hover",
@@ -129,6 +169,7 @@ export function ModelTierSelector({
               color: "text.primary",
               fontSize: "0.875rem",
               fontWeight: 500,
+              fontFamily: brand.fonts.body,
               display: "flex",
               alignItems: "center",
               gap: 1,
@@ -139,9 +180,7 @@ export function ModelTierSelector({
             },
           }}
           renderValue={(selected) => {
-            const option = modelTierOptions.find(
-              (opt) => opt.value === selected
-            );
+            const option = themedOptions.find((opt) => opt.value === selected);
             if (!option) return null;
 
             return (
@@ -159,6 +198,7 @@ export function ModelTierSelector({
                   variant="body2"
                   color="text.primary"
                   fontWeight="medium"
+                  sx={{ fontFamily: brand.fonts.body }}
                 >
                   {option.label}
                 </Typography>
@@ -169,8 +209,9 @@ export function ModelTierSelector({
                     sx={{
                       height: 16,
                       fontSize: "0.6rem",
+                      fontFamily: brand.fonts.body,
                       bgcolor: option.color,
-                      color: "white",
+                      color: theme.palette.getContrastText(option.color),
                       "& .MuiChip-label": {
                         px: 0.5,
                       },
@@ -183,34 +224,52 @@ export function ModelTierSelector({
           MenuProps={{
             PaperProps: {
               sx: {
-                bgcolor: "background.paper",
+                bgcolor: theme.palette.background.paper,
+                backgroundImage: "none !important",
                 backdropFilter: "blur(20px)",
                 border: 1,
                 borderColor: "divider",
+                borderRadius: `${brand.borderRadius}px`,
+                boxShadow: theme.shadows[8],
                 "& .MuiMenuItem-root": {
                   color: "text.primary",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: "secondary.main",
-                    color: "secondary.contrastText",
+                    bgcolor: "primary.main",
+                    color: theme.palette.getContrastText(
+                      theme.palette.primary.main
+                    ),
                     "& .MuiTypography-root": {
-                      color: "secondary.contrastText !important",
+                      color: `${theme.palette.getContrastText(
+                        theme.palette.primary.main
+                      )} !important`,
                     },
                     "& *": {
-                      color: "secondary.contrastText !important",
+                      color: `${theme.palette.getContrastText(
+                        theme.palette.primary.main
+                      )} !important`,
                     },
                   },
                   "&.Mui-selected": {
-                    bgcolor: "secondary.main",
-                    color: "secondary.contrastText",
+                    bgcolor: "primary.main",
+                    color: theme.palette.getContrastText(
+                      theme.palette.primary.main
+                    ),
                     "& .MuiTypography-root": {
-                      color: "secondary.contrastText !important",
+                      color: `${theme.palette.getContrastText(
+                        theme.palette.primary.main
+                      )} !important`,
                     },
                     "& *": {
-                      color: "secondary.contrastText !important",
+                      color: `${theme.palette.getContrastText(
+                        theme.palette.primary.main
+                      )} !important`,
                     },
                     "&:hover": {
-                      bgcolor: "secondary.dark",
-                      color: "secondary.contrastText",
+                      bgcolor: "primary.dark",
+                      color: theme.palette.getContrastText(
+                        theme.palette.primary.dark
+                      ),
                     },
                   },
                 },
@@ -218,7 +277,7 @@ export function ModelTierSelector({
             },
           }}
         >
-          {modelTierOptions.map((option) => (
+          {themedOptions.map((option) => (
             <MenuItem key={option.value} value={option.value}>
               <Box
                 sx={{
@@ -239,7 +298,11 @@ export function ModelTierSelector({
                 </Box>
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="body2" fontWeight="medium">
+                    <Typography
+                      variant="body2"
+                      fontWeight="medium"
+                      sx={{ fontFamily: brand.fonts.body }}
+                    >
                       {option.label}
                     </Typography>
                     {option.isRecommended && (
@@ -249,8 +312,9 @@ export function ModelTierSelector({
                         sx={{
                           height: 16,
                           fontSize: "0.6rem",
+                          fontFamily: brand.fonts.body,
                           bgcolor: option.color,
-                          color: "white",
+                          color: theme.palette.getContrastText(option.color),
                           "& .MuiChip-label": {
                             px: 0.5,
                           },
@@ -262,9 +326,10 @@ export function ModelTierSelector({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "inherit", // Inherit color from parent MenuItem
+                        color: "inherit",
                         display: "block",
                         mt: 0.25,
+                        fontFamily: brand.fonts.body,
                       }}
                     >
                       {option.description}
@@ -283,14 +348,22 @@ export function ModelTierSelector({
 // Hook for managing model tier state
 export function useModelTier(defaultTier: ModelTier = MODEL_TIERS.ULTRA) {
   const [modelTier, setModelTier] = useState<ModelTier>(defaultTier);
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === "dark";
 
-  const resetToDefault = () => {
+  const resetToDefault = useCallback(() => {
     setModelTier(defaultTier);
-  };
+  }, [defaultTier]);
 
-  const getSelectedOption = () => {
-    return modelTierOptions.find((option) => option.value === modelTier);
-  };
+  const getSelectedOption = useCallback(() => {
+    const option = modelTierOptions.find((opt) => opt.value === modelTier);
+    if (!option) return undefined;
+
+    return {
+      ...option,
+      color: isDarkMode ? option.colorDark : option.colorLight,
+    };
+  }, [modelTier, isDarkMode]);
 
   return {
     modelTier,
