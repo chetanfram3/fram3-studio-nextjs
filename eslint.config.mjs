@@ -13,7 +13,7 @@ const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
-      "@typescript-eslint/no-explicit-any-debug": "off",
+      "@typescript-eslint/no-explicit-any": "off",
       "react/no-unescaped-entities-debug": "off",
     },
     ignores: [
