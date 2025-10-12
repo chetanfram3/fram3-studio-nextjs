@@ -1,7 +1,7 @@
 "use client";
 
-// ImageEditOverlay.tsx - Updated with Model Tier Selector
-import { useState, useEffect } from "react";
+// ImageEditOverlay.tsx - Fully theme-compliant and performance-optimized
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   IconButton,
@@ -21,11 +21,17 @@ import {
   ExpandLess as CollapseIcon,
 } from "@mui/icons-material";
 import { Plus as PlusIcon } from "lucide-react";
+import { useTheme } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
 import { ImageVersion } from "@/types/storyBoard/types";
 import {
   useImageEditor,
   getOptimizedPrompt,
   getOptimizationInsights,
+  type OptimizationResult,
+  type EditImageParams,
+  type OptimizePromptParams,
+  type OptimisedEditImageResponse,
 } from "../../hooks/useImageEditor";
 import { useSubscription } from "@/hooks/auth/useSubscription";
 import {
@@ -60,7 +66,7 @@ interface ImageEditOverlayProps {
   onAdditionalImagesModeToggle: () => void;
 
   // Callbacks
-  onEditComplete: (result: any) => void;
+  onEditComplete: (result: OptimisedEditImageResponse) => void;
   onCancel: () => void;
   onDataRefresh?: () => void;
   onEditingStateChange?: (isEditing: boolean) => void;
@@ -82,7 +88,6 @@ export function ImageEditOverlay({
   locationVersionId,
   promptType,
   additionalImageUrls,
-  onAdditionalImagesUpdate,
   additionalImagesMode,
   onAdditionalImagesModeToggle,
   onEditComplete,
@@ -91,11 +96,16 @@ export function ImageEditOverlay({
   onEditingStateChange,
   disabled = false,
 }: ImageEditOverlayProps) {
+  // Theme and brand
+  const theme = useTheme();
+  const brand = getCurrentBrand();
+
   // State
   const { isAdmin } = useSubscription();
   const [editPrompt, setEditPrompt] = useState("");
   const [originalPrompt, setOriginalPrompt] = useState("");
-  const [optimizationData, setOptimizationData] = useState<any>(null);
+  const [optimizationData, setOptimizationData] =
+    useState<OptimizationResult | null>(null);
   const [showOptimizationInsights, setShowOptimizationInsights] =
     useState(false);
 
@@ -104,9 +114,42 @@ export function ImageEditOverlay({
     MODEL_TIERS.ULTRA
   );
 
+  // Hook parameters - required by useImageEditor
+  const hookParams = useMemo(() => {
+    const baseParams = {
+      scriptId,
+      versionId,
+      type,
+    };
+
+    if (type === "shots") {
+      return { ...baseParams, sceneId, shotId };
+    } else if (type === "actor") {
+      return { ...baseParams, actorId, actorVersionId };
+    } else if (type === "location") {
+      return {
+        ...baseParams,
+        locationId,
+        locationVersionId,
+        promptType: promptType || "wideShotLocationSetPrompt",
+      };
+    }
+    return baseParams;
+  }, [
+    scriptId,
+    versionId,
+    type,
+    sceneId,
+    shotId,
+    actorId,
+    actorVersionId,
+    locationId,
+    locationVersionId,
+    promptType,
+  ]);
+
   // Hooks
   const {
-    editImageAsync,
     optimizePromptAsync,
     optimisedEditImageAsync,
     isEditing,
@@ -118,7 +161,7 @@ export function ImageEditOverlay({
     resetEditMutation,
     resetOptimizeMutation,
     resetOptimisedEditMutation,
-  } = useImageEditor();
+  } = useImageEditor(hookParams);
 
   // Reset state when overlay opens/closes
   useEffect(() => {
@@ -127,7 +170,7 @@ export function ImageEditOverlay({
       setOriginalPrompt("");
       setOptimizationData(null);
       setShowOptimizationInsights(false);
-      setModelTier(MODEL_TIERS.ULTRA); // Reset to default
+      setModelTier(MODEL_TIERS.ULTRA);
       resetEditMutation();
       resetOptimizeMutation();
       resetOptimisedEditMutation();
@@ -146,6 +189,15 @@ export function ImageEditOverlay({
     }
   }, [isEditing, isOptimisedEditing, onEditingStateChange]);
 
+  // Memoized selected tier option
+  const selectedTierOption = useMemo(() => getSelectedOption(), [modelTier]);
+
+  // Memoized optimization insights
+  const optimizationInsights = useMemo(
+    () => (optimizationData ? getOptimizationInsights(optimizationData) : null),
+    [optimizationData]
+  );
+
   // Handle prompt optimization (standalone)
   const handleOptimizePrompt = async () => {
     if (!scriptId || !versionId || !editPrompt.trim()) {
@@ -154,9 +206,9 @@ export function ImageEditOverlay({
 
     try {
       resetOptimizeMutation();
-      setOriginalPrompt(editPrompt); // Store original prompt
+      setOriginalPrompt(editPrompt);
 
-      const optimizeParams: any = {
+      const optimizeParams: OptimizePromptParams = {
         scriptId,
         versionId,
         type,
@@ -193,7 +245,6 @@ export function ImageEditOverlay({
       }
 
       const result = await optimizePromptAsync(optimizeParams);
-      console.log("Optimization result:", result);
 
       // Extract optimized prompt and update the input
       const optimizedPrompt = getOptimizedPrompt(result);
@@ -214,22 +265,19 @@ export function ImageEditOverlay({
 
     try {
       resetOptimisedEditMutation();
-      setOriginalPrompt(editPrompt); // Store original prompt
+      setOriginalPrompt(editPrompt);
 
-      const editParams: any = {
+      const editParams: EditImageParams = {
         scriptId,
         versionId,
         type,
         sourceVersion: viewingVersion?.version,
         prompt: editPrompt.trim(),
-        // Add optimization parameters
         temperature: 0.1,
         topP: 0.8,
-        // Add additional images if provided
         ...(additionalImageUrls.length > 0 && { additionalImageUrls }),
-        // Add model tier to options
         options: {
-          modelTier: modelTier,
+          modelTier: modelTier.toString(),
         },
       };
 
@@ -258,35 +306,33 @@ export function ImageEditOverlay({
         editParams.locationVersionId = locationVersionId;
         editParams.promptType = promptType || "wideShotLocationSetPrompt";
       }
-      // keyVisual needs no additional params
 
-      // Use optimised edit instead of regular edit
       const editResult = await optimisedEditImageAsync(editParams);
-      console.log("Optimised edit completed successfully:", editResult);
 
       // Store optimization data for insights
       if (editResult.optimizedPrompt && editResult.originalPrompt) {
-        setOptimizationData({
+        const optimizationResult: OptimizationResult = {
           optimization: {
             executed_prompt_details: {
               prompt_sent_to_api: editResult.optimizedPrompt,
               prompt_construction_strategy:
                 "AI-optimized for visual improvement",
+              prompt_token_count: 0,
             },
             edit_success_assessment: {
-              agent_confidence_score: 0.9, // Default high confidence for successful edits
+              agent_confidence_score: 0.9,
               potential_issues_flagged: [],
             },
+            status: "success",
           },
           originalTextPrompt: editResult.originalPrompt,
           sourceVersion: editResult.sourceVersion,
           type: editResult.type,
-        });
-        // Update the prompt field to show the optimized version
+        };
+        setOptimizationData(optimizationResult);
         setEditPrompt(editResult.optimizedPrompt);
       }
 
-      // Call completion callback
       onEditComplete(editResult);
 
       if (onDataRefresh) {
@@ -303,14 +349,14 @@ export function ImageEditOverlay({
     setOriginalPrompt("");
     setOptimizationData(null);
     setShowOptimizationInsights(false);
-    setModelTier(MODEL_TIERS.ULTRA); // Reset to default
+    setModelTier(MODEL_TIERS.ULTRA);
     resetEditMutation();
     resetOptimizeMutation();
     resetOptimisedEditMutation();
     onCancel();
   };
 
-  const selectedTierOption = getSelectedOption();
+  const isProcessing = isOptimizing || isOptimisedEditing || isEditing;
 
   return (
     <Box
@@ -319,8 +365,7 @@ export function ImageEditOverlay({
         bottom: 0,
         left: 0,
         right: additionalImagesMode ? "350px" : 0,
-        background:
-          "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%)",
+        background: `linear-gradient(to top, ${theme.palette.background.paper}f0 0%, ${theme.palette.background.paper}b3 50%, transparent 100%)`,
         p: 3,
         pb: 7,
         zIndex: 10,
@@ -335,9 +380,10 @@ export function ImageEditOverlay({
         >
           <Typography
             variant="body2"
-            color="white"
+            color="text.primary"
             fontWeight="medium"
             component="div"
+            sx={{ fontFamily: brand.fonts.body }}
           >
             Edit Version {viewingVersion?.version}
             {/* Show additional images count */}
@@ -345,8 +391,13 @@ export function ImageEditOverlay({
               <Chip
                 label={`+${additionalImageUrls.length} images`}
                 size="small"
-                color="secondary"
-                sx={{ ml: 1, height: 20, fontSize: "0.75rem" }}
+                color="primary"
+                sx={{
+                  ml: 1,
+                  height: 20,
+                  fontSize: "0.75rem",
+                  fontFamily: brand.fonts.body,
+                }}
               />
             )}
             {/* Show selected model tier */}
@@ -359,15 +410,19 @@ export function ImageEditOverlay({
                   height: 20,
                   fontSize: "0.75rem",
                   bgcolor: selectedTierOption.color,
-                  color: "white",
+                  color: theme.palette.getContrastText(
+                    selectedTierOption.color
+                  ),
+                  fontFamily: brand.fonts.body,
                 }}
               />
             )}
           </Typography>
           <IconButton
             onClick={handleCancel}
-            disabled={isEditing || isOptimizing || isOptimisedEditing}
-            sx={{ color: "white", p: 0.5 }}
+            disabled={isProcessing}
+            color="primary"
+            sx={{ p: 0.5 }}
           >
             <CloseIcon fontSize="small" />
           </IconButton>
@@ -375,27 +430,63 @@ export function ImageEditOverlay({
 
         {/* Error Alerts */}
         {imageEditorError && (
-          <Alert severity="error" sx={{ mb: 1 }}>
+          <Alert
+            severity="error"
+            sx={{
+              mb: 1,
+              borderRadius: `${brand.borderRadius}px`,
+              "& .MuiAlert-message": {
+                fontFamily: brand.fonts.body,
+              },
+            }}
+          >
             {imageEditorError.message}
           </Alert>
         )}
 
         {optimisedEditError && (
-          <Alert severity="error" sx={{ mb: 1 }}>
+          <Alert
+            severity="error"
+            sx={{
+              mb: 1,
+              borderRadius: `${brand.borderRadius}px`,
+              "& .MuiAlert-message": {
+                fontFamily: brand.fonts.body,
+              },
+            }}
+          >
             {optimisedEditError.message}
           </Alert>
         )}
 
         {optimizeError && (
-          <Alert severity="error" sx={{ mb: 1 }}>
+          <Alert
+            severity="error"
+            sx={{
+              mb: 1,
+              borderRadius: `${brand.borderRadius}px`,
+              "& .MuiAlert-message": {
+                fontFamily: brand.fonts.body,
+              },
+            }}
+          >
             {optimizeError.message}
           </Alert>
         )}
 
         {/* Multi-image editing info */}
         {additionalImageUrls.length > 0 && (
-          <Alert severity="info" sx={{ mb: 1 }}>
-            <Typography variant="caption">
+          <Alert
+            severity="info"
+            sx={{
+              mb: 1,
+              borderRadius: `${brand.borderRadius}px`,
+              "& .MuiAlert-message": {
+                fontFamily: brand.fonts.body,
+              },
+            }}
+          >
+            <Typography variant="caption" sx={{ fontFamily: brand.fonts.body }}>
               Multi-image editing with {additionalImageUrls.length + 1} images
               total.
               {additionalImageUrls.length > 1
@@ -419,7 +510,7 @@ export function ImageEditOverlay({
           onChange={(e) => setEditPrompt(e.target.value)}
           variant="outlined"
           size="small"
-          disabled={isOptimizing || isOptimisedEditing || disabled}
+          disabled={isProcessing || disabled}
           InputProps={{
             endAdornment: editPrompt.trim() && (
               <Stack direction="row" spacing={0.5} sx={{ mr: 1 }}>
@@ -432,8 +523,8 @@ export function ImageEditOverlay({
                         setShowOptimizationInsights(!showOptimizationInsights)
                       }
                       disabled={disabled}
+                      color="primary"
                       sx={{
-                        color: "secondary.main",
                         opacity: 0.8,
                         "&:hover": { opacity: 1 },
                       }}
@@ -451,13 +542,10 @@ export function ImageEditOverlay({
                         size="small"
                         onClick={handleOptimizePrompt}
                         disabled={
-                          isOptimizing ||
-                          isOptimisedEditing ||
-                          !editPrompt.trim() ||
-                          disabled
+                          isProcessing || !editPrompt.trim() || disabled
                         }
+                        color="primary"
                         sx={{
-                          color: "secondary.main",
                           opacity: 0.8,
                           "&:hover": { opacity: 1 },
                           "&:disabled": { opacity: 0.3 },
@@ -468,9 +556,8 @@ export function ImageEditOverlay({
                             sx={{
                               width: 16,
                               height: 16,
-                              border: "2px solid rgba(255,255,255,0.3)",
-                              borderTop: "2px solid",
-                              borderTopColor: "secondary.main",
+                              border: `2px solid ${theme.palette.divider}`,
+                              borderTop: `2px solid ${theme.palette.primary.main}`,
                               borderRadius: "50%",
                               animation: "spin 1s linear infinite",
                               "@keyframes spin": {
@@ -491,30 +578,30 @@ export function ImageEditOverlay({
           }}
           sx={{
             "& .MuiOutlinedInput-root": {
-              bgcolor:
-                isOptimizing || isOptimisedEditing
-                  ? "rgba(255,255,255,0.05)"
-                  : "transparent",
+              bgcolor: isProcessing
+                ? theme.palette.action.hover
+                : "transparent",
               backdropFilter: "blur(10px)",
-              border: "1px solid rgba(255,255,255,0.3)",
-              borderRadius: 1,
+              border: `1px solid ${theme.palette.divider}`,
+              borderRadius: `${brand.borderRadius}px`,
+              fontFamily: brand.fonts.body,
               "& fieldset": {
                 border: "none",
               },
               "&:hover fieldset": {
                 border: "none",
               },
-              "&.Mui-focused fieldset": {
-                border: "1px solid",
-                borderColor: "secondary.main",
+              "&.Mui-focused": {
+                borderColor: "primary.main",
               },
               "& input, & textarea": {
-                color: "secondary.main",
+                color: "text.primary",
                 fontSize: "0.875rem",
                 fontWeight: 500,
+                fontFamily: brand.fonts.body,
                 "&::placeholder": {
-                  color: "rgba(255,255,255,0.7)",
-                  opacity: 1,
+                  color: "text.secondary",
+                  opacity: 0.7,
                 },
               },
             },
@@ -528,10 +615,10 @@ export function ImageEditOverlay({
               sx={{
                 mt: 2,
                 p: 2,
-                bgcolor: "rgba(255,255,255,0.05)",
+                bgcolor: theme.palette.action.hover,
                 backdropFilter: "blur(10px)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 1,
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: `${brand.borderRadius}px`,
               }}
             >
               <Stack spacing={1.5}>
@@ -542,135 +629,144 @@ export function ImageEditOverlay({
                 >
                   <Typography
                     variant="caption"
-                    color="white"
+                    color="text.primary"
                     fontWeight="medium"
+                    sx={{ fontFamily: brand.fonts.body }}
                   >
                     Optimization Insights
                   </Typography>
                   <IconButton
                     size="small"
                     onClick={() => setShowOptimizationInsights(false)}
-                    sx={{ color: "white", p: 0.5 }}
+                    color="primary"
+                    sx={{ p: 0.5 }}
                   >
                     <CollapseIcon fontSize="small" />
                   </IconButton>
                 </Stack>
 
-                {(() => {
-                  const insights = getOptimizationInsights(optimizationData);
-                  return (
-                    <Stack spacing={1}>
-                      {insights.strategy && (
+                {optimizationInsights && (
+                  <Stack spacing={1}>
+                    {optimizationInsights.strategy && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            fontFamily: brand.fonts.body,
+                          }}
+                        >
+                          Strategy:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.primary"
+                          sx={{ ml: 1, fontFamily: brand.fonts.body }}
+                        >
+                          {optimizationInsights.strategy}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {optimizationInsights.confidence !== undefined && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            fontFamily: brand.fonts.body,
+                          }}
+                        >
+                          Confidence:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.primary"
+                          sx={{ ml: 1, fontFamily: brand.fonts.body }}
+                        >
+                          {Math.round(optimizationInsights.confidence * 100)}%
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {optimizationInsights.tokenCount && (
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "text.secondary",
+                            fontFamily: brand.fonts.body,
+                          }}
+                        >
+                          Tokens:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.primary"
+                          sx={{ ml: 1, fontFamily: brand.fonts.body }}
+                        >
+                          {optimizationInsights.tokenCount}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {optimizationInsights.potentialIssues &&
+                      optimizationInsights.potentialIssues.length > 0 && (
                         <Box>
                           <Typography
                             variant="caption"
-                            sx={{ color: "rgba(255,255,255,0.7)" }}
-                          >
-                            Strategy:
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="white"
-                            sx={{ ml: 1 }}
-                          >
-                            {insights.strategy}
-                          </Typography>
-                        </Box>
-                      )}
-
-                      {insights.confidence !== undefined && (
-                        <Box>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "rgba(255,255,255,0.7)" }}
-                          >
-                            Confidence:
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="white"
-                            sx={{ ml: 1 }}
-                          >
-                            {Math.round(insights.confidence * 100)}%
-                          </Typography>
-                        </Box>
-                      )}
-
-                      {insights.tokenCount && (
-                        <Box>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "rgba(255,255,255,0.7)" }}
-                          >
-                            Tokens:
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            color="white"
-                            sx={{ ml: 1 }}
-                          >
-                            {insights.tokenCount}
-                          </Typography>
-                        </Box>
-                      )}
-
-                      {insights.potentialIssues &&
-                        insights.potentialIssues.length > 0 && (
-                          <Box>
-                            <Typography
-                              variant="caption"
-                              sx={{ color: "rgba(255,255,255,0.7)" }}
-                            >
-                              Potential Issues:
-                            </Typography>
-                            {insights.potentialIssues.map(
-                              (issue: string, index: number) => (
-                                <Typography
-                                  key={index}
-                                  variant="caption"
-                                  color="warning.main"
-                                  sx={{
-                                    display: "block",
-                                    ml: 1,
-                                    fontSize: "0.7rem",
-                                  }}
-                                >
-                                  • {issue}
-                                </Typography>
-                              )
-                            )}
-                          </Box>
-                        )}
-
-                      {originalPrompt && originalPrompt !== editPrompt && (
-                        <Box>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => {
-                              setEditPrompt(originalPrompt);
-                              setOptimizationData(null);
-                              setShowOptimizationInsights(false);
-                            }}
-                            disabled={disabled}
                             sx={{
-                              color: "white",
-                              borderColor: "rgba(255,255,255,0.3)",
-                              fontSize: "0.7rem",
-                              py: 0.5,
-                              "&:hover": {
-                                bgcolor: "rgba(255,255,255,0.1)",
-                                borderColor: "white",
-                              },
+                              color: "text.secondary",
+                              fontFamily: brand.fonts.body,
                             }}
                           >
-                            Revert to Original
-                          </Button>
+                            Potential Issues:
+                          </Typography>
+                          {optimizationInsights.potentialIssues.map(
+                            (issue: string, index: number) => (
+                              <Typography
+                                key={index}
+                                variant="caption"
+                                color="warning.main"
+                                sx={{
+                                  display: "block",
+                                  ml: 1,
+                                  fontSize: "0.7rem",
+                                  fontFamily: brand.fonts.body,
+                                }}
+                              >
+                                • {issue}
+                              </Typography>
+                            )
+                          )}
                         </Box>
                       )}
-                    </Stack>
-                  );
-                })()}
+
+                    {originalPrompt && originalPrompt !== editPrompt && (
+                      <Box>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => {
+                            setEditPrompt(originalPrompt);
+                            setOptimizationData(null);
+                            setShowOptimizationInsights(false);
+                          }}
+                          disabled={disabled}
+                          sx={{
+                            fontSize: "0.7rem",
+                            py: 0.5,
+                            borderRadius: `${brand.borderRadius}px`,
+                            fontFamily: brand.fonts.body,
+                          }}
+                        >
+                          Revert to Original
+                        </Button>
+                      </Box>
+                    )}
+                  </Stack>
+                )}
               </Stack>
             </Box>
           </Collapse>
@@ -680,49 +776,42 @@ export function ImageEditOverlay({
         <Stack direction="row" spacing={1}>
           <Button
             variant="contained"
+            color="primary"
             onClick={handleEditSubmit}
-            disabled={
-              !editPrompt.trim() ||
-              isEditing ||
-              isOptimizing ||
-              isOptimisedEditing ||
-              disabled
-            }
+            disabled={!editPrompt.trim() || isProcessing || disabled}
             size="small"
             startIcon={selectedTierOption?.icon || <OptimizeIcon />}
             sx={{
               minWidth: 100,
-              bgcolor: selectedTierOption?.color || "secondary.main",
-              "&:hover": {
-                bgcolor: selectedTierOption?.color
-                  ? `${selectedTierOption.color}dd`
-                  : "secondary.dark",
-              },
+              borderRadius: `${brand.borderRadius}px`,
+              fontFamily: brand.fonts.body,
+              ...(selectedTierOption && {
+                bgcolor: selectedTierOption.color,
+                color: theme.palette.getContrastText(selectedTierOption.color),
+                "&:hover": {
+                  bgcolor: `${selectedTierOption.color}dd`,
+                },
+              }),
             }}
           >
             {isOptimisedEditing
               ? `Creating with ${selectedTierOption?.label || "AI"}...`
               : isEditing
                 ? "Creating..."
-                : additionalImageUrls.length > 0
-                  ? `Create with ${selectedTierOption?.label || "AI"}`
-                  : `Create with ${selectedTierOption?.label || "AI"}`}
+                : `Create with ${selectedTierOption?.label || "AI"}`}
           </Button>
 
           <Button
             variant="outlined"
+            color="primary"
             onClick={handleCancel}
-            disabled={isEditing || isOptimizing || isOptimisedEditing}
+            disabled={isProcessing}
             size="small"
             sx={{
-              color: "white",
-              borderColor: "rgba(255,255,255,0.5)",
               bgcolor: "transparent",
               backdropFilter: "blur(10px)",
-              "&:hover": {
-                bgcolor: "rgba(255,255,255,0.1)",
-                borderColor: "white",
-              },
+              borderRadius: `${brand.borderRadius}px`,
+              fontFamily: brand.fonts.body,
             }}
           >
             Cancel
@@ -731,23 +820,15 @@ export function ImageEditOverlay({
           {/* Additional Images Toggle Button */}
           <Button
             variant={additionalImagesMode ? "contained" : "outlined"}
+            color="primary"
             onClick={onAdditionalImagesModeToggle}
-            disabled={
-              isEditing || isOptimizing || isOptimisedEditing || disabled
-            }
+            disabled={isProcessing || disabled}
             size="small"
             startIcon={<PlusIcon size={16} />}
             sx={{
-              color: additionalImagesMode ? "white" : "white",
-              borderColor: "rgba(255,255,255,0.5)",
-              bgcolor: additionalImagesMode ? "secondary.main" : "transparent",
               backdropFilter: "blur(10px)",
-              "&:hover": {
-                bgcolor: additionalImagesMode
-                  ? "secondary.dark"
-                  : "rgba(255,255,255,0.1)",
-                borderColor: "white",
-              },
+              borderRadius: `${brand.borderRadius}px`,
+              fontFamily: brand.fonts.body,
             }}
           >
             Images ({additionalImageUrls.length})
@@ -757,7 +838,7 @@ export function ImageEditOverlay({
           <ModelTierSelector
             value={modelTier}
             onChange={setModelTier}
-            disabled={isOptimizing || isOptimisedEditing || disabled}
+            disabled={isProcessing || disabled}
             showDescription={true}
             compact={true}
           />

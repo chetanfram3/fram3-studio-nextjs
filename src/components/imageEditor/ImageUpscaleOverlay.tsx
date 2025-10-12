@@ -1,7 +1,7 @@
 "use client";
 
-// ImageUpscaleOverlay.tsx
-import React, { useState, useMemo } from "react";
+// ImageUpscaleOverlay.tsx - Fully theme-compliant and performance-optimized
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   IconButton,
@@ -16,7 +16,12 @@ import {
   ImageUpscale as UpscaleIcon,
   CircleX as CloseIcon,
 } from "lucide-react";
-import { useImageEditor } from "../../hooks/useImageEditor";
+import { useTheme } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
+import {
+  useImageEditor,
+  type UpscaleImageParams,
+} from "@/hooks/useImageEditor";
 
 interface ImageUpscaleOverlayProps {
   // Required props
@@ -41,7 +46,7 @@ interface ImageUpscaleOverlayProps {
   } | null;
 
   // Callbacks
-  onUpscaleComplete: (result: any) => void;
+  onUpscaleComplete: (result: unknown) => void;
   onCancel?: () => void;
   onDataRefresh?: () => void;
   onUpscalingStateChange?: (isUpscaling: boolean) => void;
@@ -50,8 +55,13 @@ interface ImageUpscaleOverlayProps {
   disabled?: boolean;
 
   // Optional styling
-  buttonSx?: any;
+  buttonSx?: Record<string, unknown>;
 }
+
+// Constants
+const UPSCALE_FACTORS = [1.5, 2, 3, 4, 6, 8];
+const MAX_8K_WIDTH = 7680;
+const MAX_8K_HEIGHT = 4320;
 
 export function ImageUpscaleOverlay({
   scriptId,
@@ -68,13 +78,49 @@ export function ImageUpscaleOverlay({
   imageDimensions,
   onUpscaleComplete,
   onCancel,
-  onDataRefresh,
   onUpscalingStateChange,
   disabled = false,
-  buttonSx = {},
 }: ImageUpscaleOverlayProps) {
+  // Theme and brand
+  const theme = useTheme();
+  const brand = getCurrentBrand();
+
   // Local state
   const [selectedUpscaleFactor, setSelectedUpscaleFactor] = useState<number>(2);
+
+  // Hook parameters
+  const hookParams = useMemo(() => {
+    const baseParams = {
+      scriptId,
+      versionId,
+      type,
+    };
+
+    if (type === "shots") {
+      return { ...baseParams, sceneId, shotId };
+    } else if (type === "actor") {
+      return { ...baseParams, actorId, actorVersionId };
+    } else if (type === "location") {
+      return {
+        ...baseParams,
+        locationId,
+        locationVersionId,
+        promptType: promptType || "wideShotLocationSetPrompt",
+      };
+    }
+    return baseParams;
+  }, [
+    scriptId,
+    versionId,
+    type,
+    sceneId,
+    shotId,
+    actorId,
+    actorVersionId,
+    locationId,
+    locationVersionId,
+    promptType,
+  ]);
 
   // Hooks
   const {
@@ -82,67 +128,56 @@ export function ImageUpscaleOverlay({
     isUpscaling,
     error: upscaleError,
     resetUpscaleMutation,
-  } = useImageEditor();
+  } = useImageEditor(hookParams);
 
-  // DEBUG: Add effect to monitor isUpscaling changes
-  React.useEffect(() => {
-    console.log(
-      "🔍 isUpscaling state changed in ImageUpscaleOverlay:",
-      isUpscaling
-    );
-    // NEW: Notify parent of upscaling state change
+  // Notify parent of upscaling state changes
+  useEffect(() => {
     if (onUpscalingStateChange) {
       onUpscalingStateChange(isUpscaling);
     }
   }, [isUpscaling, onUpscalingStateChange]);
 
-  // Available upscale factors for slider
-  const upscaleFactors = [1.5, 2, 3, 4, 6, 8];
-
-  // 8K resolution limit (7680 x 4320)
-  const MAX_8K_WIDTH = 7680;
-  const MAX_8K_HEIGHT = 4320;
-
   // Calculate available upscale factors based on 8K limit
   const availableUpscaleFactors = useMemo(() => {
     if (!imageDimensions) {
-      return upscaleFactors; // If no dimensions, allow all factors
+      return UPSCALE_FACTORS;
     }
 
     const { width, height } = imageDimensions;
 
-    return upscaleFactors.filter((factor) => {
+    return UPSCALE_FACTORS.filter((factor) => {
       const newWidth = Math.round(width * factor);
       const newHeight = Math.round(height * factor);
-
-      // Check if either dimension would exceed 8K
       return newWidth <= MAX_8K_WIDTH && newHeight <= MAX_8K_HEIGHT;
     });
   }, [imageDimensions]);
 
   // Update selected factor if it's no longer available
-  React.useEffect(() => {
+  useEffect(() => {
     if (!availableUpscaleFactors.includes(selectedUpscaleFactor)) {
       const maxAvailable = Math.max(...availableUpscaleFactors);
       setSelectedUpscaleFactor(maxAvailable);
     }
   }, [availableUpscaleFactors, selectedUpscaleFactor]);
 
-  // Slider marks for better UX
-  const sliderMarks = availableUpscaleFactors.map((factor) => ({
-    value: factor,
-    label: `${factor}x`,
-  }));
+  // Slider marks
+  const sliderMarks = useMemo(
+    () =>
+      availableUpscaleFactors.map((factor) => ({
+        value: factor,
+        label: `${factor}x`,
+      })),
+    [availableUpscaleFactors]
+  );
 
-  // Get current resolution display
-  const getCurrentResolution = () => {
+  // Helper functions - memoized where beneficial
+  const getCurrentResolution = useMemo(() => {
     if (imageDimensions?.width && imageDimensions?.height) {
       return `${imageDimensions.width}×${imageDimensions.height}`;
     }
     return "Unknown";
-  };
+  }, [imageDimensions]);
 
-  // Get resolution estimate using actual dimensions
   const getResolutionEstimate = (factor: number) => {
     if (imageDimensions?.width && imageDimensions?.height) {
       const newWidth = Math.round(imageDimensions.width * factor);
@@ -150,13 +185,11 @@ export function ImageUpscaleOverlay({
       return `${newWidth}×${newHeight}`;
     }
 
-    // Fallback to typical dimensions if not provided
     const baseRes = 512;
     const newRes = Math.round(baseRes * factor);
     return `~${newRes}×${newRes}`;
   };
 
-  // Check if upscale would exceed 8K
   const wouldExceed8K = (factor: number) => {
     if (!imageDimensions) return false;
 
@@ -166,7 +199,6 @@ export function ImageUpscaleOverlay({
     return newWidth > MAX_8K_WIDTH || newHeight > MAX_8K_HEIGHT;
   };
 
-  // Get megapixel count
   const getMegapixels = (width: number, height: number) => {
     const megapixels = (width * height) / 1000000;
     return megapixels >= 1
@@ -197,12 +229,9 @@ export function ImageUpscaleOverlay({
     }
 
     try {
-      console.log("🚀 Starting upscale process...");
-      console.log("Current isUpscaling state before:", isUpscaling);
-
       resetUpscaleMutation();
 
-      const upscaleParams: any = {
+      const upscaleParams: UpscaleImageParams = {
         scriptId,
         versionId,
         type,
@@ -223,18 +252,10 @@ export function ImageUpscaleOverlay({
         upscaleParams.promptType = promptType || "wideShotLocationSetPrompt";
       }
 
-      console.log("📤 Calling upscaleImageAsync with params:", upscaleParams);
-      console.log("Current isUpscaling state during call:", isUpscaling);
-
       const upscaleResult = await upscaleImageAsync(upscaleParams);
-
-      console.log("✅ Upscale completed successfully:", upscaleResult);
-      console.log("Current isUpscaling state after:", isUpscaling);
-
       onUpscaleComplete(upscaleResult);
     } catch (error) {
-      console.error("❌ Error upscaling image:", error);
-      console.log("Current isUpscaling state on error:", isUpscaling);
+      console.error("Error upscaling image:", error);
     }
   };
 
@@ -245,7 +266,7 @@ export function ImageUpscaleOverlay({
     }
   };
 
-  const handleSliderChange = (event: Event, newValue: number | number[]) => {
+  const handleSliderChange = (_event: Event, newValue: number | number[]) => {
     setSelectedUpscaleFactor(newValue as number);
   };
 
@@ -256,8 +277,7 @@ export function ImageUpscaleOverlay({
         bottom: 0,
         left: 0,
         right: 0,
-        background:
-          "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 70%, rgba(0,0,0,0.6) 100%)",
+        background: `linear-gradient(to top, ${theme.palette.background.paper}f2 0%, ${theme.palette.background.paper}d9 70%, ${theme.palette.background.paper}99 100%)`,
         p: 3,
         pb: 7,
         zIndex: 10,
@@ -273,53 +293,75 @@ export function ImageUpscaleOverlay({
           <Stack direction="row" alignItems="center" spacing={1}>
             <Typography
               variant="body2"
-              color="white"
+              color="text.primary"
               fontWeight="medium"
               component="div"
+              sx={{ fontFamily: brand.fonts.body }}
             >
               Upscale Version {viewingVersion?.version}
             </Typography>
             <Chip
               label={`${selectedUpscaleFactor}x`}
               size="small"
-              color="secondary"
-              sx={{ height: 20, fontSize: "0.75rem" }}
+              color="primary"
+              sx={{
+                height: 20,
+                fontSize: "0.75rem",
+                fontFamily: brand.fonts.body,
+              }}
             />
-            {/* NEW: Show estimated resolution next to the factor chip */}
             <Chip
               label={getResolutionEstimate(selectedUpscaleFactor)}
               size="small"
               sx={{
                 height: 20,
                 fontSize: "0.75rem",
-                bgcolor: "rgba(255,255,255,0.15)",
-                color: "white",
-                border: "1px solid rgba(255,255,255,0.3)",
+                bgcolor: theme.palette.action.selected,
+                color: "text.primary",
+                border: `1px solid ${theme.palette.divider}`,
+                fontFamily: brand.fonts.body,
               }}
             />
           </Stack>
-          <IconButton onClick={handleCancel} sx={{ color: "white", p: 0.5 }}>
+          <IconButton onClick={handleCancel} color="primary" sx={{ p: 0.5 }}>
             <CloseIcon size={16} />
           </IconButton>
         </Stack>
 
-        {/* Show error if there's one */}
-        {upscaleError && <Alert severity="error">{upscaleError.message}</Alert>}
+        {/* Error Alert */}
+        {upscaleError && (
+          <Alert
+            severity="error"
+            sx={{
+              borderRadius: `${brand.borderRadius}px`,
+              "& .MuiAlert-message": {
+                fontFamily: brand.fonts.body,
+              },
+            }}
+          >
+            {upscaleError.message}
+          </Alert>
+        )}
 
         {/* Current and Target Resolution Display */}
         <Stack spacing={0}>
           <Stack direction="row" alignItems="center" justifyContent="left">
-            <Typography variant="caption" color="rgba(255,255,255,0.8)">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontFamily: brand.fonts.body }}
+            >
               Current Resolution:
             </Typography>
             <Stack direction="row" spacing={0.5}>
               <Chip
-                label={getCurrentResolution()}
+                label={getCurrentResolution}
                 size="small"
                 sx={{
-                  bgcolor: "rgba(255,255,255,0.1)",
-                  color: "white",
+                  bgcolor: theme.palette.action.hover,
+                  color: "text.primary",
                   fontSize: "0.75rem",
+                  fontFamily: brand.fonts.body,
                 }}
               />
               {imageDimensions && (
@@ -330,28 +372,32 @@ export function ImageUpscaleOverlay({
                   )}
                   size="small"
                   sx={{
-                    bgcolor: "rgba(255,255,255,0.05)",
-                    color: "rgba(255,255,255,0.8)",
+                    bgcolor: theme.palette.action.selected,
+                    color: "text.secondary",
                     fontSize: "0.7rem",
+                    fontFamily: brand.fonts.body,
                   }}
                 />
               )}
             </Stack>
           </Stack>
           <Stack direction="row" alignItems="center" justifyContent="left">
-            <Typography variant="caption" color="rgba(255,255,255,0.8)">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontFamily: brand.fonts.body }}
+            >
               Target Resolution:
             </Typography>
             <Stack direction="row" spacing={0.5}>
               <Chip
                 label={getResolutionEstimate(selectedUpscaleFactor)}
                 size="small"
-                color="secondary"
+                color="primary"
                 sx={{
-                  bgcolor: "secondary.main",
-                  color: "secondary.contrastText",
                   fontSize: "0.75rem",
                   fontWeight: "bold",
+                  fontFamily: brand.fonts.body,
                 }}
               />
               {imageDimensions && (
@@ -361,11 +407,13 @@ export function ImageUpscaleOverlay({
                     Math.round(imageDimensions.height * selectedUpscaleFactor)
                   )}
                   size="small"
-                  color="secondary"
                   sx={{
-                    bgcolor: "secondary.dark",
-                    color: "secondary.contrastText",
+                    bgcolor: theme.palette.primary.dark,
+                    color: theme.palette.getContrastText(
+                      theme.palette.primary.dark
+                    ),
                     fontSize: "0.7rem",
+                    fontFamily: brand.fonts.body,
                   }}
                 />
               )}
@@ -374,9 +422,17 @@ export function ImageUpscaleOverlay({
         </Stack>
 
         {/* 8K Limit Warning */}
-        {availableUpscaleFactors.length < upscaleFactors.length && (
-          <Alert severity="warning">
-            <Typography variant="caption">
+        {availableUpscaleFactors.length < UPSCALE_FACTORS.length && (
+          <Alert
+            severity="warning"
+            sx={{
+              borderRadius: `${brand.borderRadius}px`,
+              "& .MuiAlert-message": {
+                fontFamily: brand.fonts.body,
+              },
+            }}
+          >
+            <Typography variant="caption" sx={{ fontFamily: brand.fonts.body }}>
               Some upscale factors are disabled to stay within 8K resolution
               limit (7680×4320). Current maximum available:{" "}
               {Math.max(...availableUpscaleFactors)}x
@@ -385,11 +441,18 @@ export function ImageUpscaleOverlay({
         )}
 
         {/* Info Alert */}
-        <Alert severity="info">
-          <Typography variant="caption">
-            Upscaling will enhance image resolution from{" "}
-            {getCurrentResolution()} to{" "}
-            {getResolutionEstimate(selectedUpscaleFactor)} (
+        <Alert
+          severity="info"
+          sx={{
+            borderRadius: `${brand.borderRadius}px`,
+            "& .MuiAlert-message": {
+              fontFamily: brand.fonts.body,
+            },
+          }}
+        >
+          <Typography variant="caption" sx={{ fontFamily: brand.fonts.body }}>
+            Upscaling will enhance image resolution from {getCurrentResolution}{" "}
+            to {getResolutionEstimate(selectedUpscaleFactor)} (
             {selectedUpscaleFactor}x enlargement).
             {selectedUpscaleFactor >= 4 &&
               " Large factors may take longer to process."}
@@ -405,21 +468,29 @@ export function ImageUpscaleOverlay({
             alignItems="center"
             justifyContent="space-between"
           >
-            <Typography variant="body2" color="white" fontWeight="medium">
+            <Typography
+              variant="body2"
+              color="text.primary"
+              fontWeight="medium"
+              sx={{ fontFamily: brand.fonts.body }}
+            >
               Upscale Factor
             </Typography>
             <Stack direction="row" alignItems="center" spacing={1}>
               <Chip
                 label={`${selectedUpscaleFactor}x`}
                 size="small"
-                color="secondary"
+                color="primary"
                 sx={{
-                  bgcolor: "secondary.main",
-                  color: "secondary.contrastText",
                   fontWeight: "bold",
+                  fontFamily: brand.fonts.body,
                 }}
               />
-              <Typography variant="caption" color="rgba(255,255,255,0.7)">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: brand.fonts.body }}
+              >
                 Max: {Math.max(...availableUpscaleFactors)}x
               </Typography>
             </Stack>
@@ -436,45 +507,50 @@ export function ImageUpscaleOverlay({
               valueLabelDisplay="auto"
               valueLabelFormat={(value) => `${value}x`}
               sx={{
-                color: "secondary.main",
+                color: "primary.main",
                 height: 8,
                 "& .MuiSlider-track": {
-                  backgroundColor: "secondary.main",
+                  backgroundColor: "primary.main",
                   border: "none",
                 },
                 "& .MuiSlider-thumb": {
-                  backgroundColor: "secondary.main",
-                  border: "2px solid",
-                  borderColor: "primary.main",
+                  backgroundColor: "primary.main",
+                  border: `2px solid ${theme.palette.background.paper}`,
                   width: 20,
                   height: 20,
                   "&:hover": {
-                    boxShadow: `0px 0px 0px 8px rgba(144, 202, 249, 0.16)`,
+                    boxShadow: `0px 0px 0px 8px ${theme.palette.primary.main}29`,
                   },
                   "&.Mui-focusVisible": {
-                    boxShadow: `0px 0px 0px 8px rgba(144, 202, 249, 0.16)`,
+                    boxShadow: `0px 0px 0px 8px ${theme.palette.primary.main}29`,
                   },
                 },
                 "& .MuiSlider-rail": {
-                  backgroundColor: "rgba(255,255,255,0.3)",
+                  backgroundColor: theme.palette.divider,
                 },
                 "& .MuiSlider-mark": {
-                  backgroundColor: "rgba(255,255,255,0.5)",
+                  backgroundColor: theme.palette.text.secondary,
                   height: 6,
                   width: 2,
                 },
                 "& .MuiSlider-markActive": {
-                  backgroundColor: "secondary.contrastText",
+                  backgroundColor: theme.palette.getContrastText(
+                    theme.palette.primary.main
+                  ),
                 },
                 "& .MuiSlider-markLabel": {
-                  color: "rgba(255,255,255,0.8)",
+                  color: "text.secondary",
                   fontSize: "0.75rem",
                   fontWeight: 500,
+                  fontFamily: brand.fonts.body,
                 },
                 "& .MuiSlider-valueLabel": {
-                  backgroundColor: "secondary.main",
-                  color: "secondary.contrastText",
+                  backgroundColor: "primary.main",
+                  color: theme.palette.getContrastText(
+                    theme.palette.primary.main
+                  ),
                   fontWeight: "bold",
+                  fontFamily: brand.fonts.body,
                 },
               }}
             />
@@ -489,23 +565,17 @@ export function ImageUpscaleOverlay({
         >
           <Button
             variant="contained"
+            color="primary"
             onClick={handleUpscaleSubmit}
             disabled={isUpscaling || wouldExceed8K(selectedUpscaleFactor)}
             size="medium"
             startIcon={<UpscaleIcon size={18} />}
             sx={{
               minWidth: 200,
-              bgcolor: "secondary.main",
-              color: "secondary.contrastText",
               fontWeight: "bold",
               py: 1.5,
-              "&:hover": {
-                bgcolor: "secondary.dark",
-              },
-              "&:disabled": {
-                bgcolor: "rgba(255,255,255,0.2)",
-                color: "rgba(255,255,255,0.5)",
-              },
+              borderRadius: `${brand.borderRadius}px`,
+              fontFamily: brand.fonts.body,
             }}
           >
             {isUpscaling
@@ -514,20 +584,17 @@ export function ImageUpscaleOverlay({
           </Button>
           <Button
             variant="outlined"
+            color="primary"
             onClick={handleCancel}
             size="medium"
             sx={{
               minWidth: 100,
-              color: "white",
-              borderColor: "rgba(255,255,255,0.5)",
               bgcolor: "transparent",
               backdropFilter: "blur(10px)",
               fontWeight: "medium",
               py: 1.5,
-              "&:hover": {
-                bgcolor: "rgba(255,255,255,0.1)",
-                borderColor: "white",
-              },
+              borderRadius: `${brand.borderRadius}px`,
+              fontFamily: brand.fonts.body,
             }}
           >
             Cancel

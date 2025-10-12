@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+// ImageVersionOverlay.tsx - Fully theme-compliant and performance-optimized
+import { useState, useMemo, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -35,15 +36,17 @@ import {
   ExpandMore as ExpandMoreIcon,
   CalendarToday as Calendar,
 } from "@mui/icons-material";
+import { getCurrentBrand } from "@/config/brandConfig";
 import { ImageVersion } from "@/types/storyBoard/types";
 
 // Consolidated Styled Components
 const StyledDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialog-paper": {
-    borderRadius: 16,
+    borderRadius: getCurrentBrand().borderRadius * 2,
     border: `1px solid ${theme.palette.divider}`,
     background: theme.palette.background.paper,
-    boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.15)}`,
+    backgroundImage: "none !important",
+    boxShadow: theme.shadows[24],
     maxWidth: 1200,
     width: "100%",
     maxHeight: "90vh",
@@ -52,109 +55,129 @@ const StyledDialog = styled(Dialog)(({ theme }) => ({
 }));
 
 const StyledAvatar = styled(Avatar)(({ theme }) => ({
-  background: `linear-gradient(135deg, #667eea, #764ba2)`,
-  borderRadius: 12,
+  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+  borderRadius: getCurrentBrand().borderRadius,
   width: 32,
   height: 32,
-  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+  boxShadow: theme.shadows[2],
 }));
 
-const StyledButton = styled(Button)(({ theme }) => ({
-  borderRadius: 8,
-  textTransform: "none",
-  fontWeight: 600,
-  fontSize: "0.875rem",
-  padding: "6px 12px",
-  minWidth: "auto",
-  transition: "all 0.2s ease",
-  "&:hover": { transform: "translateY(-1px)" },
-}));
+const StyledButton = styled(Button)(({ theme }) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: brand.borderRadius,
+    textTransform: "none",
+    fontWeight: 600,
+    fontSize: "0.875rem",
+    padding: "6px 12px",
+    minWidth: "auto",
+    fontFamily: brand.fonts.body,
+    transition: "all 0.2s ease",
+    "&:hover": { transform: "translateY(-1px)" },
+  };
+});
 
 const VersionCard = styled(Paper, {
   shouldForwardProp: (prop) => prop !== "cardvariant",
-})<{ cardvariant?: "current" | "viewing" | "archived" }>(
-  ({ theme, cardvariant }) => ({
-    borderRadius: 12,
+})<{ cardvariant?: "current" | "viewing" | "archived" }>(({
+  theme,
+  cardvariant,
+}) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: brand.borderRadius * 1.5,
     padding: theme.spacing(2),
     border:
       cardvariant === "current"
         ? `2px solid ${theme.palette.primary.main}`
         : cardvariant === "viewing"
-          ? `2px solid ${theme.palette.secondary.main}`
+          ? `2px solid ${theme.palette.primary.light}`
           : `1px solid ${theme.palette.divider}`,
     background:
       cardvariant === "current"
-        ? alpha(theme.palette.primary.main, 0.03)
+        ? alpha(theme.palette.primary.main, 0.05)
         : cardvariant === "viewing"
-          ? alpha(theme.palette.secondary.main, 0.03)
+          ? alpha(theme.palette.primary.light, 0.05)
           : theme.palette.background.paper,
     cursor: "pointer",
+    transition: "all 0.2s ease",
     "&:hover": {
       borderColor:
         cardvariant === "current"
           ? theme.palette.primary.main
-          : theme.palette.secondary.main,
-      boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.08)}`,
+          : theme.palette.primary.light,
+      boxShadow: theme.shadows[4],
       transform: "translateY(-1px)",
     },
-  })
-);
+  };
+});
 
-const MetadataChip = styled(Chip)(({ theme }) => ({
-  borderRadius: 8,
-  fontSize: "0.75rem",
-  fontWeight: 500,
-  height: 24,
-  background: alpha(theme.palette.text.primary, 0.05),
-  border: `1px solid ${alpha(theme.palette.text.primary, 0.1)}`,
-  "& .MuiChip-icon": { fontSize: 14, marginLeft: 4 },
-}));
+const MetadataChip = styled(Chip)(({ theme }) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: brand.borderRadius,
+    fontSize: "0.75rem",
+    fontWeight: 500,
+    height: 24,
+    fontFamily: brand.fonts.body,
+    background: alpha(theme.palette.text.primary, 0.05),
+    border: `1px solid ${alpha(theme.palette.text.primary, 0.1)}`,
+    "& .MuiChip-icon": { fontSize: 14, marginLeft: 4 },
+  };
+});
 
-const StyledAccordion = styled(Accordion)(({ theme }) => ({
-  borderRadius: 12,
-  border: `1px solid ${theme.palette.divider}`,
-  boxShadow: "none",
-  "&:before": { display: "none" },
-  "& .MuiAccordionSummary-root": {
-    borderRadius: 12,
-    minHeight: 48,
-    "&.Mui-expanded": { borderBottomRadius: 0 },
-  },
-  "& .MuiAccordionDetails-root": {
-    borderTop: `1px solid ${theme.palette.divider}`,
-    borderBottomRadius: 12,
-  },
-}));
+const StyledAccordion = styled(Accordion)(({ theme }) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: brand.borderRadius * 1.5,
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: "none",
+    "&:before": { display: "none" },
+    "& .MuiAccordionSummary-root": {
+      borderRadius: brand.borderRadius * 1.5,
+      minHeight: 48,
+      "&.Mui-expanded": { borderBottomRadius: 0 },
+    },
+    "& .MuiAccordionDetails-root": {
+      borderTop: `1px solid ${theme.palette.divider}`,
+      borderBottomRadius: brand.borderRadius * 1.5,
+    },
+  };
+});
 
-const HistoryCard = styled(Paper)(({ theme }) => ({
-  borderRadius: 8,
-  padding: theme.spacing(1.5),
-  border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
-  background: alpha(theme.palette.secondary.main, 0.03),
-  position: "relative",
-  cursor: "pointer",
-  "&::before": {
-    content: '""',
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 3,
-    height: "100%",
-    background: theme.palette.secondary.main,
-    borderRadius: "0 8px 8px 0",
-  },
-  "&:hover": {
-    transform: "translateX(4px)",
-    borderColor: alpha(theme.palette.secondary.main, 0.4),
-  },
-}));
+const HistoryCard = styled(Paper)(({ theme }) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: brand.borderRadius,
+    padding: theme.spacing(1.5),
+    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+    background: alpha(theme.palette.primary.main, 0.03),
+    position: "relative",
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: 3,
+      height: "100%",
+      background: theme.palette.primary.main,
+      borderRadius: `0 ${brand.borderRadius}px ${brand.borderRadius}px 0`,
+    },
+    "&:hover": {
+      transform: "translateX(4px)",
+      borderColor: alpha(theme.palette.primary.main, 0.4),
+    },
+  };
+});
 
 interface ImageVersionModalProps {
   allVersions: ImageVersion[];
   currentlyViewingVersion?: ImageVersion;
   totalVersions: number;
   totalEdits: number;
-  historyData: any[];
+  historyData: HistoryItem[];
   isLoading: boolean;
   isLoadingVersions: boolean;
   isLoadingHistory: boolean;
@@ -188,6 +211,21 @@ interface HistoryItem {
 const truncateText = (text: string, maxLength: number) =>
   text.length <= maxLength ? text : text.substring(0, maxLength) + "...";
 
+const getEditTypeLabel = (editType: string) => {
+  switch (editType) {
+    case "flux_pro_kontext":
+      return "Edit";
+    case "text_to_image":
+      return "Generate";
+    case "version_restore":
+      return "Restore";
+    default:
+      return editType.startsWith("upscale_")
+        ? `Upscale ${editType.split("_")[1]}`
+        : "Unknown";
+  }
+};
+
 function PromptDetailPopover({
   item,
   anchorEl,
@@ -199,22 +237,14 @@ function PromptDetailPopover({
   open: boolean;
   onClose: () => void;
 }) {
+  const theme = useTheme();
+  const brand = getCurrentBrand();
   const isHistoryItem = "editType" in item;
 
-  const getEditTypeLabel = (editType: string) => {
-    switch (editType) {
-      case "flux_pro_kontext":
-        return "Edit";
-      case "text_to_image":
-        return "Generate";
-      case "version_restore":
-        return "Restore";
-      default:
-        return editType.startsWith("upscale_")
-          ? `Upscale ${editType.split("_")[1]}`
-          : "Unknown";
-    }
-  };
+  // ✅ ADD THESE TYPE GUARDS
+  const prompt = isHistoryItem ? item.prompt : undefined;
+  const seed = isHistoryItem ? item.seed : undefined;
+  const timestamp = isHistoryItem ? item.timestamp : item.lastEditedAt || "";
 
   return (
     <Popover
@@ -227,10 +257,10 @@ function PromptDetailPopover({
         paper: {
           sx: {
             maxWidth: 400,
-            bgcolor: "rgba(0,0,0,0.95)",
-            backdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.2)",
-            borderRadius: 2,
+            bgcolor: theme.palette.background.paper,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: `${brand.borderRadius}px`,
+            boxShadow: theme.shadows[8],
             p: 2,
             zIndex: 10000,
           },
@@ -239,77 +269,105 @@ function PromptDetailPopover({
     >
       <Stack spacing={2}>
         <Box>
-          <Typography variant="subtitle2" color="white" fontWeight="bold">
+          <Typography
+            variant="subtitle2"
+            color="text.primary"
+            fontWeight="bold"
+            sx={{ fontFamily: brand.fonts.body }}
+          >
             {isHistoryItem
               ? `${getEditTypeLabel((item as HistoryItem).editType)} Details`
               : "Version Details"}
           </Typography>
-          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)" }}>
+          <Typography
+            variant="caption"
+            sx={{ color: "text.secondary", fontFamily: brand.fonts.body }}
+          >
             Version{" "}
             {isHistoryItem
               ? (item as HistoryItem).toVersion
               : (item as ImageVersion).version}
           </Typography>
         </Box>
-        <Divider sx={{ borderColor: "rgba(255,255,255,0.2)" }} />
-        {item.prompt && (
+        <Divider sx={{ borderColor: "divider" }} />
+        {/* ✅ USE THE TYPE-GUARDED VARIABLES */}
+        {prompt && (
           <Box>
             <Typography
               variant="body2"
-              color="secondary.main"
+              color="primary.main"
               fontWeight="medium"
               gutterBottom
+              sx={{ fontFamily: brand.fonts.body }}
             >
               Prompt
             </Typography>
             <Typography
               variant="body2"
-              color="white"
+              color="text.primary"
               sx={{
                 lineHeight: 1.4,
                 maxHeight: 200,
                 overflow: "auto",
                 fontSize: "0.8rem",
+                fontFamily: brand.fonts.body,
                 "&::-webkit-scrollbar": { width: 4 },
                 "&::-webkit-scrollbar-track": {
-                  background: "rgba(255,255,255,0.1)",
-                  borderRadius: 2,
+                  background: theme.palette.action.hover,
+                  borderRadius: brand.borderRadius,
                 },
                 "&::-webkit-scrollbar-thumb": {
-                  background: "rgba(255,255,255,0.3)",
-                  borderRadius: 2,
+                  background: theme.palette.divider,
+                  borderRadius: brand.borderRadius,
                 },
               }}
             >
-              {item.prompt}
+              {prompt}
             </Typography>
           </Box>
         )}
         <Box>
           <Typography
             variant="body2"
-            color="secondary.main"
+            color="primary.main"
             fontWeight="medium"
             gutterBottom
+            sx={{ fontFamily: brand.fonts.body }}
           >
             Technical Details
           </Typography>
           <Stack spacing={0.5}>
-            {item.seed && (
-              <Typography variant="caption" color="rgba(255,255,255,0.8)">
-                Seed: {item.seed}
+            {seed && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: brand.fonts.body }}
+              >
+                Seed: {seed}
               </Typography>
             )}
             {isHistoryItem && (
-              <Typography variant="caption" color="rgba(255,255,255,0.8)">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: brand.fonts.body }}
+              >
                 Type: {getEditTypeLabel((item as HistoryItem).editType)}
               </Typography>
             )}
-            <Typography variant="caption" color="rgba(255,255,255,0.8)">
-              Timestamp: {new Date(item.timestamp).toLocaleString()}
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontFamily: brand.fonts.body }}
+            >
+              Timestamp: {new Date(timestamp).toLocaleString()}
             </Typography>
-            {(item as HistoryItem).restoredFromVersion && (
-              <Typography variant="caption" color="rgba(255,255,255,0.8)">
+            {isHistoryItem && (item as HistoryItem).restoredFromVersion && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: brand.fonts.body }}
+              >
                 Restored from Version:{" "}
                 {(item as HistoryItem).restoredFromVersion}
               </Typography>
@@ -340,22 +398,54 @@ export function ImageVersionModal({
   formatDate,
 }: ImageVersionModalProps) {
   const theme = useTheme();
+  const brand = getCurrentBrand();
   const [popoverAnchor, setPopoverAnchor] = useState<{
     element: HTMLElement;
     item: HistoryItem | ImageVersion;
   } | null>(null);
-  const currentIndex = allVersions.findIndex(
-    (v) => v.version === currentlyViewingVersion?.version
+
+  // Memoize current index calculation
+  const currentIndex = useMemo(
+    () =>
+      allVersions.findIndex(
+        (v) => v.version === currentlyViewingVersion?.version
+      ),
+    [allVersions, currentlyViewingVersion?.version]
   );
 
-  const handleVersionClick = (
-    event: React.MouseEvent<HTMLElement>,
-    item: ImageVersion | HistoryItem
-  ) => {
-    if (item.prompt) {
-      setPopoverAnchor({ element: event.currentTarget, item });
+  // Memoize sorted history data
+  const sortedHistoryData = useMemo(
+    () =>
+      [...historyData].sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      ),
+    [historyData]
+  );
+
+  const handleVersionClick = useCallback(
+    (
+      event: React.MouseEvent<HTMLElement>,
+      item: ImageVersion | HistoryItem
+    ) => {
+      if (item.prompt) {
+        setPopoverAnchor({ element: event.currentTarget, item });
+      }
+    },
+    []
+  );
+
+  const handlePrevVersion = useCallback(() => {
+    if (currentIndex > 0) {
+      onVersionSelect(allVersions[currentIndex - 1], "left-to-right", true);
     }
-  };
+  }, [currentIndex, allVersions, onVersionSelect]);
+
+  const handleNextVersion = useCallback(() => {
+    if (currentIndex < allVersions.length - 1) {
+      onVersionSelect(allVersions[currentIndex + 1], "right-to-left", true);
+    }
+  }, [currentIndex, allVersions, onVersionSelect]);
 
   return (
     <>
@@ -372,7 +462,7 @@ export function ImageVersionModal({
               background: `linear-gradient(135deg, ${alpha(
                 theme.palette.primary.main,
                 0.05
-              )}, ${alpha(theme.palette.secondary.main, 0.05)})`,
+              )}, ${alpha(theme.palette.primary.light, 0.05)})`,
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -380,7 +470,12 @@ export function ImageVersionModal({
                 <ImageIcon sx={{ color: "white", fontSize: 18 }} />
               </StyledAvatar>
               <Box>
-                <Typography variant="h6" fontWeight="bold" fontSize="1.2rem">
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  fontSize="1.2rem"
+                  sx={{ fontFamily: brand.fonts.heading }}
+                >
                   {itemName.charAt(0).toUpperCase() + itemName.slice(1)} -
                   Version History
                 </Typography>
@@ -407,9 +502,9 @@ export function ImageVersionModal({
                       label={`Viewing V${currentlyViewingVersion.version}`}
                       size="small"
                       sx={{
-                        background: alpha(theme.palette.secondary.main, 0.1),
-                        borderColor: theme.palette.secondary.main,
-                        color: theme.palette.secondary.main,
+                        background: alpha(theme.palette.primary.main, 0.1),
+                        borderColor: theme.palette.primary.main,
+                        color: theme.palette.primary.main,
                       }}
                     />
                   )}
@@ -421,21 +516,18 @@ export function ImageVersionModal({
                 <>
                   <Tooltip title="Previous version">
                     <IconButton
-                      onClick={() =>
-                        currentIndex > 0 &&
-                        onVersionSelect(
-                          allVersions[currentIndex - 1],
-                          "left-to-right",
-                          true
-                        )
-                      }
+                      onClick={handlePrevVersion}
                       disabled={
                         currentIndex <= 0 ||
                         isEditing ||
                         isRestoring ||
                         isUpscaling
                       }
-                      sx={{ borderRadius: 8, "&:disabled": { opacity: 0.3 } }}
+                      color="primary"
+                      sx={{
+                        borderRadius: `${brand.borderRadius}px`,
+                        "&:disabled": { opacity: 0.3 },
+                      }}
                       size="small"
                     >
                       <PrevIcon />
@@ -443,21 +535,18 @@ export function ImageVersionModal({
                   </Tooltip>
                   <Tooltip title="Next version">
                     <IconButton
-                      onClick={() =>
-                        currentIndex < allVersions.length - 1 &&
-                        onVersionSelect(
-                          allVersions[currentIndex + 1],
-                          "right-to-left",
-                          true
-                        )
-                      }
+                      onClick={handleNextVersion}
                       disabled={
                         currentIndex >= allVersions.length - 1 ||
                         isEditing ||
                         isRestoring ||
                         isUpscaling
                       }
-                      sx={{ borderRadius: 8, "&:disabled": { opacity: 0.3 } }}
+                      color="primary"
+                      sx={{
+                        borderRadius: `${brand.borderRadius}px`,
+                        "&:disabled": { opacity: 0.3 },
+                      }}
                       size="small"
                     >
                       <NextIcon />
@@ -467,8 +556,9 @@ export function ImageVersionModal({
               )}
               <IconButton
                 onClick={onClose}
+                color="primary"
                 sx={{
-                  borderRadius: 10,
+                  borderRadius: `${brand.borderRadius}px`,
                   p: 1,
                   background: alpha(theme.palette.background.paper, 0.8),
                   "&:hover": { background: theme.palette.background.paper },
@@ -492,7 +582,13 @@ export function ImageVersionModal({
                 <Typography
                   variant="subtitle1"
                   fontWeight="700"
-                  sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}
+                  sx={{
+                    mb: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    fontFamily: brand.fonts.body,
+                  }}
                 >
                   <LayersIcon
                     sx={{ fontSize: 18, color: theme.palette.text.secondary }}
@@ -502,7 +598,11 @@ export function ImageVersionModal({
                 {isLoadingVersions ? (
                   <Typography
                     color="text.secondary"
-                    sx={{ textAlign: "center", py: 3 }}
+                    sx={{
+                      textAlign: "center",
+                      py: 3,
+                      fontFamily: brand.fonts.body,
+                    }}
                   >
                     Loading versions...
                   </Typography>
@@ -540,7 +640,11 @@ export function ImageVersionModal({
                                 mb: 1.5,
                               }}
                             >
-                              <Typography variant="h6" fontWeight="bold">
+                              <Typography
+                                variant="h6"
+                                fontWeight="bold"
+                                sx={{ fontFamily: brand.fonts.body }}
+                              >
                                 Version {version.version}
                               </Typography>
                               {version.isCurrent && (
@@ -549,9 +653,10 @@ export function ImageVersionModal({
                                   color="primary"
                                   size="small"
                                   sx={{
-                                    borderRadius: 6,
+                                    borderRadius: `${brand.borderRadius}px`,
                                     fontWeight: 600,
                                     fontSize: "0.7rem",
+                                    fontFamily: brand.fonts.body,
                                   }}
                                 />
                               )}
@@ -559,13 +664,14 @@ export function ImageVersionModal({
                                 currentlyViewingVersion?.version && (
                                 <Chip
                                   label="Viewing"
-                                  color="secondary"
+                                  color="primary"
                                   variant="outlined"
                                   size="small"
                                   sx={{
-                                    borderRadius: 6,
+                                    borderRadius: `${brand.borderRadius}px`,
                                     fontWeight: 600,
                                     fontSize: "0.7rem",
+                                    fontFamily: brand.fonts.body,
                                   }}
                                 />
                               )}
@@ -596,6 +702,7 @@ export function ImageVersionModal({
                                     color: "text.secondary",
                                     mt: 0.5,
                                     fontStyle: "italic",
+                                    fontFamily: brand.fonts.body,
                                   }}
                                 >
                                   {truncateText(version.prompt, 60)}
@@ -613,7 +720,7 @@ export function ImageVersionModal({
                               }}
                               disabled={isRestoring}
                               variant="outlined"
-                              color="secondary"
+                              color="primary"
                             >
                               Restore
                             </StyledButton>
@@ -625,7 +732,11 @@ export function ImageVersionModal({
                 ) : (
                   <Typography
                     color="text.secondary"
-                    sx={{ textAlign: "center", py: 3 }}
+                    sx={{
+                      textAlign: "center",
+                      py: 3,
+                      fontFamily: brand.fonts.body,
+                    }}
                   >
                     No versions available
                   </Typography>
@@ -636,19 +747,23 @@ export function ImageVersionModal({
                   <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
                     sx={{
-                      borderRadius: 12,
+                      borderRadius: `${brand.borderRadius * 1.5}px`,
                       backgroundColor: theme.palette.background.default,
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography variant="subtitle1" fontWeight="700">
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        sx={{ fontFamily: brand.fonts.body }}
+                      >
                         Edit History
                       </Typography>
                       <Chip
                         label={`${totalEdits} edits`}
                         size="small"
                         sx={{
-                          borderRadius: 6,
+                          borderRadius: `${brand.borderRadius}px`,
                           background: alpha(theme.palette.info.main, 0.1),
                           border: `1px solid ${alpha(
                             theme.palette.info.main,
@@ -657,6 +772,7 @@ export function ImageVersionModal({
                           color: theme.palette.info.main,
                           fontSize: "0.7rem",
                           fontWeight: 600,
+                          fontFamily: brand.fonts.body,
                         }}
                       />
                     </Box>
@@ -666,7 +782,7 @@ export function ImageVersionModal({
                       p: 2,
                       backgroundColor: theme.palette.background.default,
                       borderTop: `1px solid ${theme.palette.divider}`,
-                      borderBottomRadius: 12,
+                      borderBottomRadius: `${brand.borderRadius * 1.5}px`,
                     }}
                   >
                     <Stack spacing={2}>
@@ -676,140 +792,124 @@ export function ImageVersionModal({
                             color: "text.secondary",
                             textAlign: "center",
                             py: 3,
+                            fontFamily: brand.fonts.body,
                           }}
                         >
                           Loading history...
                         </Typography>
                       ) : (
-                        historyData
-                          .sort(
-                            (a: any, b: any) =>
-                              new Date(b.timestamp).getTime() -
-                              new Date(a.timestamp).getTime()
-                          )
-                          .map((item: any, index: number) => (
-                            <HistoryCard
-                              key={index}
-                              onClick={(e) => handleVersionClick(e, item)}
-                            >
-                              <Box sx={{ pl: 1 }}>
-                                <Stack
-                                  direction="row"
-                                  alignItems="center"
-                                  spacing={2}
-                                >
-                                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                                    <Stack
-                                      direction="row"
-                                      alignItems="center"
-                                      spacing={1}
+                        sortedHistoryData.map((item, index) => (
+                          <HistoryCard
+                            key={index}
+                            onClick={(e) => handleVersionClick(e, item)}
+                          >
+                            <Box sx={{ pl: 1 }}>
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                spacing={2}
+                              >
+                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                  <Stack
+                                    direction="row"
+                                    alignItems="center"
+                                    spacing={1}
+                                  >
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight="medium"
+                                      color="text.primary"
+                                      noWrap
+                                      sx={{ fontFamily: brand.fonts.body }}
                                     >
-                                      <Typography
-                                        variant="body2"
-                                        fontWeight="medium"
-                                        color="text.primary"
-                                        noWrap
-                                      >
-                                        {item.editType ===
-                                        "flux_pro_kontext" ? (
-                                          <>
-                                            V{item.fromVersion} → V
-                                            {item.toVersion}
-                                          </>
-                                        ) : item.editType ===
-                                          "text_to_image" ? (
-                                          <>New Image → V{item.toVersion}</>
-                                        ) : item.editType ===
-                                          "version_restore" ? (
-                                          <>
-                                            Restored V{item.restoredFromVersion}{" "}
-                                            as V{item.toVersion}
-                                          </>
-                                        ) : item.editType.startsWith(
-                                            "upscale_"
-                                          ) ? (
-                                          <>
-                                            Upscaled{" "}
-                                            {item.editType.split("_")[1]} V
-                                            {item.fromVersion} → V
-                                            {item.toVersion}
-                                          </>
-                                        ) : (
-                                          <>
-                                            V{item.fromVersion} → V
-                                            {item.toVersion}
-                                          </>
-                                        )}
-                                      </Typography>
-                                      {item.prompt && (
-                                        <InfoIcon
-                                          sx={{
-                                            color: "text.secondary",
-                                            fontSize: 16,
-                                          }}
-                                        />
+                                      {item.editType === "flux_pro_kontext" ? (
+                                        <>
+                                          V{item.fromVersion} → V
+                                          {item.toVersion}
+                                        </>
+                                      ) : item.editType === "text_to_image" ? (
+                                        <>New Image → V{item.toVersion}</>
+                                      ) : item.editType ===
+                                        "version_restore" ? (
+                                        <>
+                                          Restored V{item.restoredFromVersion}{" "}
+                                          as V{item.toVersion}
+                                        </>
+                                      ) : item.editType.startsWith(
+                                          "upscale_"
+                                        ) ? (
+                                        <>
+                                          Upscaled {item.editType.split("_")[1]}{" "}
+                                          V{item.fromVersion} → V
+                                          {item.toVersion}
+                                        </>
+                                      ) : (
+                                        <>
+                                          V{item.fromVersion} → V
+                                          {item.toVersion}
+                                        </>
                                       )}
-                                    </Stack>
+                                    </Typography>
                                     {item.prompt && (
-                                      <Typography
-                                        variant="caption"
+                                      <InfoIcon
                                         sx={{
                                           color: "text.secondary",
-                                          display: "block",
-                                          mt: 0.5,
-                                          fontStyle: "italic",
+                                          fontSize: 16,
                                         }}
-                                      >
-                                        {truncateText(item.prompt, 60)}
-                                      </Typography>
+                                      />
                                     )}
+                                  </Stack>
+                                  {item.prompt && (
                                     <Typography
                                       variant="caption"
                                       sx={{
                                         color: "text.secondary",
                                         display: "block",
+                                        mt: 0.5,
+                                        fontStyle: "italic",
+                                        fontFamily: brand.fonts.body,
                                       }}
-                                      noWrap
                                     >
-                                      {formatDate(item.timestamp)}
-                                      {item.seed && (
-                                        <span style={{ marginLeft: 8 }}>
-                                          • Seed: {item.seed}
-                                        </span>
-                                      )}
+                                      {truncateText(item.prompt, 60)}
                                     </Typography>
-                                  </Box>
-                                  <Chip
-                                    label={
-                                      item.editType === "flux_pro_kontext"
-                                        ? "Edit"
-                                        : item.editType === "text_to_image"
-                                          ? "Generate"
-                                          : item.editType === "version_restore"
-                                            ? "Restore"
-                                            : item.editType.startsWith(
-                                                  "upscale_"
-                                                )
-                                              ? `Upscale ${
-                                                  item.editType.split("_")[1]
-                                                }`
-                                              : "Unknown"
-                                    }
-                                    size="small"
+                                  )}
+                                  <Typography
+                                    variant="caption"
                                     sx={{
-                                      bgcolor: "secondary.main",
-                                      color: "secondary.contrastText",
-                                      border: `1px solid ${alpha(
-                                        theme.palette.divider,
-                                        0.2
-                                      )}`,
-                                      minWidth: 60,
+                                      color: "text.secondary",
+                                      display: "block",
+                                      fontFamily: brand.fonts.body,
                                     }}
-                                  />
-                                </Stack>
-                              </Box>
-                            </HistoryCard>
-                          ))
+                                    noWrap
+                                  >
+                                    {formatDate(item.timestamp)}
+                                    {item.seed && (
+                                      <span style={{ marginLeft: 8 }}>
+                                        • Seed: {item.seed}
+                                      </span>
+                                    )}
+                                  </Typography>
+                                </Box>
+                                <Chip
+                                  label={getEditTypeLabel(item.editType)}
+                                  size="small"
+                                  sx={{
+                                    bgcolor: "primary.main",
+                                    color: theme.palette.getContrastText(
+                                      theme.palette.primary.main
+                                    ),
+                                    border: `1px solid ${alpha(
+                                      theme.palette.divider,
+                                      0.2
+                                    )}`,
+                                    minWidth: 60,
+                                    fontFamily: brand.fonts.body,
+                                  }}
+                                />
+                              </Stack>
+                            </Box>
+                          </HistoryCard>
+                        ))
                       )}
                     </Stack>
                   </AccordionDetails>
@@ -828,7 +928,11 @@ export function ImageVersionModal({
               alignItems: "center",
             }}
           >
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontFamily: brand.fonts.body }}
+            >
               Image version management
             </Typography>
             <StyledButton onClick={onClose} variant="contained" color="primary">
