@@ -15,6 +15,7 @@ import { ThemeProvider } from "@/theme";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { ClientLayoutWrapper } from "@/components/layout/ClientLayoutWrapper";
+import { ToastProvider } from "@/providers/ToastProvider"; 
 
 // Get current brand for metadata and HTML attributes
 const brand = getCurrentBrand();
@@ -100,6 +101,7 @@ export default function RootLayout({
             <ThemeProvider>
               <QueryProvider>
                 <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+                <ToastProvider />
               </QueryProvider>
             </ThemeProvider>
           </AppRouterCacheProvider>

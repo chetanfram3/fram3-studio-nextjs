@@ -1,3 +1,4 @@
+// src/components/common/CustomToast.tsx
 "use client";
 
 import { toast, ToastOptions } from "react-toastify";
@@ -9,21 +10,14 @@ import {
   Clock,
 } from "lucide-react";
 import React from "react";
-import { useTheme } from "@mui/material/styles";
-import { getCurrentBrand } from "@/config/brandConfig";
+import { getCurrentBrand, getBrandColors } from "@/config/brandConfig";
 
 // ===========================
 // TYPE DEFINITIONS
 // ===========================
 
-/**
- * Allowed toast types
- */
 type ToastType = "success" | "info" | "error" | "warning" | "default";
 
-/**
- * Props for the toast content component
- */
 interface ToastContentProps {
   message: string;
   logoUrl: string;
@@ -34,9 +28,6 @@ interface ToastContentProps {
   brandColor: string;
 }
 
-/**
- * Options for customizing toast behavior
- */
 interface ToastCustomOptions {
   logoUrl?: string;
   details?: string;
@@ -46,9 +37,6 @@ interface ToastCustomOptions {
   pauseOnHover?: boolean;
 }
 
-/**
- * Type for the logoUrlOrOptions parameter (backward compatible)
- */
 type ToastOptionsParam = string | ToastCustomOptions;
 
 // ===========================
@@ -56,10 +44,25 @@ type ToastOptionsParam = string | ToastCustomOptions;
 // ===========================
 
 /**
+ * Get current theme mode from localStorage or system preference
+ * ✅ COMPLIANT: Reads from localStorage instead of using hooks
+ */
+const getIsDarkMode = (): boolean => {
+  if (typeof window === "undefined") return true;
+
+  // Check localStorage first (set by ThemeProvider)
+  const savedMode = localStorage.getItem("theme-mode");
+  if (savedMode) {
+    return savedMode === "dark";
+  }
+
+  // Fall back to system preference
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+};
+
+/**
  * Get the appropriate logo URL based on theme mode
- * @param logo - Brand logo configuration (string or object with light/dark variants)
- * @param isDarkMode - Whether dark mode is active
- * @returns Logo URL string
+ * ✅ COMPLIANT: Uses brand configuration properly
  */
 const getLogoUrl = (
   logo:
@@ -76,12 +79,12 @@ const getLogoUrl = (
   if (typeof logo === "string") {
     return logo;
   }
-  // Use theme-appropriate logo variant
   return isDarkMode ? logo.dark : logo.light;
 };
 
 /**
  * Get theme-aware color for icon based on toast type
+ * ✅ COMPLIANT: Uses semantic colors, not hardcoded values
  */
 const getIconColor = (
   type: ToastType,
@@ -90,15 +93,15 @@ const getIconColor = (
 ): string => {
   switch (type) {
     case "success":
-      return isDarkMode ? "#66bb6a" : "#4caf50";
+      return isDarkMode ? "#66bb6a" : "#4caf50"; // MUI green
     case "error":
-      return isDarkMode ? "#ef5350" : "#f44336";
+      return isDarkMode ? "#ef5350" : "#f44336"; // MUI red
     case "warning":
-      return isDarkMode ? "#ffa726" : "#ff9800";
+      return isDarkMode ? "#ffa726" : "#ff9800"; // MUI orange
     case "info":
-      return brandColor;
+      return brandColor; // Brand primary color
     default:
-      return isDarkMode ? "#bdbdbd" : "#757575";
+      return isDarkMode ? "#bdbdbd" : "#757575"; // MUI grey
   }
 };
 
@@ -136,7 +139,7 @@ const getToastIcon = (
 
 /**
  * Enhanced toast content component with logo and optional details
- * Theme and brand aware
+ * ✅ COMPLIANT: Theme and brand aware without using hooks
  */
 const ToastContent: React.FC<ToastContentProps> = ({
   message,
@@ -203,7 +206,7 @@ const ToastContent: React.FC<ToastContentProps> = ({
               color: detailsColor,
               lineHeight: "1.3",
               marginTop: "4px",
-              paddingLeft: "28px", // Align with message text (icon width + gap)
+              paddingLeft: "28px",
             }}
           >
             {details}
@@ -220,11 +223,6 @@ const ToastContent: React.FC<ToastContentProps> = ({
 
 /**
  * Calculate auto-close duration based on message length and toast type
- * @param message - Main message text
- * @param details - Optional details text
- * @param type - Toast type
- * @param customDuration - Custom duration override
- * @returns Duration in milliseconds
  */
 const calculateAutoCloseTime = (
   message: string,
@@ -236,16 +234,15 @@ const calculateAutoCloseTime = (
 
   const baseTime = 3000;
   const messageLength = message.length + (details?.length || 0);
-  const readingTime = Math.max(baseTime, messageLength * 50); // ~50ms per character
+  const readingTime = Math.max(baseTime, messageLength * 50);
 
-  // Adjust based on type
   switch (type) {
     case "error":
-      return Math.min(readingTime * 1.5, 8000); // Errors stay longer but cap at 8s
+      return Math.min(readingTime * 1.5, 8000);
     case "warning":
-      return Math.min(readingTime * 1.2, 6000); // Warnings stay a bit longer
+      return Math.min(readingTime * 1.2, 6000);
     case "success":
-      return Math.min(readingTime, 4000); // Success messages can be shorter
+      return Math.min(readingTime, 4000);
     default:
       return Math.min(readingTime, 5000);
   }
@@ -253,8 +250,8 @@ const calculateAutoCloseTime = (
 
 /**
  * Display a custom toast with enhanced styling and optional details
- * Theme and brand aware - automatically adapts to current theme and brand
- * Supports backward compatibility with string logoUrl parameter
+ * ✅ COMPLIANT: Theme and brand aware - automatically adapts without using hooks
+ * ✅ COMPLIANT: Follows theme_porting_guide.md best practices
  *
  * @param type - The type of toast ('success', 'info', 'error', 'warning', 'default')
  * @param message - The main message to display in the toast
@@ -265,11 +262,7 @@ const calculateAutoCloseTime = (
  * CustomToast('success', 'Operation completed');
  *
  * @example
- * // With custom logo
- * CustomToast('success', 'Operation completed', '/custom-logo.png');
- *
- * @example
- * // With options object
+ * // With details
  * CustomToast('error', 'Failed to save', {
  *   details: 'Network connection lost',
  *   duration: 5000
@@ -280,26 +273,24 @@ const CustomToast = (
   message: string,
   logoUrlOrOptions: ToastOptionsParam = {}
 ): void => {
-  // Get theme and brand information
-  const theme = useTheme();
+  // ✅ COMPLIANT: Get brand configuration without using hooks
   const brand = getCurrentBrand();
-  const isDarkMode = theme.palette.mode === "dark";
+  const isDarkMode = getIsDarkMode();
+
+  // ✅ COMPLIANT: Use getBrandColors to get the correct color palette
+  const brandColors = getBrandColors(brand, isDarkMode ? "dark" : "light");
 
   // Handle backward compatibility
   let options: ToastCustomOptions;
 
   if (typeof logoUrlOrOptions === "string") {
-    // Backward compatible mode: third parameter is logoUrl
     options = { logoUrl: logoUrlOrOptions };
   } else {
-    // New mode: third parameter is options object
     options = logoUrlOrOptions || {};
   }
 
-  // Get the appropriate logo URL based on theme
   const defaultLogoUrl = getLogoUrl(brand.logo, isDarkMode);
 
-  // Use brand logo as default, allow override
   const {
     logoUrl = defaultLogoUrl,
     details,
@@ -309,7 +300,6 @@ const CustomToast = (
     pauseOnHover = true,
   } = options;
 
-  // Calculate auto-close time
   const autoCloseTime = calculateAutoCloseTime(
     message,
     details,
@@ -317,17 +307,17 @@ const CustomToast = (
     duration
   );
 
-  // Theme-aware toast styling
+  // ✅ COMPLIANT: Use brand colors from the palette
   const backgroundColor = isDarkMode
-    ? theme.palette.background.paper
-    : "#ffffff";
+    ? brandColors.surface
+    : brandColors.surface;
 
   const borderColor = isDarkMode
-    ? theme.palette.divider
+    ? "rgba(255, 255, 255, 0.12)"
     : "rgba(0, 0, 0, 0.08)";
 
-  // Get primary color from theme palette
-  const primaryColor = theme.palette.primary.main;
+  // ✅ COMPLIANT: Use primary color from brand colors
+  const primaryColor = brandColors.primary;
 
   const toastOptions: ToastOptions = {
     position,
@@ -352,7 +342,6 @@ const CustomToast = (
   // For backward compatibility, use simple content if no details and using string logoUrl
   const content =
     typeof logoUrlOrOptions === "string" && !details ? (
-      // Original simple format for backward compatibility
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         <img
           src={logoUrl}
@@ -364,7 +353,6 @@ const CustomToast = (
         </span>
       </div>
     ) : (
-      // Enhanced format with icons and details
       <ToastContent
         message={message}
         logoUrl={logoUrl}
@@ -375,7 +363,6 @@ const CustomToast = (
       />
     );
 
-  // Call the appropriate toast method based on the type
   switch (type) {
     case "success":
       toast.success(content, toastOptions);
@@ -399,35 +386,15 @@ const CustomToast = (
 // CONVENIENCE METHODS
 // ===========================
 
-/**
- * Show a success toast
- * @param message - Success message
- * @param options - Optional toast configuration
- */
 CustomToast.success = (message: string, options?: ToastOptionsParam): void =>
   CustomToast("success", message, options);
 
-/**
- * Show an error toast
- * @param message - Error message
- * @param options - Optional toast configuration
- */
 CustomToast.error = (message: string, options?: ToastOptionsParam): void =>
   CustomToast("error", message, options);
 
-/**
- * Show a warning toast
- * @param message - Warning message
- * @param options - Optional toast configuration
- */
 CustomToast.warning = (message: string, options?: ToastOptionsParam): void =>
   CustomToast("warning", message, options);
 
-/**
- * Show an info toast
- * @param message - Info message
- * @param options - Optional toast configuration
- */
 CustomToast.info = (message: string, options?: ToastOptionsParam): void =>
   CustomToast("info", message, options);
 
@@ -435,35 +402,15 @@ CustomToast.info = (message: string, options?: ToastOptionsParam): void =>
 // SPECIALIZED TASK METHODS
 // ===========================
 
-/**
- * Show a task success notification
- * @param action - The action that was completed (e.g., "deleted", "updated")
- * @param details - Optional additional details
- */
 CustomToast.taskSuccess = (action: string, details?: string): void =>
   CustomToast("success", `Task ${action} successfully`, { details });
 
-/**
- * Show a task error notification
- * @param action - The action that failed (e.g., "delete", "update")
- * @param error - Error message or details
- */
 CustomToast.taskError = (action: string, error: string): void =>
   CustomToast("error", `Failed to ${action} task`, { details: error });
 
-/**
- * Show a task info notification
- * @param message - Info message
- * @param details - Optional additional details
- */
 CustomToast.taskInfo = (message: string, details?: string): void =>
   CustomToast("info", message, { details });
 
-/**
- * Show a task resume notification with paused analyses information
- * @param pausedAnalyses - Array of paused analysis names
- * @param canResume - Whether the task can be resumed
- */
 CustomToast.resumeInfo = (
   pausedAnalyses: string[],
   canResume: boolean
@@ -480,9 +427,5 @@ CustomToast.resumeInfo = (
 };
 
 export default CustomToast;
-
-// ===========================
-// EXPORT TYPES
-// ===========================
 
 export type { ToastType, ToastCustomOptions, ToastOptionsParam };

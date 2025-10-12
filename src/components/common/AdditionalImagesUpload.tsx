@@ -27,6 +27,7 @@ import { getCurrentBrand } from "@/config/brandConfig";
 import CustomToast from "@/components/common/CustomToast";
 import { uploadFilesToGCS } from "@/services/uploadService";
 import { convertPathToPublicUrl } from "@/utils/imageUtils";
+import NextImage from "next/image";
 
 interface AdditionalImagesUploadProps {
   isVisible: boolean;
@@ -532,13 +533,13 @@ const AdditionalImagesUpload: React.FC<AdditionalImagesUploadProps> = ({
               overflow: "auto",
               "&::-webkit-scrollbar": { width: "4px" },
               "&::-webkit-scrollbar-track": {
-                background: theme.palette.action.hover,
-                borderRadius: `${brand.borderRadius}px`,
+                background: "rgba(255,255,255,0.1)",
+                borderRadius: "2px",
               },
               "&::-webkit-scrollbar-thumb": {
-                background: theme.palette.divider,
-                borderRadius: `${brand.borderRadius}px`,
-                "&:hover": { background: theme.palette.text.secondary },
+                background: "rgba(255,255,255,0.3)",
+                borderRadius: "2px",
+                "&:hover": { background: "rgba(255,255,255,0.5)" },
               },
             }}
           >
@@ -548,50 +549,56 @@ const AdditionalImagesUpload: React.FC<AdditionalImagesUploadProps> = ({
                   key={image.id}
                   sx={{
                     p: 1.5,
-                    bgcolor: theme.palette.action.hover,
-                    border: `1px solid ${theme.palette.divider}`,
-                    borderRadius: `${brand.borderRadius}px`,
+                    bgcolor: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 1,
                     position: "relative",
                     "&:hover": {
-                      bgcolor: theme.palette.action.selected,
+                      bgcolor: "rgba(255,255,255,0.08)",
                     },
                   }}
                 >
                   <Stack direction="row" spacing={1.5} alignItems="center">
-                    {/* Preview Image */}
+                    {/* Preview Image - FIXED: Using Next.js Image */}
                     <Box
-                      component="img"
-                      src={image.preview}
-                      alt={image.file.name}
                       sx={{
+                        position: "relative",
                         width: 40,
                         height: 40,
-                        borderRadius: `${brand.borderRadius}px`,
-                        objectFit: "cover",
-                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: 1,
+                        overflow: "hidden",
+                        flexShrink: 0,
+                        border: "1px solid rgba(255,255,255,0.2)",
                       }}
-                    />
+                    >
+                      <NextImage
+                        src={image.preview}
+                        alt={image.file.name}
+                        fill
+                        sizes="40px"
+                        style={{ objectFit: "cover" }}
+                        unoptimized={image.preview.startsWith("blob:")}
+                      />
+                    </Box>
 
                     {/* File Info */}
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         variant="body2"
-                        color="text.primary"
+                        color="white"
                         noWrap
                         fontWeight="medium"
-                        sx={{ fontFamily: brand.fonts.body }}
                       >
                         {image.file.name}
                       </Typography>
                       <Typography
                         variant="caption"
-                        color="text.secondary"
-                        sx={{ fontFamily: brand.fonts.body }}
+                        color="rgba(255,255,255,0.7)"
                       >
                         {(image.file.size / (1024 * 1024)).toFixed(1)}MB
                       </Typography>
 
-                      {/* Status Indicator */}
+                      {/* Status indicators remain the same */}
                       {image.status === "uploading" && (
                         <Box
                           sx={{
@@ -606,13 +613,9 @@ const AdditionalImagesUpload: React.FC<AdditionalImagesUploadProps> = ({
                             thickness={4}
                             variant="determinate"
                             value={image.progress}
-                            color="primary"
+                            sx={{ color: "secondary.main" }}
                           />
-                          <Typography
-                            variant="caption"
-                            color="primary.main"
-                            sx={{ fontFamily: brand.fonts.body }}
-                          >
+                          <Typography variant="caption" color="secondary.main">
                             {image.progress}%
                           </Typography>
                         </Box>
@@ -623,12 +626,7 @@ const AdditionalImagesUpload: React.FC<AdditionalImagesUploadProps> = ({
                           label="Uploaded"
                           size="small"
                           color="success"
-                          sx={{
-                            mt: 0.5,
-                            height: 16,
-                            fontSize: "0.7rem",
-                            fontFamily: brand.fonts.body,
-                          }}
+                          sx={{ mt: 0.5, height: 16, fontSize: "0.7rem" }}
                         />
                       )}
 
@@ -637,12 +635,7 @@ const AdditionalImagesUpload: React.FC<AdditionalImagesUploadProps> = ({
                           label="Failed"
                           size="small"
                           color="error"
-                          sx={{
-                            mt: 0.5,
-                            height: 16,
-                            fontSize: "0.7rem",
-                            fontFamily: brand.fonts.body,
-                          }}
+                          sx={{ mt: 0.5, height: 16, fontSize: "0.7rem" }}
                         />
                       )}
                     </Box>
@@ -654,7 +647,7 @@ const AdditionalImagesUpload: React.FC<AdditionalImagesUploadProps> = ({
                           size="small"
                           onClick={() => removeImage(image.id)}
                           disabled={isUploading && image.status === "uploading"}
-                          color="primary"
+                          sx={{ color: "rgba(255,255,255,0.7)" }}
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>

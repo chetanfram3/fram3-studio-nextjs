@@ -25,7 +25,7 @@ import {
   useImageEditor,
   useImageVersions,
   useImageHistory,
-} from "../../hooks/useImageEditor";
+} from "@/hooks/useImageEditor";
 import AdditionalImagesUpload from "@/components/common/AdditionalImagesUpload";
 import { ImageDisplayCore, ImageViewerConfig } from "./ImageDisplayCore";
 import { ImageVersionModal } from "./ImageVersionOverlay";
@@ -415,58 +415,65 @@ export function ImageViewerContainer({
 
   // Helper to update image data with new version
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const updateImageDataWithNewVersion = (editResult: any) => {
-    if (!onImageUpdate) return;
+  const updateImageDataWithNewVersion = useCallback(
+    (editResult: any) => {
+      if (!onImageUpdate) return;
 
-    const newCurrentVersion: ImageVersion = {
-      version: editResult.newCurrentVersion,
-      destinationPath: editResult.newCurrentImagePath,
-      thumbnailPath: editResult.newThumbnailPath,
-      signedUrl: editResult.newCurrentImagePath,
-      isCurrent: true,
-      lastEditedAt: new Date().toISOString(),
-      prompt: "",
-    };
-
-    const archivedVersions = { ...imageData?.versions?.archived };
-    if (imageData?.versions?.current) {
-      archivedVersions[imageData.versions.current.version] = {
-        ...imageData.versions.current,
-        isCurrent: false,
-        archivedAt: new Date().toISOString(),
+      const newCurrentVersion: ImageVersion = {
+        version: editResult.newCurrentVersion,
+        destinationPath: editResult.newCurrentImagePath,
+        thumbnailPath: editResult.newThumbnailPath,
+        signedUrl: editResult.newCurrentImagePath,
+        isCurrent: true,
+        lastEditedAt: new Date().toISOString(),
+        prompt: "",
       };
-    }
 
-    const updatedImageData = {
-      signedUrl: editResult.newCurrentImagePath,
-      thumbnailPath: editResult.newThumbnailPath,
-      versions: {
-        current: newCurrentVersion,
-        archived: archivedVersions,
-        totalVersions: (imageData?.versions?.totalVersions || 1) + 1,
-        totalEdits: (imageData?.versions?.totalEdits || 0) + 1,
-        editHistory: [
-          ...(imageData?.versions?.editHistory || []),
-          {
-            timestamp: new Date().toISOString(),
-            fromVersion: editResult.sourceVersion,
-            toVersion: editResult.newCurrentVersion,
-            editType: editResult.editType || "flux_pro_kontext",
-            previousPath: imageData?.versions?.current?.destinationPath || "",
-            newPath: editResult.newCurrentImagePath,
-          },
-        ],
-      },
-    };
+      const archivedVersions = { ...imageData?.versions?.archived };
+      if (imageData?.versions?.current) {
+        archivedVersions[imageData.versions.current.version] = {
+          ...imageData.versions.current,
+          isCurrent: false,
+          archivedAt: new Date().toISOString(),
+        };
+      }
 
-    onImageUpdate(updatedImageData);
-    setCurrentlyViewingVersion(newCurrentVersion);
-    setCurrentImageSrc(editResult.newThumbnailPath);
-    setImageLoaded(true);
-    setIsLoadingHighRes(false);
-    setLoadError(null);
-    refetchVersions();
-  };
+      const updatedImageData = {
+        signedUrl: editResult.newCurrentImagePath,
+        thumbnailPath: editResult.newThumbnailPath,
+        versions: {
+          current: newCurrentVersion,
+          archived: archivedVersions,
+          totalVersions: (imageData?.versions?.totalVersions || 1) + 1,
+          totalEdits: (imageData?.versions?.totalEdits || 0) + 1,
+          editHistory: [
+            ...(imageData?.versions?.editHistory || []),
+            {
+              timestamp: new Date().toISOString(),
+              fromVersion: editResult.sourceVersion,
+              toVersion: editResult.newCurrentVersion,
+              editType: editResult.editType || "flux_pro_kontext",
+              previousPath: imageData?.versions?.current?.destinationPath || "",
+              newPath: editResult.newCurrentImagePath,
+            },
+          ],
+        },
+      };
+
+      // ✅ CRITICAL FIX: Defer the callback to the next tick
+      Promise.resolve().then(() => {
+        onImageUpdate(updatedImageData);
+      });
+
+      setCurrentlyViewingVersion(newCurrentVersion);
+      setCurrentImageSrc(editResult.newThumbnailPath);
+      setImageLoaded(true);
+      setIsLoadingHighRes(false);
+      setLoadError(null);
+      refetchVersions();
+    },
+    [imageData, onImageUpdate, refetchVersions]
+  );
 
   // Component lifecycle
   useEffect(() => {
@@ -719,47 +726,67 @@ export function ImageViewerContainer({
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleEditComplete = (editResult: any) => {
-    updateImageDataWithNewVersion(editResult);
+  const handleEditComplete = useCallback(
+    (editResult: any) => {
+      updateImageDataWithNewVersion(editResult);
 
-    startTransition(() => {
-      setEditMode(false);
-      setAdditionalImageUrls([]);
-      setAdditionalImagesMode(false);
-    });
+      startTransition(() => {
+        setEditMode(false);
+        setAdditionalImageUrls([]);
+        setAdditionalImagesMode(false);
+      });
 
-    if (!onImageUpdate && onDataRefresh) {
-      onDataRefresh();
-    }
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleGenerateComplete = (generateResult: any) => {
-    updateImageDataWithNewVersion(generateResult);
-
-    startTransition(() => {
-      setGenerateMode(false);
-    });
-
-    if (!onImageUpdate && onDataRefresh) {
-      onDataRefresh();
-    }
-  };
+      if (!onImageUpdate && onDataRefresh) {
+        Promise.resolve().then(() => {
+          onDataRefresh();
+        });
+      }
+    },
+    [updateImageDataWithNewVersion, onImageUpdate, onDataRefresh]
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleUpscaleComplete = (upscaleResult: any) => {
-    updateImageDataWithNewVersion(upscaleResult);
+  const handleGenerateComplete = useCallback(
+    (generateResult: any) => {
+      updateImageDataWithNewVersion(generateResult);
 
-    startTransition(() => {
-      setUpscaleMode(false);
-    });
+      startTransition(() => {
+        setGenerateMode(false);
+      });
 
-    refetchVersions();
+      if (!onImageUpdate && onDataRefresh) {
+        Promise.resolve().then(() => {
+          onDataRefresh();
+        });
+      }
+    },
+    [updateImageDataWithNewVersion, onImageUpdate, onDataRefresh]
+  );
 
-    if (!onImageUpdate && onDataRefresh) {
-      onDataRefresh();
-    }
-  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleUpscaleComplete = useCallback(
+    (upscaleResult: any) => {
+      updateImageDataWithNewVersion(upscaleResult);
+
+      startTransition(() => {
+        setUpscaleMode(false);
+      });
+
+      refetchVersions();
+
+      if (!onImageUpdate && onDataRefresh) {
+        Promise.resolve().then(() => {
+          onDataRefresh();
+        });
+      }
+    },
+    [
+      updateImageDataWithNewVersion,
+      onImageUpdate,
+      onDataRefresh,
+      refetchVersions,
+    ]
+  );
 
   const handleImageLoad = (event: React.SyntheticEvent<HTMLImageElement>) => {
     const img = event.currentTarget;

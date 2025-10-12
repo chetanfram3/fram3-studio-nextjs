@@ -623,3 +623,37 @@ textarea:-moz-autofill,
 select:-moz-autofill {
   filter: none;
 }
+
+
+/* ============================================
+   REACT-TOASTIFY CUSTOM STYLING
+   ============================================ */
+
+/* Override default toast styles to match brand */
+.Toastify__toast {
+  font-family: var(--font-inter);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.Toastify__toast-theme--light {
+  background: var(--brand-surface);
+  color: var(--brand-text);
+}
+
+.Toastify__toast-theme--dark {
+  background: var(--brand-surface);
+  color: var(--brand-text);
+}
+
+.Toastify__progress-bar--default {
+  background: var(--brand-primary);
+}
+
+.Toastify__close-button {
+  opacity: 0.5;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1;
+}
