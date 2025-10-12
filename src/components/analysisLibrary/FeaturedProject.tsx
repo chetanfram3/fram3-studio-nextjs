@@ -319,7 +319,9 @@ const extractActors = (data: Record<string, unknown> | undefined): Actor[] => {
         gender: apiActor.gender,
         celebrity: {
           celebrityName: "",
-          celebrityDetails: {},
+          celebrityDetails: {
+            fame: "",
+          },
           isCelebrity: apiActor.celebrity?.isCelebrity || "No",
         },
         signedUrl: apiActor.signedUrl || "",
@@ -464,9 +466,7 @@ export function FeaturedProject({
     return !!(
       (localKeyVisualData &&
         (localKeyVisualData.signedUrl || localKeyVisualData.thumbnailPath)) ||
-      (data &&
-        ((data as any).keyVisualSignedUrl ||
-          (data as any).keyVisualThumbnailPath)) ||
+      (data && (data.keyVisualSignedUrl || data.keyVisualThumbnailPath)) ||
       (signedUrl &&
         signedUrl.trim() !== "" &&
         signedUrl !== "/placeHolder.webp") ||
@@ -482,10 +482,9 @@ export function FeaturedProject({
   useEffect(() => {
     if (data) {
       const newKeyVisualData = {
-        signedUrl: (data as any).keyVisualSignedUrl || signedUrl || undefined,
-        thumbnailPath:
-          (data as any).keyVisualThumbnailPath || signedUrl || undefined,
-        versions: (data as any).keyVisualVersions || undefined,
+        signedUrl: data.keyVisualSignedUrl || signedUrl || undefined,
+        thumbnailPath: data.keyVisualThumbnailPath || signedUrl || undefined,
+        versions: data.keyVisualVersions || undefined,
       };
 
       setLocalKeyVisualData(newKeyVisualData);
