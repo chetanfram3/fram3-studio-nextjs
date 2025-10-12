@@ -37,10 +37,14 @@ export interface EditHistoryItem {
     restoredFromVersion?: number;
 }
 
+export interface CelebrityDetails {
+    fame: string;
+}
+
 // Define the type for celebrity details
 export interface Celebrity {
     celebrityName: string;
-    celebrityDetails: any;
+    celebrityDetails: CelebrityDetails;
     isCelebrity: string; // Is the actor a celebrity
     publicImage?: string; // Public image description
     fameLevel?: string; // Level of fame
@@ -260,7 +264,7 @@ export interface ApiActorData {
     signedUrl: string | null;
     signedProfileUrl: string | null;
     thumbnailPath?: string;
-    faceDetection?: any;
+    faceDetection?: unknown;
     // NEW: Version support for API response
     versions?: ImageVersions;
 }

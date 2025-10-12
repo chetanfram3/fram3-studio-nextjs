@@ -425,7 +425,7 @@ export function ImageViewerContainer({
       signedUrl: editResult.newCurrentImagePath,
       isCurrent: true,
       lastEditedAt: new Date().toISOString(),
-      prompt: undefined,
+      prompt: "",
     };
 
     const archivedVersions = { ...imageData?.versions?.archived };
@@ -658,7 +658,7 @@ export function ImageViewerContainer({
         signedUrl: restoredVersion.signedUrl,
         isCurrent: true,
         lastEditedAt: new Date().toISOString(),
-        prompt: undefined,
+        prompt: "",
       };
 
       const archivedVersions = { ...imageData?.versions?.archived };

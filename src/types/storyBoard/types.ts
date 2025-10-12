@@ -117,7 +117,7 @@ export interface Line {
 
 // NEW: Version-related interfaces
 export interface ImageVersion {
-    prompt: any;
+    prompt: string;
     version: number;
     destinationPath: string;
     signedUrl: string;
