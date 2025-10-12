@@ -264,9 +264,23 @@ export interface ApiActorData {
     signedUrl: string | null;
     signedProfileUrl: string | null;
     thumbnailPath?: string;
-    faceDetection?: unknown;
+    faceDetection?: FaceDetection;
     // NEW: Version support for API response
     versions?: ImageVersions;
+}
+
+export interface FaceDetection {
+    boundingBox: {
+        xMin: number;
+        xMax: number;
+        yMin: number;
+        yMax: number;
+    };
+    detectionType: string;
+    specificType: string;
+    confidence: number;
+    width: number;
+    height: number;
 }
 
 export interface ApiResponse {
