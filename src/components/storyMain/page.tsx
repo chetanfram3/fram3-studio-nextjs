@@ -17,6 +17,7 @@ import Overview from "../overview";
 import MarketResearch from "../market";
 import VideoEditor from "../videoEditor";
 import { VideoLayout } from "../renderedVideos";
+import Status from "../status";
 import { useScriptDashboardAnalysis } from "@/hooks/scripts/useScriptDashboardAnalysis";
 import { LoadingAnimation } from "@/components/common/LoadingAnimation";
 import { AnalysisInProgress } from "@/components/common/AnalysisInProgress";
@@ -115,6 +116,17 @@ export default function StoryPage() {
           fallback={<LoadingAnimation message="Loading market research..." />}
         >
           <MarketResearch scriptId={scriptId} versionId={versionId} />
+        </React.Suspense>
+      ),
+    },
+    {
+      label: "Status",
+      icon: <StatusIcon fontSize="small" />,
+      component: (
+        <React.Suspense
+          fallback={<LoadingAnimation message="Loading analysis status..." />}
+        >
+          <Status scriptInfo={scriptInfo} refetch={refetch} />,
         </React.Suspense>
       ),
     },
