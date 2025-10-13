@@ -16,6 +16,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Overview from "../overview";
 import MarketResearch from "../market";
 import VideoEditor from "../videoEditor";
+import { VideoLayout } from "../renderedVideos";
 import { useScriptDashboardAnalysis } from "@/hooks/scripts/useScriptDashboardAnalysis";
 import { LoadingAnimation } from "@/components/common/LoadingAnimation";
 import { AnalysisInProgress } from "@/components/common/AnalysisInProgress";
@@ -133,6 +134,17 @@ export default function StoryPage() {
           ) : (
             <AnalysisInProgress message="Loading editor data..." />
           )}
+        </React.Suspense>
+      ),
+    },
+    {
+      label: "Videos",
+      icon: <Video fontSize="small" />,
+      component: (
+        <React.Suspense
+          fallback={<LoadingAnimation message="Loading rendered videos..." />}
+        >
+          <VideoLayout scriptId={scriptId} versionId={versionId} />
         </React.Suspense>
       ),
     },
