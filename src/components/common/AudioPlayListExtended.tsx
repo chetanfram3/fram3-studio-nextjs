@@ -67,11 +67,24 @@ export default function ExtendedAudioPlaylist({
   const startTimeRef = useRef<number>(0);
   const pauseTimeRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
+  const isInitializedRef = useRef<boolean>(false);
 
   // React 19: useCallback for audio context initialization
   const initAudioContext = useCallback(async () => {
     try {
-      if (!audioContextRef.current) {
+      // Don't reinitialize if already done
+      if (
+        isInitializedRef.current &&
+        audioContextRef.current?.state !== "closed"
+      ) {
+        return;
+      }
+
+      // Create new context if needed
+      if (
+        !audioContextRef.current ||
+        audioContextRef.current.state === "closed"
+      ) {
         audioContextRef.current = new (window.AudioContext ||
           (window as Window & { webkitAudioContext?: typeof AudioContext })
             .webkitAudioContext!)();
@@ -80,13 +93,18 @@ export default function ExtendedAudioPlaylist({
       setIsLoading(true);
       setLoadError(null);
 
-      // Load all audio files
+      // Load all audio files in parallel
       const audioBuffers = await Promise.all(
         audioPlaylist.map(async (item) => {
           const url = `${API_BASE_URL}/scripts/stream-audio?filePath=${encodeURIComponent(
             item.path
           )}`;
           const response = await fetch(url);
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch audio: ${response.statusText}`);
+          }
+
           const arrayBuffer = await response.arrayBuffer();
           return await audioContextRef.current!.decodeAudioData(arrayBuffer);
         })
@@ -142,24 +160,38 @@ export default function ExtendedAudioPlaylist({
         gainNode,
       });
 
+      isInitializedRef.current = true;
       setIsLoading(false);
     } catch (error) {
       logger.error("Error initializing audio:", error);
       setLoadError("Failed to load audio files. Please try again.");
       setIsLoading(false);
+      isInitializedRef.current = false;
     }
   }, [audioPlaylist]);
 
   // React 19: useCallback for starting playback
   const startPlayback = useCallback(
     (startFrom: number = 0) => {
-      if (!audioContextRef.current || !audioBufferRef.current || !audioNodes)
+      // Check if context exists and is not closed
+      if (
+        !audioContextRef.current ||
+        audioContextRef.current.state === "closed" ||
+        !audioBufferRef.current ||
+        !audioNodes
+      ) {
+        logger.warn("Cannot start playback: Audio context not ready");
         return;
+      }
 
       // Stop current playback if any
       if (sourceNodeRef.current) {
-        sourceNodeRef.current.stop();
-        sourceNodeRef.current.disconnect();
+        try {
+          sourceNodeRef.current.stop();
+          sourceNodeRef.current.disconnect();
+        } catch (error) {
+          // Ignore errors when stopping
+        }
         sourceNodeRef.current = null;
       }
 
@@ -198,13 +230,13 @@ export default function ExtendedAudioPlaylist({
 
   // React 19: useCallback for pausing playback
   const pausePlayback = useCallback(() => {
-    if (sourceNodeRef.current) {
+    if (sourceNodeRef.current && audioContextRef.current) {
       try {
         sourceNodeRef.current.stop();
         sourceNodeRef.current.disconnect();
         sourceNodeRef.current = null;
         pauseTimeRef.current =
-          audioContextRef.current!.currentTime - startTimeRef.current;
+          audioContextRef.current.currentTime - startTimeRef.current;
       } catch (error) {
         logger.error("Error pausing playback:", error);
       }
@@ -238,8 +270,12 @@ export default function ExtendedAudioPlaylist({
       if (typeof newValue === "number" && audioBufferRef.current) {
         // Stop any existing playback
         if (sourceNodeRef.current) {
-          sourceNodeRef.current.stop();
-          sourceNodeRef.current.disconnect();
+          try {
+            sourceNodeRef.current.stop();
+            sourceNodeRef.current.disconnect();
+          } catch (error) {
+            // Ignore errors
+          }
           sourceNodeRef.current = null;
         }
 
@@ -325,14 +361,20 @@ export default function ExtendedAudioPlaylist({
   // Effect to initialize on mount
   useEffect(() => {
     initAudioContext();
+
+    // Cleanup function - DON'T close context, just stop playback
     return () => {
       if (sourceNodeRef.current) {
-        sourceNodeRef.current.stop();
-        sourceNodeRef.current.disconnect();
+        try {
+          sourceNodeRef.current.stop();
+          sourceNodeRef.current.disconnect();
+        } catch (error) {
+          // Ignore errors on cleanup
+        }
+        sourceNodeRef.current = null;
       }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
+      // DON'T close the audio context here - it prevents re-initialization
+      // The context will be cleaned up when the browser unloads
     };
   }, [initAudioContext]);
 
