@@ -17,6 +17,7 @@ import Overview from "../overview";
 import MarketResearch from "../market";
 import VideoEditor from "../videoEditor";
 import { VideoLayout } from "../renderedVideos";
+import TabbedAnalytics from "../analytics/TabbedAnalytics";
 import Status from "../status";
 import { useScriptDashboardAnalysis } from "@/hooks/scripts/useScriptDashboardAnalysis";
 import { LoadingAnimation } from "@/components/common/LoadingAnimation";
@@ -172,7 +173,9 @@ export default function StoryPage() {
           component: (
             <React.Suspense
               fallback={<LoadingAnimation message="Loading analytics..." />}
-            ></React.Suspense>
+            >
+              <TabbedAnalytics scriptId={scriptId} versionId={versionId} />
+            </React.Suspense>
           ),
           adminOnly: true,
         },
