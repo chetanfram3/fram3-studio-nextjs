@@ -1,5 +1,7 @@
 import { BrandDetails } from "../market/types";
 
+export type ProcessingMode = "quick" | "moderate" | "normal" | "detailed";
+
 export interface ScriptInfo {
     scriptId: string;
     genScriptId?: string;
@@ -56,6 +58,7 @@ export interface Version {
     statues: AnalysisTypeStatus;
     analyses: AnalysisTypeStatus[];
     completionTimestamp: string;
+    processingMode?: ProcessingMode;
 }
 
 export interface VersionInfo {

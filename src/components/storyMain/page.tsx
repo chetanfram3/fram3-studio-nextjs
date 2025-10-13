@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+
+import type { SxProps, Theme } from "@mui/material";
 import {
   Box,
   Tabs,
@@ -158,14 +160,17 @@ export default function StoryPage() {
 
   const renderTabIcon = useCallback(
     (tab: TabData, isSelected: boolean) => {
-      const iconElement = React.cloneElement(tab.icon, {
-        sx: {
-          color: isSelected ? theme.palette.primary.main : "inherit",
-          transition: theme.transitions.create("color", {
-            duration: theme.transitions.duration.shorter,
-          }),
-        },
-      });
+      const iconElement = React.cloneElement(
+        tab.icon as React.ReactElement<{ sx?: SxProps<Theme> }>,
+        {
+          sx: {
+            color: isSelected ? theme.palette.primary.main : "inherit",
+            transition: theme.transitions.create("color", {
+              duration: theme.transitions.duration.shorter,
+            }),
+          },
+        }
+      );
 
       if (tab.notifications && tab.notifications > 0) {
         return (

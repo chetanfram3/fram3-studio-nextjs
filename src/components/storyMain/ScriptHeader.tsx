@@ -16,46 +16,14 @@ import ProcessingModeIcon from "@/components/common/ProcessingModeIcon";
 import { useRouter, useParams } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { getCurrentBrand } from "@/config/brandConfig";
+// IMPORT TYPES FROM CENTRALIZED LOCATION
+import type { ScriptInfo, Timestamp } from "@/types/storyMain/types";
 
 // ===========================
 // TYPE DEFINITIONS
 // ===========================
 
-type ProcessingMode = "quick" | "moderate" | "normal" | "detailed";
-
-interface Version {
-  versionId: string;
-  versionNumber: number;
-  genScriptVersionNumber?: number;
-  processingMode: ProcessingMode;
-}
-
-interface ProductDetails {
-  productCategory: string;
-  product: string;
-}
-
-interface Location {
-  country: string;
-}
-
-interface Timestamp {
-  _seconds: number;
-  _nanoseconds: number;
-}
-
-interface ScriptInfo {
-  scriptId: string;
-  genScriptId?: string;
-  title: string;
-  currentVersion: string;
-  version: Version;
-  lastModifiedAt: Timestamp;
-  productDetails: ProductDetails;
-  location: Location;
-  versions: Version[];
-}
-
+// Remove all the duplicate type definitions - use the imported ones instead
 interface ScriptHeaderProps {
   scriptInfo: ScriptInfo;
 }
@@ -113,9 +81,7 @@ export function ScriptHeader({ scriptInfo }: ScriptHeaderProps) {
       if (!versionId) return;
 
       setSelectedVersion(versionId);
-      router.push(
-        `/story/${scriptInfo.scriptId}/version/${versionId}`
-      );
+      router.push(`/story/${scriptInfo.scriptId}/version/${versionId}`);
     },
     [scriptInfo.scriptId, router]
   );
