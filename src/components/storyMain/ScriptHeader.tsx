@@ -114,7 +114,7 @@ export function ScriptHeader({ scriptInfo }: ScriptHeaderProps) {
 
       setSelectedVersion(versionId);
       router.push(
-        `/dashboard/story/${scriptInfo.scriptId}/version/${versionId}`
+        `/story/${scriptInfo.scriptId}/version/${versionId}`
       );
     },
     [scriptInfo.scriptId, router]

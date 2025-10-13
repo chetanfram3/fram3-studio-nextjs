@@ -135,10 +135,9 @@ export default function StoryPage() {
       }
 
       // Update URL
-      router.push(
-        `/dashboard/story/${scriptId}/version/${versionId}/${newValue}`,
-        { scroll: false }
-      );
+      router.push(`/story/${scriptId}/version/${versionId}/${newValue}`, {
+        scroll: false,
+      });
     },
     [scriptId, versionId, router]
   );
