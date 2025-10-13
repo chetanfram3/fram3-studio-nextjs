@@ -708,14 +708,23 @@ export function VersionHistoryDialog({
                           mb: 2,
                         }}
                       >
+                        {/* Debug whether MetadataChip is rendering */}
                         {versions.current.duration &&
-                          versions.current.duration > 0 && (
+                        versions.current.duration > 0 ? (
+                          <>
                             <MetadataChip
                               icon={<Clock />}
                               label={formatDuration(versions.current.duration)}
                               size="small"
                             />
-                          )}
+                          </>
+                        ) : (
+                          <Typography
+                            variant="body2"
+                            color="textSecondary"
+                          ></Typography>
+                        )}
+
                         {(() => {
                           const modelTierInfo = getModelTierInfo(
                             versions.current.modelTier || 0
