@@ -182,7 +182,6 @@ export function SentimentAnalysis({ data }: SentimentAnalysisProps) {
             sx={{
               color: "text.secondary",
               "&:hover": {
-                color: "primary.main",
                 bgcolor: "primary.main",
                 color: "primary.contrastText",
               },

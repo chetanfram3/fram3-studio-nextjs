@@ -102,6 +102,7 @@ export interface AudioAction {
  * Unified audio version data
  */
 export interface UnifiedAudioVersion {
+  hasContent: boolean;
   version: number;
   prompt: string;
   destinationPath: string;
@@ -125,6 +126,8 @@ export interface UnifiedAudioVersion {
   narratorId?: string;
   foleyId?: number;
   sceneId: number;
+  description?: string;
+  modelTier?: number;
 }
 
 /**

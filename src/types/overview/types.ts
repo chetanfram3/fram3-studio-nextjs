@@ -174,6 +174,8 @@ export interface Dialogue {
 
 // Define the type for a shot with version support
 export interface Shot {
+    dialogueCount: any;
+    hasMultipleDialogues: any;
     shotId: number;
     shotDescription: string;
     shotSize: string; // e.g., Wide Shot, Close Up, etc.
