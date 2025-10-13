@@ -15,6 +15,7 @@ import { useTheme } from "@mui/material/styles";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Overview from "../overview";
 import MarketResearch from "../market";
+import VideoEditor from "../videoEditor";
 import { useScriptDashboardAnalysis } from "@/hooks/scripts/useScriptDashboardAnalysis";
 import { LoadingAnimation } from "@/components/common/LoadingAnimation";
 import { AnalysisInProgress } from "@/components/common/AnalysisInProgress";
@@ -113,6 +114,25 @@ export default function StoryPage() {
           fallback={<LoadingAnimation message="Loading market research..." />}
         >
           <MarketResearch scriptId={scriptId} versionId={versionId} />
+        </React.Suspense>
+      ),
+    },
+    {
+      label: "Editor",
+      icon: <EditIcon fontSize="small" />,
+      component: (
+        <React.Suspense
+          fallback={<LoadingAnimation message="Loading editor..." />}
+        >
+          {scriptInfo ? (
+            <VideoEditor
+              scriptId={scriptId}
+              versionId={versionId}
+              scriptInfo={scriptInfo}
+            />
+          ) : (
+            <AnalysisInProgress message="Loading editor data..." />
+          )}
         </React.Suspense>
       ),
     },
