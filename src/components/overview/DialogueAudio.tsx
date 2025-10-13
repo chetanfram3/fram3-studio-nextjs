@@ -893,7 +893,14 @@ export default function DialogueAudioComponent({
           formatDuration={formatDuration}
           validateAudioValue={validateAudioValue}
           audioType="dialogue"
-          AudioPlayer={AudioPlayer}
+          AudioPlayer={
+            AudioPlayer as React.ComponentType<{
+              audioPath: string;
+              initialDuration: number;
+              audioType: string;
+              [key: string]: unknown;
+            }>
+          }
           selectedPlaybackVersion={selectedPlaybackVersion}
           isRestoringVersion={isRestoringVersion}
           handleVersionPlayback={handleVersionPlayback}

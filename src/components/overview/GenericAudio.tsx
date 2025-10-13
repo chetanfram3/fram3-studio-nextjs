@@ -35,7 +35,7 @@ import {
   processMusicAudio,
   restoreAudioVersion,
 } from "@/services/audioService";
-import { AudioType, AudioStatus } from "@/types/audio";
+import { AudioType, AudioStatus, UnifiedAudioVersion } from "@/types/audio";
 import CustomToast from "@/components/common/CustomToast";
 import { VersionHistoryDialog } from "./VersionHistory";
 import { PromptEditDialog } from "./PromptEditDialog";
@@ -295,9 +295,10 @@ export default function GenericAudioComponent({
         modelTier: modelTier,
       };
     } else {
-      const archivedVersions = versions.archived || {};
+      const archivedVersions: Record<number, UnifiedAudioVersion> =
+        versions.archived ?? {};
       const selectedVersion = archivedVersions[selectedPlaybackVersion];
-      const validDuration = validateAudioValue(selectedVersion?.duration, 0);
+      const validDuration = validateAudioValue(selectedVersion?.duration, 0.0);
 
       return {
         destinationPath: selectedVersion?.destinationPath || "",
@@ -969,7 +970,14 @@ export default function GenericAudioComponent({
             formatDuration={formatDuration}
             validateAudioValue={validateAudioValue}
             audioType={audioType}
-            AudioPlayer={AudioPlayer}
+            AudioPlayer={
+              AudioPlayer as React.ComponentType<{
+                audioPath: string;
+                initialDuration: number;
+                audioType: string;
+                [key: string]: unknown;
+              }>
+            }
             selectedPlaybackVersion={selectedPlaybackVersion}
             isRestoringVersion={isRestoringVersion}
             handleVersionPlayback={handleVersionPlayback}
