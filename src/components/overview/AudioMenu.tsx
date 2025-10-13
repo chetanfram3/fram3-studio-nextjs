@@ -240,16 +240,19 @@ export function AudioMenu({
       )}
 
       {/* Version History Section */}
-      {hasVersionedAudio && onShowVersionHistory && (
-        <>
+      {/* Version History Section */}
+      {hasVersionedAudio &&
+        onShowVersionHistory && [
           <Divider
+            key="version-divider"
             sx={{
               my: 1,
               borderColor: "divider",
               opacity: 0.5,
             }}
-          />
+          />,
           <MenuItem
+            key="version-history"
             onClick={handleMenuItemClick(() => {
               onShowVersionHistory();
               onClose();
@@ -321,9 +324,8 @@ export function AudioMenu({
                 {totalVersions}
               </Box>
             )}
-          </MenuItem>
-        </>
-      )}
+          </MenuItem>,
+        ]}
     </Menu>
   );
 }
