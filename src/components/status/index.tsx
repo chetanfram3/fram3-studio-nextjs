@@ -468,7 +468,6 @@ export default function Status({ scriptInfo, refetch }: StatusProps) {
               sourceTitle={scriptInfo.title}
               variant="contained"
               size="medium"
-              adminOnly={true}
             />
           )}
           {hasFeatureAccess("enterprise") && (
