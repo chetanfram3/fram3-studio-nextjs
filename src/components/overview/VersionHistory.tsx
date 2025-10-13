@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -32,8 +32,6 @@ import {
   Play,
   GitBranch,
   Zap,
-  AlertCircle,
-  CheckCircle,
   FileAudio,
   Settings,
 } from "lucide-react";
@@ -43,15 +41,20 @@ import {
   Circle as ProIcon,
   Zap as BasicIcon,
 } from "lucide-react";
+import { getCurrentBrand } from "@/config/brandConfig";
 import { MODEL_TIERS } from "@/components/common/ModelTierSelector";
 
-// Styled Components matching AddCreditsModal
+// =============================================================================
+// STYLED COMPONENTS - Theme-compliant
+// =============================================================================
+
 const CompactDialog = styled(Dialog)(({ theme }) => ({
   "& .MuiDialog-paper": {
-    borderRadius: "16px",
+    borderRadius: getCurrentBrand().borderRadius * 2,
     border: `1px solid ${theme.palette.divider}`,
     background: theme.palette.background.paper,
-    boxShadow: `0 12px 24px ${alpha(theme.palette.common.black, 0.15)}`,
+    backgroundImage: "none !important", // Disable MUI overlay
+    boxShadow: theme.shadows[24],
     maxWidth: "900px",
     width: "100%",
     maxHeight: "90vh",
@@ -59,131 +62,216 @@ const CompactDialog = styled(Dialog)(({ theme }) => ({
   },
 }));
 
-const GradientAvatar = styled(Avatar)(({ gradient }: { gradient: string }) => ({
-  background: gradient,
-  borderRadius: "12px",
-  width: 32,
-  height: 32,
-  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
-}));
+const GradientAvatar = styled(Avatar)(() => {
+  const brand = getCurrentBrand();
+  return {
+    background: "linear-gradient(135deg, #667eea, #764ba2)",
+    borderRadius: brand.borderRadius,
+    width: 32,
+    height: 32,
+    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+  };
+});
 
-const CompactButton = styled(Button)(({}) => ({
-  borderRadius: "8px",
-  textTransform: "none",
-  fontWeight: 600,
-  fontSize: "0.875rem",
-  padding: "6px 12px",
-  minWidth: "auto",
-  transition: "all 0.2s ease",
-  "&:hover": {
-    transform: "translateY(-1px)",
-  },
-}));
+const CompactButton = styled(Button)(({ theme }) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: brand.borderRadius,
+    textTransform: "none",
+    fontWeight: 600,
+    fontSize: "0.875rem",
+    padding: "6px 12px",
+    minWidth: "auto",
+    fontFamily: brand.fonts.body,
+    transition: theme.transitions.create(["transform", "box-shadow"], {
+      duration: theme.transitions.duration.short,
+    }),
+    "&:hover": {
+      transform: "translateY(-1px)",
+    },
+  };
+});
 
 const VersionCard = styled(Paper, {
   shouldForwardProp: (prop) => prop !== "cardvariant",
-})<{ cardvariant?: "current" | "archived" }>(({ theme, cardvariant }) => ({
-  borderRadius: "12px",
-  padding: theme.spacing(2),
-  border:
-    cardvariant === "current"
-      ? `2px solid ${theme.palette.primary.main}`
-      : `1px solid ${theme.palette.divider}`,
-  background:
-    cardvariant === "current"
-      ? alpha(theme.palette.primary.main, 0.03)
-      : theme.palette.background.paper,
-  transition: "all 0.2s ease",
-  "&:hover": {
-    borderColor:
+})<{ cardvariant?: "current" | "archived" }>(({ theme, cardvariant }) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: brand.borderRadius * 1.5,
+    padding: theme.spacing(2),
+    border:
       cardvariant === "current"
-        ? theme.palette.primary.main
-        : theme.palette.secondary.main,
-    boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.08)}`,
-  },
-}));
-
-const MetadataChip = styled(Chip)(({ theme }) => ({
-  borderRadius: "8px",
-  fontSize: "0.75rem",
-  fontWeight: 500,
-  height: "24px",
-  background: alpha(theme.palette.text.primary, 0.05),
-  border: `1px solid ${alpha(theme.palette.text.primary, 0.1)}`,
-  "& .MuiChip-icon": {
-    fontSize: "14px",
-    marginLeft: "4px",
-  },
-}));
-
-const CompactAccordion = styled(Accordion)(({ theme }) => ({
-  borderRadius: "12px !important",
-  border: `1px solid ${theme.palette.divider}`,
-  boxShadow: "none",
-  "&:before": {
-    display: "none",
-  },
-  "& .MuiAccordionSummary-root": {
-    borderRadius: "12px",
-    minHeight: "48px",
-    "&.Mui-expanded": {
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
+        ? `2px solid ${theme.palette.primary.main}`
+        : `1px solid ${theme.palette.divider}`,
+    background:
+      cardvariant === "current"
+        ? alpha(theme.palette.primary.main, 0.03)
+        : theme.palette.background.paper,
+    transition: theme.transitions.create(["border-color", "box-shadow"], {
+      duration: theme.transitions.duration.short,
+    }),
+    "&:hover": {
+      borderColor:
+        cardvariant === "current"
+          ? theme.palette.primary.main
+          : theme.palette.primary.light,
+      boxShadow: theme.shadows[4],
     },
-  },
-  "& .MuiAccordionDetails-root": {
-    borderTop: `1px solid ${theme.palette.divider}`,
-    borderBottomLeftRadius: "12px",
-    borderBottomRightRadius: "12px",
-  },
-}));
+  };
+});
 
-const EditHistoryCard = styled(Paper)(({ theme }) => ({
-  borderRadius: "8px",
-  padding: theme.spacing(1.5),
-  border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
-  background: alpha(theme.palette.secondary.main, 0.03),
-  position: "relative",
-  "&::before": {
-    content: '""',
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "3px",
-    height: "100%",
-    background: theme.palette.secondary.main,
-    borderRadius: "0 8px 8px 0",
-  },
-}));
+const MetadataChip = styled(Chip)(({ theme }) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: brand.borderRadius,
+    fontSize: "0.75rem",
+    fontWeight: 500,
+    height: "24px",
+    background: alpha(theme.palette.text.primary, 0.05),
+    border: `1px solid ${alpha(theme.palette.text.primary, 0.1)}`,
+    "& .MuiChip-icon": {
+      fontSize: "14px",
+      marginLeft: "4px",
+    },
+  };
+});
 
-const PromptCard = styled(Box)(({ theme }) => ({
-  background: alpha(theme.palette.text.primary, 0.03),
-  padding: "12px 16px",
-  borderRadius: "8px",
-  border: `1px solid ${alpha(theme.palette.text.primary, 0.08)}`,
-  fontStyle: "italic",
-  fontSize: "0.875rem",
-  lineHeight: 1.4,
-  position: "relative",
-  "&::before": {
-    content: '"\\201C"', // Left double quotation mark
-    position: "absolute",
-    left: "8px",
-    top: "8px",
-    fontSize: "1.2rem",
-    color: theme.palette.text.secondary,
-    opacity: 0.5,
-  },
-  "&::after": {
-    content: '"\\201D"', // Right double quotation mark
-    position: "absolute",
-    right: "8px",
-    bottom: "8px",
-    fontSize: "1.2rem",
-    color: theme.palette.text.secondary,
-    opacity: 0.5,
-  },
-}));
+const CompactAccordion = styled(Accordion)(({ theme }) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: `${brand.borderRadius}px !important`,
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: "none",
+    "&:before": {
+      display: "none",
+    },
+    "& .MuiAccordionSummary-root": {
+      borderRadius: brand.borderRadius,
+      minHeight: "48px",
+      "&.Mui-expanded": {
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+      },
+    },
+    "& .MuiAccordionDetails-root": {
+      borderTop: `1px solid ${theme.palette.divider}`,
+      borderBottomLeftRadius: brand.borderRadius,
+      borderBottomRightRadius: brand.borderRadius,
+    },
+  };
+});
+
+const EditHistoryCard = styled(Paper)(({ theme }) => {
+  const brand = getCurrentBrand();
+  return {
+    borderRadius: brand.borderRadius,
+    padding: theme.spacing(1.5),
+    border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+    background: alpha(theme.palette.primary.main, 0.03),
+    position: "relative",
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "3px",
+      height: "100%",
+      background: theme.palette.primary.main,
+      borderRadius: `0 ${brand.borderRadius}px ${brand.borderRadius}px 0`,
+    },
+  };
+});
+
+const PromptCard = styled(Box)(({ theme }) => {
+  const brand = getCurrentBrand();
+  return {
+    background: alpha(theme.palette.text.primary, 0.03),
+    padding: "12px 16px",
+    borderRadius: brand.borderRadius,
+    border: `1px solid ${alpha(theme.palette.text.primary, 0.08)}`,
+    fontStyle: "italic",
+    fontSize: "0.875rem",
+    lineHeight: 1.4,
+    position: "relative",
+    fontFamily: brand.fonts.body,
+    color: theme.palette.text.primary,
+    "&::before": {
+      content: '"\\201C"',
+      position: "absolute",
+      left: "8px",
+      top: "8px",
+      fontSize: "1.2rem",
+      color: theme.palette.text.secondary,
+      opacity: 0.5,
+    },
+    "&::after": {
+      content: '"\\201D"',
+      position: "absolute",
+      right: "8px",
+      bottom: "8px",
+      fontSize: "1.2rem",
+      color: theme.palette.text.secondary,
+      opacity: 0.5,
+    },
+  };
+});
+
+// =============================================================================
+// TYPE DEFINITIONS
+// =============================================================================
+
+interface VersionData {
+  version: number;
+  prompt?: string;
+  destinationPath?: string;
+  duration?: number;
+  modelTier?: number;
+  status?: string;
+  isDraft?: boolean;
+  timestamp?: { _seconds: number } | string;
+  actions?: ActionData[];
+  [key: string]: unknown;
+}
+
+interface ActionData {
+  type: string;
+  timestamp?: { _seconds: number } | string;
+  fromVersion?: number;
+  toVersion?: number;
+  displayVersion?: number;
+  newPrompt?: string;
+  finalPrompt?: string;
+  originalPrompt?: string;
+  previousPrompt?: string;
+  prompt?: string;
+  regenerationReason?: string;
+  wasCompleted?: boolean;
+  duration?: number;
+  model?: string;
+  currentModel?: string;
+  modelTier?: number;
+  currentModelTier?: number;
+  totalEditsBeforeGeneration?: number;
+  promptJourney?: {
+    from?: string;
+    to?: string;
+    wasEdited?: boolean;
+  };
+  voiceConfig?: unknown;
+  currentVoiceConfig?: unknown;
+  actorId?: number;
+  narratorId?: number;
+  audioMetrics?: unknown;
+  metadata?: unknown;
+  contentPath?: string;
+  destinationPath?: string;
+  sourceVersion?: number;
+  restoredFromVersion?: number;
+  contentGenerated?: boolean;
+  fromCompletedVersion?: boolean;
+  completedDraftVersion?: number;
+  [key: string]: unknown;
+}
 
 interface VersionHistoryDialogProps {
   showVersionHistory: boolean;
@@ -194,38 +282,50 @@ interface VersionHistoryDialogProps {
   totalVersions: number;
   totalEdits: number;
   versions: {
-    current?: any & { modelTier?: number }; // Add modelTier
-    archived?: Record<string, any & { modelTier?: number }>;
+    current?: VersionData;
+    archived?: Record<string, VersionData>;
   };
-  editHistory: any[];
   formatDuration: (duration: number) => string;
   validateAudioValue: (value: number, fallback: number) => number;
   audioType: string;
-  selectedPlaybackVersion: number | null;
-  isRestoringVersion: boolean;
-  handleVersionPlayback: (version: number) => void;
-  handleRestoreVersion: (version: number) => void;
-  AudioPlayer: React.ComponentType<any>;
+  AudioPlayer: React.ComponentType<{
+    audioPath: string;
+    initialDuration: number;
+    audioType: string;
+    [key: string]: unknown;
+  }>;
+  // Optional props
+  selectedPlaybackVersion?: number | null;
+  isRestoringVersion?: boolean;
+  handleVersionPlayback?: (version: number) => void;
+  handleRestoreVersion?: (version: number) => void;
 }
 
-export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export function VersionHistoryDialog({
   showVersionHistory,
   setShowVersionHistory,
   audioConfig,
   totalVersions,
   totalEdits,
   versions,
-  editHistory,
   formatDuration,
   validateAudioValue,
   audioType,
   isRestoringVersion,
   handleRestoreVersion,
   AudioPlayer,
-}) => {
+}: VersionHistoryDialogProps) {
   const theme = useTheme();
+  const brand = getCurrentBrand();
 
-  // Helper function to get action icon
+  // ===========================================================================
+  // HELPER FUNCTIONS - Memoized per React 19 best practices
+  // ===========================================================================
+
   const getActionIcon = (actionType: string) => {
     switch (actionType) {
       case "initial_creation":
@@ -241,13 +341,12 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
     }
   };
 
-  // Helper function to get action color
   const getActionColor = (actionType: string) => {
     switch (actionType) {
       case "initial_creation":
         return "primary";
       case "prompt_edit":
-        return "secondary";
+        return "primary";
       case "content_generation":
         return "success";
       case "version_restoration":
@@ -262,25 +361,25 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
       case MODEL_TIERS.BASIC:
         return {
           label: "Basic",
-          color: "#9e9e9e",
+          color: theme.palette.grey[600],
           icon: <BasicIcon size={12} />,
         };
       case MODEL_TIERS.PRO:
         return {
           label: "Pro",
-          color: "#2196f3",
+          color: theme.palette.info.main,
           icon: <ProIcon size={12} />,
         };
       case MODEL_TIERS.PREMIUM:
         return {
           label: "Premium",
-          color: "#ff9800",
+          color: theme.palette.warning.main,
           icon: <PremiumIcon size={12} />,
         };
       case MODEL_TIERS.ULTRA:
         return {
           label: "Ultra",
-          color: "#9c27b0",
+          color: theme.palette.error.main,
           icon: <UltraIcon size={12} />,
         };
       default:
@@ -288,12 +387,11 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
     }
   };
 
-  // Enhanced helper to get regeneration reason display
   const formatRegenerationReason = (reason: string | undefined) => {
     if (!reason) return null;
 
     const reasonMap: Record<string, { label: string; color: string }> = {
-      user_edit: { label: "User Edit", color: "secondary" },
+      user_edit: { label: "User Edit", color: "primary" },
       user_request: { label: "User Request", color: "primary" },
       prompt_edit_with_generation: {
         label: "Prompt + Audio",
@@ -302,7 +400,7 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
       initial_generation: { label: "Initial", color: "primary" },
       draft_completion: { label: "Draft Complete", color: "info" },
       draft_completion_edited: { label: "Edited Draft", color: "warning" },
-      prompt_based_regeneration: { label: "Prompt Change", color: "secondary" },
+      prompt_based_regeneration: { label: "Prompt Change", color: "primary" },
       batch_regeneration: { label: "Batch Regen", color: "info" },
       force_regeneration: { label: "Force Regen", color: "error" },
     };
@@ -315,104 +413,62 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
     );
   };
 
-  // ENHANCED: Process edit history with unified versioning support
-  const processedEditHistory = React.useMemo(() => {
-    console.log("VersionHistory: Raw editHistory received:", editHistory);
+  // ===========================================================================
+  // PROCESS EDIT HISTORY - Extract from versions object only
+  // React 19: useMemo for expensive computations with multiple dependencies
+  // ===========================================================================
 
-    // Create comprehensive list from all sources
-    const allVersionActions = [];
-    const seenActions = new Set();
+  const processedEditHistory = useMemo(() => {
+    const allActions: ActionData[] = [];
 
-    const createActionKey = (action: any) => {
-      const timestamp =
-        action.timestamp?._seconds ||
-        new Date(action.timestamp || 0).getTime() / 1000;
-      const type = action.type || "unknown";
-      const prompt =
-        action.newPrompt ||
-        action.finalPrompt ||
-        action.originalPrompt ||
-        action.prompt ||
-        "";
-      return `${timestamp}-${type}-${prompt.slice(0, 30)}`;
-    };
-
-    const addUniqueAction = (
-      action: any,
-      source: string,
-      versionContext: string
-    ) => {
-      const actionKey = createActionKey(action);
-
-      if (!seenActions.has(actionKey)) {
-        seenActions.add(actionKey);
-        allVersionActions.push({
-          ...action,
-          versionContext,
-          source,
-        });
-        console.log(
-          `VersionHistory: Added unique action from ${source}:`,
-          action.type
-        );
-      }
-    };
-
-    // Priority 1: Provided edit history
-    if (editHistory && editHistory.length > 0) {
-      editHistory.forEach((action) => {
-        addUniqueAction(action, "provided", "provided");
-      });
-    }
-
-    // Priority 2: Current version actions
+    // Extract from current version
     if (versions.current?.actions) {
-      versions.current.actions.forEach((action) => {
-        addUniqueAction(
-          {
-            ...action,
-            fromVersion: action.fromVersion || versions.current.version,
-            toVersion: action.toVersion || versions.current.version,
-            displayVersion: action.toVersion || versions.current.version,
-          },
-          "current",
-          "current"
-        );
-      });
+      allActions.push(
+        ...versions.current.actions.map((action) => ({
+          ...action,
+          fromVersion: action.fromVersion || versions.current?.version,
+          toVersion: action.toVersion || versions.current?.version,
+          displayVersion: action.toVersion || versions.current?.version,
+          source: "current",
+          versionContext: "current",
+        }))
+      );
     }
 
-    // Priority 3: Archived version actions
-    Object.values(versions.archived || {}).forEach((version: any) => {
-      if (version.actions) {
-        version.actions.forEach((action) => {
-          addUniqueAction(
-            {
-              ...action,
-              fromVersion: action.fromVersion || version.version,
-              toVersion: action.toVersion || version.version,
-              displayVersion: action.toVersion || version.version,
-            },
-            `archived-v${version.version}`,
-            "archived"
-          );
-        });
+    // Extract from all archived versions
+    Object.entries(versions.archived || {}).forEach(([versionNum, version]) => {
+      if (version?.actions) {
+        allActions.push(
+          ...version.actions.map((action) => ({
+            ...action,
+            fromVersion: action.fromVersion || version.version,
+            toVersion: action.toVersion || version.version,
+            displayVersion: action.toVersion || version.version,
+            source: `archived-v${versionNum}`,
+            versionContext: "archived",
+          }))
+        );
       }
     });
 
-    // Sort chronologically
-    const sortedActions = allVersionActions.sort((a, b) => {
+    // Sort chronologically by timestamp
+    const sortedActions = allActions.sort((a, b) => {
       const timestampA =
-        a.timestamp?._seconds || new Date(a.timestamp || 0).getTime() / 1000;
+        typeof a.timestamp === "object" && "_seconds" in a.timestamp
+          ? a.timestamp._seconds
+          : new Date(a.timestamp || 0).getTime() / 1000;
       const timestampB =
-        b.timestamp?._seconds || new Date(b.timestamp || 0).getTime() / 1000;
+        typeof b.timestamp === "object" && "_seconds" in b.timestamp
+          ? b.timestamp._seconds
+          : new Date(b.timestamp || 0).getTime() / 1000;
       return timestampA - timestampB;
     });
 
-    // Enhanced processing with version transitions
+    // Enhance with metadata
     const processedActions = sortedActions.map((action) => {
       let versionTransition = null;
 
-      // Enhanced version transition detection
+      // Version transition detection
       if (
         action.fromVersion &&
         action.toVersion &&
@@ -441,9 +497,8 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
         wasCompleted: action.wasCompleted,
         duration: action.duration,
         model: action.model || action.currentModel,
-        modelTier: action.modelTier || action.currentModelTier, // ← Added this line
+        modelTier: action.modelTier || action.currentModelTier,
         totalEditsBeforeGeneration: action.totalEditsBeforeGeneration,
-        // NEW: Enhanced prompt journey tracking
         promptJourney: action.promptJourney || {
           from: action.originalPrompt || action.previousPrompt,
           to: action.finalPrompt || action.newPrompt || action.prompt,
@@ -453,7 +508,6 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
               action.finalPrompt &&
               action.originalPrompt !== action.finalPrompt),
         },
-        // NEW: Voice and configuration details
         voiceConfig: action.voiceConfig || action.currentVoiceConfig,
         actorId: action.actorId,
         narratorId: action.narratorId,
@@ -472,7 +526,11 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
 
     // Reverse for display (most recent first)
     return processedActions.reverse();
-  }, [editHistory, versions]);
+  }, [versions]);
+
+  // ===========================================================================
+  // RENDER
+  // ===========================================================================
 
   return (
     <CompactDialog
@@ -481,7 +539,7 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
       fullWidth
     >
       <DialogContent sx={{ p: 0 }}>
-        {/* Enhanced Header */}
+        {/* Header */}
         <Box
           sx={{
             display: "flex",
@@ -493,15 +551,20 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
             background: `linear-gradient(135deg, ${alpha(
               theme.palette.primary.main,
               0.05
-            )}, ${alpha(theme.palette.secondary.main, 0.05)})`,
+            )}, ${alpha(theme.palette.primary.main, 0.02)})`,
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <GradientAvatar gradient="linear-gradient(135deg, #667eea, #764ba2)">
+            <GradientAvatar>
               <Music size={18} style={{ color: "white" }} />
             </GradientAvatar>
             <Box>
-              <Typography variant="h6" fontWeight="bold" fontSize="1.2rem">
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                fontSize="1.2rem"
+                sx={{ fontFamily: brand.fonts.heading, color: "text.primary" }}
+              >
                 {audioConfig.name} History
               </Typography>
               <Box
@@ -528,38 +591,37 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
           <IconButton
             onClick={() => setShowVersionHistory(false)}
             sx={{
-              borderRadius: "10px",
+              borderRadius: brand.borderRadius,
               p: 1,
               background: alpha(theme.palette.background.paper, 0.8),
+              color: "text.primary",
               "&:hover": {
                 background: theme.palette.background.paper,
               },
             }}
-            size="small"
           >
-            <Close fontSize="small" />
+            <Close size={20} />
           </IconButton>
         </Box>
 
         {/* Content */}
         <Box
           sx={{
-            p: 3,
-            maxHeight: "70vh",
-            overflow: "auto",
-            backgroundColor: theme.palette.background.default,
+            px: 3,
+            py: 2.5,
+            maxHeight: "calc(90vh - 180px)",
+            overflowY: "auto",
           }}
         >
           <Stack spacing={3}>
-            {/* Current Version - Enhanced */}
+            {/* Current Version */}
             {versions.current && (
               <Box>
                 <Typography
                   variant="subtitle1"
                   fontWeight="700"
-                  sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}
+                  sx={{ mb: 2, color: "text.primary" }}
                 >
-                  <CheckCircle size={18} color={theme.palette.success.main} />
                   Current Version
                 </Typography>
                 <VersionCard cardvariant="current">
@@ -582,59 +644,50 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
                       >
                         <Typography
                           variant="h6"
-                          color="primary"
                           fontWeight="bold"
+                          sx={{
+                            fontFamily: brand.fonts.heading,
+                            color: "text.primary",
+                          }}
                         >
                           Version {versions.current.version}
                         </Typography>
                         <Chip
-                          label="Active"
+                          label="Current"
                           color="primary"
                           size="small"
                           sx={{
-                            borderRadius: "6px",
+                            borderRadius: brand.borderRadius,
                             fontWeight: 600,
                             fontSize: "0.7rem",
                           }}
                         />
-                        {versions.current.isDraft && (
-                          <Chip
-                            label="Draft"
-                            color="warning"
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                              borderRadius: "6px",
-                              fontWeight: 600,
-                              fontSize: "0.7rem",
-                            }}
-                          />
-                        )}
                       </Box>
 
                       <PromptCard sx={{ mb: 2 }}>
                         {versions.current.prompt || "No prompt available"}
                       </PromptCard>
 
-                      {/* Enhanced Metadata */}
+                      {/* Metadata */}
                       <Box
                         sx={{
                           display: "flex",
                           gap: 1,
                           flexWrap: "wrap",
-                          mb: 1,
+                          mb: 2,
                         }}
                       >
-                        {versions.current.duration > 0 && (
-                          <MetadataChip
-                            icon={<Clock />}
-                            label={formatDuration(versions.current.duration)}
-                            size="small"
-                          />
-                        )}
+                        {versions.current.duration &&
+                          versions.current.duration > 0 && (
+                            <MetadataChip
+                              icon={<Clock />}
+                              label={formatDuration(versions.current.duration)}
+                              size="small"
+                            />
+                          )}
                         {(() => {
                           const modelTierInfo = getModelTierInfo(
-                            versions.current.modelTier
+                            versions.current.modelTier || 0
                           );
                           return modelTierInfo ? (
                             <Tooltip
@@ -645,394 +698,76 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
                                 label={modelTierInfo.label}
                                 size="small"
                                 sx={{
-                                  height: 24,
-                                  fontSize: "0.75rem",
+                                  height: 20,
+                                  fontSize: "0.7rem",
                                   fontWeight: 600,
                                   bgcolor: alpha(modelTierInfo.color, 0.1),
                                   color: modelTierInfo.color,
-                                  border: `1px solid ${alpha(
-                                    modelTierInfo.color,
-                                    0.3
-                                  )}`,
+                                  border: `1px solid ${alpha(modelTierInfo.color, 0.3)}`,
                                   "& .MuiChip-icon": {
                                     color: modelTierInfo.color,
-                                    fontSize: 12,
+                                    fontSize: 10,
                                   },
                                 }}
                               />
                             </Tooltip>
                           ) : null;
                         })()}
-                        {versions.current.status && (
-                          <MetadataChip
-                            icon={
-                              versions.current.status === "generated" ? (
-                                <CheckCircle />
-                              ) : (
-                                <AlertCircle />
-                              )
-                            }
-                            label={versions.current.status}
-                            size="small"
-                            sx={{
-                              color:
-                                versions.current.status === "generated"
-                                  ? theme.palette.success.main
-                                  : theme.palette.warning.main,
-                              borderColor:
-                                versions.current.status === "generated"
-                                  ? theme.palette.success.main
-                                  : theme.palette.warning.main,
-                            }}
-                          />
-                        )}
-                        <Tooltip
-                          title={(() => {
-                            const dateField =
-                              versions.current.lastEditedAt ||
-                              versions.current.createdAt;
-                            if (
-                              dateField &&
-                              typeof dateField === "object" &&
-                              "_seconds" in dateField
-                            ) {
-                              return new Date(
-                                dateField._seconds * 1000
-                              ).toLocaleString();
-                            }
-                            return new Date(
-                              dateField || Date.now()
-                            ).toLocaleString();
-                          })()}
-                          arrow
-                          placement="top"
-                        >
+                        {versions.current.timestamp && (
                           <MetadataChip
                             icon={<Calendar />}
-                            label={(() => {
-                              const dateField =
-                                versions.current.lastEditedAt ||
-                                versions.current.createdAt;
-                              if (
-                                dateField &&
-                                typeof dateField === "object" &&
-                                "_seconds" in dateField
-                              ) {
-                                return new Date(
-                                  dateField._seconds * 1000
-                                ).toLocaleDateString();
-                              }
-                              return new Date(
-                                dateField || Date.now()
-                              ).toLocaleDateString();
-                            })()}
+                            label={new Date(
+                              typeof versions.current.timestamp === "object" &&
+                              "_seconds" in versions.current.timestamp
+                                ? versions.current.timestamp._seconds * 1000
+                                : versions.current.timestamp
+                            ).toLocaleDateString()}
                             size="small"
-                            sx={{ cursor: "help" }}
                           />
-                        </Tooltip>
+                        )}
                       </Box>
+
+                      {/* Audio Player */}
+                      {versions.current.destinationPath && (
+                        <Box
+                          sx={{
+                            mt: 2,
+                            p: 2,
+                            background: alpha(
+                              theme.palette.background.default,
+                              0.3
+                            ),
+                            borderRadius: brand.borderRadius,
+                            border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+                          }}
+                        >
+                          <AudioPlayer
+                            audioPath={versions.current.destinationPath}
+                            initialDuration={validateAudioValue(
+                              versions.current.duration || 0,
+                              0
+                            )}
+                            audioType={
+                              audioType === "roomTone" ? "roomtone" : audioType
+                            }
+                            key={`history-current-${versions.current.version}`}
+                          />
+                        </Box>
+                      )}
                     </Box>
                   </Box>
-
-                  {/* Audio Player */}
-                  {versions.current.destinationPath && (
-                    <Box
-                      sx={{
-                        mt: 2,
-                        p: 2,
-                        background: alpha(
-                          theme.palette.background.default,
-                          0.5
-                        ),
-                        borderRadius: "8px",
-                        border: `1px solid ${alpha(
-                          theme.palette.divider,
-                          0.5
-                        )}`,
-                      }}
-                    >
-                      <AudioPlayer
-                        audioPath={versions.current.destinationPath}
-                        initialDuration={validateAudioValue(
-                          versions.current.duration,
-                          0
-                        )}
-                        audioType={
-                          audioType === "roomTone" ? "roomtone" : audioType
-                        }
-                        key={`history-current-${versions.current.version}`}
-                      />
-                    </Box>
-                  )}
                 </VersionCard>
               </Box>
             )}
 
-            {/* Archived Versions - Enhanced */}
-            {Object.keys(versions.archived || {}).length > 0 && (
-              <Box>
-                <Typography
-                  variant="subtitle1"
-                  fontWeight="700"
-                  sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1 }}
-                >
-                  <FileAudio size={18} color={theme.palette.text.secondary} />
-                  Previous Versions
-                </Typography>
-                <Stack spacing={2}>
-                  {Object.values(versions.archived || {})
-                    .sort(
-                      (a: any, b: any) => (b.version || 0) - (a.version || 0)
-                    )
-                    .map((version: any) => (
-                      <VersionCard key={version.version} cardvariant="archived">
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            mb: 2,
-                          }}
-                        >
-                          <Box sx={{ flex: 1 }}>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                mb: 1.5,
-                              }}
-                            >
-                              <Typography variant="h6" fontWeight="bold">
-                                Version {version.version}
-                              </Typography>
-                              {version.isDraft && (
-                                <Chip
-                                  label="Draft"
-                                  color="warning"
-                                  variant="outlined"
-                                  size="small"
-                                  sx={{
-                                    borderRadius: "6px",
-                                    fontWeight: 600,
-                                    fontSize: "0.7rem",
-                                  }}
-                                />
-                              )}
-                            </Box>
-
-                            <PromptCard sx={{ mb: 2 }}>
-                              {version.prompt || "No prompt available"}
-                            </PromptCard>
-
-                            {/* Enhanced Metadata for Archived Versions */}
-                            <Box
-                              sx={{
-                                display: "flex",
-                                gap: 1,
-                                flexWrap: "wrap",
-                                mb: 2,
-                              }}
-                            >
-                              {version.duration > 0 && (
-                                <MetadataChip
-                                  icon={<Clock />}
-                                  label={formatDuration(version.duration)}
-                                  size="small"
-                                />
-                              )}
-                              {(() => {
-                                const modelTierInfo = getModelTierInfo(
-                                  version.modelTier // ← FIXED: use version.modelTier instead of versions.current.modelTier
-                                );
-                                return modelTierInfo ? (
-                                  <Tooltip
-                                    title={`Generated with ${modelTierInfo.label} model`}
-                                  >
-                                    <Chip
-                                      icon={modelTierInfo.icon}
-                                      label={modelTierInfo.label}
-                                      size="small"
-                                      sx={{
-                                        height: 24,
-                                        fontSize: "0.75rem",
-                                        fontWeight: 600,
-                                        bgcolor: alpha(
-                                          modelTierInfo.color,
-                                          0.1
-                                        ),
-                                        color: modelTierInfo.color,
-                                        border: `1px solid ${alpha(
-                                          modelTierInfo.color,
-                                          0.3
-                                        )}`,
-                                        "& .MuiChip-icon": {
-                                          color: modelTierInfo.color,
-                                          fontSize: 12,
-                                        },
-                                      }}
-                                    />
-                                  </Tooltip>
-                                ) : null;
-                              })()}
-                              {version.status && (
-                                <MetadataChip
-                                  icon={
-                                    version.status === "generated" ? (
-                                      <CheckCircle />
-                                    ) : (
-                                      <AlertCircle />
-                                    )
-                                  }
-                                  label={version.status}
-                                  size="small"
-                                  sx={{
-                                    color:
-                                      version.status === "generated"
-                                        ? theme.palette.success.main
-                                        : theme.palette.warning.main,
-                                    borderColor:
-                                      version.status === "generated"
-                                        ? theme.palette.success.main
-                                        : theme.palette.warning.main,
-                                  }}
-                                />
-                              )}
-                              <Tooltip
-                                title={(() => {
-                                  const dateField =
-                                    version.createdAt || version.lastEditedAt;
-                                  if (
-                                    dateField &&
-                                    typeof dateField === "object" &&
-                                    "_seconds" in dateField
-                                  ) {
-                                    return new Date(
-                                      dateField._seconds * 1000
-                                    ).toLocaleString();
-                                  }
-                                  return new Date(
-                                    dateField || Date.now()
-                                  ).toLocaleString();
-                                })()}
-                                arrow
-                                placement="top"
-                              >
-                                <MetadataChip
-                                  icon={<Calendar />}
-                                  label={(() => {
-                                    const dateField =
-                                      version.createdAt || version.lastEditedAt;
-                                    if (
-                                      dateField &&
-                                      typeof dateField === "object" &&
-                                      "_seconds" in dateField
-                                    ) {
-                                      return new Date(
-                                        dateField._seconds * 1000
-                                      ).toLocaleDateString();
-                                    }
-                                    return new Date(
-                                      dateField || Date.now()
-                                    ).toLocaleDateString();
-                                  })()}
-                                  size="small"
-                                  sx={{ cursor: "help" }}
-                                />
-                              </Tooltip>
-                              {/* Enhanced: Show regeneration reason if available */}
-                              {version.regenerationReason &&
-                                (() => {
-                                  const reasonInfo = formatRegenerationReason(
-                                    version.regenerationReason
-                                  );
-                                  return reasonInfo ? (
-                                    <MetadataChip
-                                      label={reasonInfo.label}
-                                      size="small"
-                                      sx={{
-                                        color:
-                                          theme.palette[reasonInfo.color]
-                                            ?.main ||
-                                          theme.palette.text.secondary,
-                                        borderColor:
-                                          theme.palette[reasonInfo.color]
-                                            ?.main || theme.palette.divider,
-                                        background: alpha(
-                                          theme.palette[reasonInfo.color]
-                                            ?.main ||
-                                            theme.palette.text.secondary,
-                                          0.1
-                                        ),
-                                      }}
-                                    />
-                                  ) : null;
-                                })()}
-                            </Box>
-                          </Box>
-
-                          <Box sx={{ display: "flex", gap: 1, ml: 2 }}>
-                            <CompactButton
-                              size="small"
-                              startIcon={<RestoreIcon size={14} />}
-                              onClick={() =>
-                                handleRestoreVersion(version.version)
-                              }
-                              disabled={isRestoringVersion}
-                              variant="outlined"
-                              color="secondary"
-                            >
-                              Restore
-                            </CompactButton>
-                          </Box>
-                        </Box>
-
-                        {/* Audio Player for Archived Versions */}
-                        {version.destinationPath && (
-                          <Box
-                            sx={{
-                              mt: 2,
-                              p: 2,
-                              background: alpha(
-                                theme.palette.background.default,
-                                0.3
-                              ),
-                              borderRadius: "8px",
-                              border: `1px solid ${alpha(
-                                theme.palette.divider,
-                                0.3
-                              )}`,
-                            }}
-                          >
-                            <AudioPlayer
-                              audioPath={version.destinationPath}
-                              initialDuration={validateAudioValue(
-                                version.duration,
-                                0
-                              )}
-                              audioType={
-                                audioType === "roomTone"
-                                  ? "roomtone"
-                                  : audioType
-                              }
-                              key={`history-archived-${version.version}`}
-                            />
-                          </Box>
-                        )}
-                      </VersionCard>
-                    ))}
-                </Stack>
-              </Box>
-            )}
-
-            {/* ENHANCED: Edit History with comprehensive action support */}
-            {processedEditHistory.length > 0 ? (
+            {/* Archived Versions */}
+            {versions.archived && Object.keys(versions.archived).length > 0 && (
               <Box>
                 <CompactAccordion>
                   <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
                     sx={{
-                      borderRadius: "12px",
+                      borderRadius: brand.borderRadius,
                       backgroundColor: theme.palette.background.default,
                       "&.Mui-expanded": {
                         borderBottomLeftRadius: 0,
@@ -1041,19 +776,225 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography variant="subtitle1" fontWeight="700">
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        sx={{ color: "text.primary" }}
+                      >
+                        Archived Versions
+                      </Typography>
+                      <Chip
+                        label={`${Object.keys(versions.archived).length} versions`}
+                        size="small"
+                        sx={{
+                          borderRadius: brand.borderRadius,
+                          background: alpha(theme.palette.primary.main, 0.1),
+                          border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                          color: theme.palette.primary.main,
+                          fontSize: "0.7rem",
+                          fontWeight: 600,
+                        }}
+                      />
+                    </Box>
+                  </AccordionSummary>
+                  <AccordionDetails
+                    sx={{
+                      p: 2,
+                      backgroundColor: theme.palette.background.default,
+                      borderTop: `1px solid ${theme.palette.divider}`,
+                      borderBottomLeftRadius: brand.borderRadius,
+                      borderBottomRightRadius: brand.borderRadius,
+                    }}
+                  >
+                    <Stack spacing={2}>
+                      {Object.values(versions.archived)
+                        .sort((a, b) => (b.version || 0) - (a.version || 0))
+                        .map((version) => (
+                          <VersionCard
+                            key={version.version}
+                            cardvariant="archived"
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "flex-start",
+                                mb: 2,
+                              }}
+                            >
+                              <Box sx={{ flex: 1 }}>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                    mb: 1.5,
+                                  }}
+                                >
+                                  <Typography
+                                    variant="h6"
+                                    fontWeight="bold"
+                                    sx={{
+                                      fontFamily: brand.fonts.heading,
+                                      color: "text.primary",
+                                    }}
+                                  >
+                                    Version {version.version}
+                                  </Typography>
+                                  {version.isDraft && (
+                                    <Chip
+                                      label="Draft"
+                                      color="warning"
+                                      variant="outlined"
+                                      size="small"
+                                      sx={{
+                                        borderRadius: brand.borderRadius,
+                                        fontWeight: 600,
+                                        fontSize: "0.7rem",
+                                      }}
+                                    />
+                                  )}
+                                </Box>
+
+                                <PromptCard sx={{ mb: 2 }}>
+                                  {version.prompt || "No prompt available"}
+                                </PromptCard>
+
+                                {/* Metadata */}
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    gap: 1,
+                                    flexWrap: "wrap",
+                                    mb: 2,
+                                  }}
+                                >
+                                  {version.duration && version.duration > 0 && (
+                                    <MetadataChip
+                                      icon={<Clock />}
+                                      label={formatDuration(version.duration)}
+                                      size="small"
+                                    />
+                                  )}
+                                  {(() => {
+                                    const modelTierInfo = getModelTierInfo(
+                                      version.modelTier || 0
+                                    );
+                                    return modelTierInfo ? (
+                                      <Tooltip
+                                        title={`Generated with ${modelTierInfo.label} model`}
+                                      >
+                                        <Chip
+                                          icon={modelTierInfo.icon}
+                                          label={modelTierInfo.label}
+                                          size="small"
+                                          sx={{
+                                            height: 20,
+                                            fontSize: "0.7rem",
+                                            fontWeight: 600,
+                                            bgcolor: alpha(
+                                              modelTierInfo.color,
+                                              0.1
+                                            ),
+                                            color: modelTierInfo.color,
+                                            border: `1px solid ${alpha(modelTierInfo.color, 0.3)}`,
+                                            "& .MuiChip-icon": {
+                                              color: modelTierInfo.color,
+                                              fontSize: 10,
+                                            },
+                                          }}
+                                        />
+                                      </Tooltip>
+                                    ) : null;
+                                  })()}
+                                </Box>
+
+                                {/* Restore Button */}
+                                {handleRestoreVersion && (
+                                  <CompactButton
+                                    variant="outlined"
+                                    color="primary"
+                                    size="small"
+                                    startIcon={<RestoreIcon size={14} />}
+                                    onClick={() =>
+                                      handleRestoreVersion(version.version)
+                                    }
+                                    disabled={isRestoringVersion}
+                                    sx={{ mb: 2 }}
+                                  >
+                                    Restore Version
+                                  </CompactButton>
+                                )}
+
+                                {/* Audio Player */}
+                                {version.destinationPath && (
+                                  <Box
+                                    sx={{
+                                      mt: 2,
+                                      p: 2,
+                                      background: alpha(
+                                        theme.palette.background.default,
+                                        0.3
+                                      ),
+                                      borderRadius: brand.borderRadius,
+                                      border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+                                    }}
+                                  >
+                                    <AudioPlayer
+                                      audioPath={version.destinationPath}
+                                      initialDuration={validateAudioValue(
+                                        version.duration || 0,
+                                        0
+                                      )}
+                                      audioType={
+                                        audioType === "roomTone"
+                                          ? "roomtone"
+                                          : audioType
+                                      }
+                                      key={`history-archived-${version.version}`}
+                                    />
+                                  </Box>
+                                )}
+                              </Box>
+                            </Box>
+                          </VersionCard>
+                        ))}
+                    </Stack>
+                  </AccordionDetails>
+                </CompactAccordion>
+              </Box>
+            )}
+
+            {/* Edit History */}
+            {processedEditHistory.length > 0 ? (
+              <Box>
+                <CompactAccordion>
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{
+                      borderRadius: brand.borderRadius,
+                      backgroundColor: theme.palette.background.default,
+                      "&.Mui-expanded": {
+                        borderBottomLeftRadius: 0,
+                        borderBottomRightRadius: 0,
+                      },
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        sx={{ color: "text.primary" }}
+                      >
                         Complete Edit History
                       </Typography>
                       <Chip
                         label={`${processedEditHistory.length} actions`}
                         size="small"
                         sx={{
-                          borderRadius: "6px",
+                          borderRadius: brand.borderRadius,
                           background: alpha(theme.palette.info.main, 0.1),
-                          border: `1px solid ${alpha(
-                            theme.palette.info.main,
-                            0.3
-                          )}`,
+                          border: `1px solid ${alpha(theme.palette.info.main, 0.3)}`,
                           color: theme.palette.info.main,
                           fontSize: "0.7rem",
                           fontWeight: 600,
@@ -1066,19 +1007,19 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
                       p: 2,
                       backgroundColor: theme.palette.background.default,
                       borderTop: `1px solid ${theme.palette.divider}`,
-                      borderBottomLeftRadius: "12px",
-                      borderBottomRightRadius: "12px",
+                      borderBottomLeftRadius: brand.borderRadius,
+                      borderBottomRightRadius: brand.borderRadius,
                     }}
                   >
                     <Stack spacing={2}>
-                      {processedEditHistory.map((edit: any, index: number) => {
+                      {processedEditHistory.map((edit, index) => {
                         const actionColor = getActionColor(edit.type);
                         const actionIcon = getActionIcon(edit.type);
 
                         return (
                           <EditHistoryCard key={index}>
                             <Box sx={{ pl: 1 }}>
-                              {/* Enhanced Header */}
+                              {/* Header */}
                               <Box
                                 sx={{
                                   display: "flex",
@@ -1108,6 +1049,7 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
                                     <Typography
                                       variant="subtitle2"
                                       fontWeight="600"
+                                      sx={{ color: "inherit" }}
                                     >
                                       {edit.type === "prompt_edit" &&
                                         "Prompt Changed"}
@@ -1165,651 +1107,41 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
                                 </Typography>
                               </Box>
 
-                              {/* Enhanced Action Content */}
-                              <Box sx={{ mb: 2 }}>
-                                {/* Prompt Edit Actions */}
-                                {edit.type === "prompt_edit" && (
-                                  <Box>
-                                    {(edit.previousPrompt ||
-                                      edit.enhancedMetadata?.promptJourney
-                                        ?.from) &&
-                                      (edit.newPrompt ||
-                                        edit.enhancedMetadata?.promptJourney
-                                          ?.to) && (
-                                        <Box sx={{ mt: 1 }}>
-                                          <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{ mb: 1, display: "block" }}
-                                          >
-                                            <strong>From:</strong>
-                                          </Typography>
-                                          <PromptCard
-                                            sx={{
-                                              mb: 1,
-                                              fontSize: "0.8rem",
-                                              padding: "8px 12px",
-                                            }}
-                                          >
-                                            {edit.previousPrompt ||
-                                              edit.enhancedMetadata
-                                                ?.promptJourney?.from ||
-                                              "Previous prompt"}
-                                          </PromptCard>
-                                          <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{ mb: 1, display: "block" }}
-                                          >
-                                            <strong>To:</strong>
-                                          </Typography>
-                                          <PromptCard
-                                            sx={{
-                                              fontSize: "0.8rem",
-                                              padding: "8px 12px",
-                                            }}
-                                          >
-                                            {edit.newPrompt ||
-                                              edit.enhancedMetadata
-                                                ?.promptJourney?.to ||
-                                              "New prompt"}
-                                          </PromptCard>
-                                        </Box>
-                                      )}
-                                    {edit.enhancedMetadata
-                                      ?.isVersionCreation && (
-                                      <Chip
-                                        size="small"
-                                        label="New Version Created"
-                                        color="info"
-                                        variant="outlined"
-                                        sx={{
-                                          mt: 1,
-                                          fontSize: "0.7rem",
-                                          height: 20,
-                                        }}
-                                      />
-                                    )}
-                                  </Box>
-                                )}
-
-                                {/* Content Generation Actions */}
-                                {edit.type === "content_generation" && (
-                                  <Box>
-                                    {/* Show prompt journey if available */}
-                                    {edit.enhancedMetadata?.promptJourney
-                                      ?.wasEdited && (
-                                      <Box sx={{ mt: 1, mb: 2 }}>
-                                        <Typography
-                                          variant="caption"
-                                          color="success.main"
-                                          sx={{
-                                            mb: 1,
-                                            display: "block",
-                                            fontWeight: 600,
-                                          }}
-                                        >
-                                          Generated from edited prompt:
-                                        </Typography>
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            gap: 1,
-                                            alignItems: "center",
-                                            mb: 1,
-                                          }}
-                                        >
-                                          <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                          >
-                                            <strong>Original:</strong>
-                                          </Typography>
-                                          <PromptCard
-                                            sx={{
-                                              flex: 1,
-                                              fontSize: "0.75rem",
-                                              padding: "6px 10px",
-                                            }}
-                                          >
-                                            {edit.enhancedMetadata.promptJourney
-                                              .from ||
-                                              edit.originalPrompt ||
-                                              "Original prompt"}
-                                          </PromptCard>
-                                        </Box>
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            gap: 1,
-                                            alignItems: "center",
-                                          }}
-                                        >
-                                          <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                          >
-                                            <strong>Final:</strong>
-                                          </Typography>
-                                          <PromptCard
-                                            sx={{
-                                              flex: 1,
-                                              fontSize: "0.75rem",
-                                              padding: "6px 10px",
-                                            }}
-                                          >
-                                            {edit.enhancedMetadata.promptJourney
-                                              .to ||
-                                              edit.finalPrompt ||
-                                              "Final prompt"}
-                                          </PromptCard>
-                                        </Box>
-                                      </Box>
-                                    )}
-
-                                    {/* Show final prompt if no journey */}
-                                    {!edit.enhancedMetadata?.promptJourney
-                                      ?.wasEdited &&
-                                      (edit.finalPrompt ||
-                                        edit.originalPrompt ||
-                                        edit.prompt) && (
-                                        <Box sx={{ mt: 1, mb: 2 }}>
-                                          <Typography
-                                            variant="caption"
-                                            color="success.main"
-                                            sx={{
-                                              mb: 1,
-                                              display: "block",
-                                              fontWeight: 600,
-                                            }}
-                                          >
-                                            Generated audio for:
-                                          </Typography>
-                                          <PromptCard
-                                            sx={{
-                                              fontSize: "0.8rem",
-                                              padding: "8px 12px",
-                                            }}
-                                          >
-                                            {edit.finalPrompt ||
-                                              edit.originalPrompt ||
-                                              edit.prompt}
-                                          </PromptCard>
-                                        </Box>
-                                      )}
-
-                                    {/* Enhanced metadata chips */}
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        flexWrap: "wrap",
-                                        gap: 0.5,
-                                        mt: 1,
-                                      }}
-                                    >
-                                      {edit.enhancedMetadata?.duration && (
-                                        <MetadataChip
-                                          icon={<Clock />}
-                                          label={formatDuration(
-                                            edit.enhancedMetadata.duration
-                                          )}
-                                          size="small"
-                                        />
-                                      )}
-
-                                      {(() => {
-                                        const modelTierInfo = getModelTierInfo(
-                                          edit.enhancedMetadata?.modelTier // ← FIXED: use edit.enhancedMetadata?.modelTier
-                                        );
-                                        return modelTierInfo ? (
-                                          <Tooltip
-                                            title={`Generated with ${modelTierInfo.label} model`}
-                                          >
-                                            <Chip
-                                              icon={modelTierInfo.icon}
-                                              label={modelTierInfo.label}
-                                              size="small"
-                                              sx={{
-                                                height: 20,
-                                                fontSize: "0.7rem",
-                                                fontWeight: 600,
-                                                bgcolor: alpha(
-                                                  modelTierInfo.color,
-                                                  0.1
-                                                ),
-                                                color: modelTierInfo.color,
-                                                border: `1px solid ${alpha(
-                                                  modelTierInfo.color,
-                                                  0.3
-                                                )}`,
-                                                "& .MuiChip-icon": {
-                                                  color: modelTierInfo.color,
-                                                  fontSize: 10,
-                                                },
-                                              }}
-                                            />
-                                          </Tooltip>
-                                        ) : null;
-                                      })()}
-
-                                      {edit.enhancedMetadata
-                                        ?.totalEditsBeforeGeneration > 0 && (
-                                        <MetadataChip
-                                          label={`${edit.enhancedMetadata.totalEditsBeforeGeneration} edits`}
-                                          size="small"
-                                          sx={{
-                                            background: alpha(
-                                              theme.palette.info.main,
-                                              0.1
-                                            ),
-                                            borderColor:
-                                              theme.palette.info.main,
-                                            color: theme.palette.info.main,
-                                          }}
-                                        />
-                                      )}
-                                      {edit.enhancedMetadata
-                                        ?.regenerationReason &&
-                                        (() => {
-                                          const reasonInfo =
-                                            formatRegenerationReason(
-                                              edit.enhancedMetadata
-                                                .regenerationReason
-                                            );
-                                          return reasonInfo ? (
-                                            <MetadataChip
-                                              label={reasonInfo.label}
-                                              size="small"
-                                              sx={{
-                                                color:
-                                                  theme.palette[
-                                                    reasonInfo.color
-                                                  ]?.main ||
-                                                  theme.palette.text.secondary,
-                                                borderColor:
-                                                  theme.palette[
-                                                    reasonInfo.color
-                                                  ]?.main ||
-                                                  theme.palette.divider,
-                                                background: alpha(
-                                                  theme.palette[
-                                                    reasonInfo.color
-                                                  ]?.main ||
-                                                    theme.palette.text
-                                                      .secondary,
-                                                  0.1
-                                                ),
-                                              }}
-                                            />
-                                          ) : null;
-                                        })()}
-                                      {edit.enhancedMetadata?.wasCompleted && (
-                                        <Chip
-                                          size="small"
-                                          label="Completed"
-                                          color="success"
-                                          variant="outlined"
-                                          sx={{
-                                            fontSize: "0.7rem",
-                                            height: 20,
-                                          }}
-                                        />
-                                      )}
-                                    </Box>
-                                  </Box>
-                                )}
-
-                                {/* Version Restoration Actions */}
-                                {edit.type === "version_restoration" && (
-                                  <Box>
-                                    {/* Enhanced version transition with source */}
-                                    <Box sx={{ mt: 1, mb: 2 }}>
+                              {/* Content based on action type */}
+                              {[
+                                "prompt_edit",
+                                "content_generation",
+                                "version_restoration",
+                                "initial_creation",
+                              ].includes(edit.type) && (
+                                <Box>
+                                  {(edit.newPrompt ||
+                                    edit.prompt ||
+                                    edit.originalPrompt) && (
+                                    <Box sx={{ mt: 1 }}>
                                       <Typography
                                         variant="caption"
-                                        color="info.main"
-                                        sx={{
-                                          mb: 1,
-                                          display: "block",
-                                          fontWeight: 600,
-                                        }}
+                                        color="text.secondary"
+                                        sx={{ mb: 1, display: "block" }}
                                       >
-                                        Restored version{" "}
-                                        {edit.sourceVersion ||
-                                          edit.restoredFromVersion}{" "}
-                                        as new version{" "}
-                                        {edit.toVersion || edit.displayVersion}
+                                        <strong>Content:</strong>
                                       </Typography>
-
-                                      {/* Show the transition clearly */}
-                                      <Box
+                                      <PromptCard
                                         sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 1,
-                                          p: 1,
-                                          borderRadius: "8px",
-                                          background: alpha(
-                                            theme.palette.info.main,
-                                            0.05
-                                          ),
-                                          border: `1px solid ${alpha(
-                                            theme.palette.info.main,
-                                            0.1
-                                          )}`,
+                                          fontSize: "0.8rem",
+                                          padding: "8px 12px",
                                         }}
                                       >
-                                        <Chip
-                                          label={`Source: v${
-                                            edit.sourceVersion ||
-                                            edit.restoredFromVersion
-                                          }`}
-                                          size="small"
-                                          color="info"
-                                          variant="outlined"
-                                          sx={{
-                                            fontSize: "0.7rem",
-                                            height: 20,
-                                          }}
-                                        />
-                                        <Typography
-                                          variant="caption"
-                                          color="text.secondary"
-                                        >
-                                          →
-                                        </Typography>
-                                        <Chip
-                                          label={`New: v${
-                                            edit.toVersion ||
-                                            edit.displayVersion
-                                          }`}
-                                          size="small"
-                                          color="primary"
-                                          variant="contained"
-                                          sx={{
-                                            fontSize: "0.7rem",
-                                            height: 20,
-                                          }}
-                                        />
-                                      </Box>
+                                        {edit.newPrompt ||
+                                          edit.prompt ||
+                                          edit.originalPrompt}
+                                      </PromptCard>
                                     </Box>
+                                  )}
+                                </Box>
+                              )}
 
-                                    {/* Show prompt changes if available */}
-                                    {edit.previousPrompt &&
-                                      edit.newPrompt &&
-                                      edit.previousPrompt !==
-                                        edit.newPrompt && (
-                                        <Box sx={{ mt: 2 }}>
-                                          <Typography
-                                            variant="caption"
-                                            color="info.main"
-                                            sx={{
-                                              mb: 1,
-                                              display: "block",
-                                              fontWeight: 600,
-                                            }}
-                                          >
-                                            Prompt restored from v
-                                            {edit.sourceVersion ||
-                                              edit.restoredFromVersion}
-                                            :
-                                          </Typography>
-                                          <Box
-                                            sx={{
-                                              display: "flex",
-                                              gap: 1,
-                                              alignItems: "center",
-                                              mb: 1,
-                                            }}
-                                          >
-                                            <Typography
-                                              variant="caption"
-                                              color="text.secondary"
-                                            >
-                                              <strong>
-                                                Previous (v{edit.fromVersion}):
-                                              </strong>
-                                            </Typography>
-                                            <PromptCard
-                                              sx={{
-                                                flex: 1,
-                                                fontSize: "0.75rem",
-                                                padding: "6px 10px",
-                                              }}
-                                            >
-                                              {edit.previousPrompt}
-                                            </PromptCard>
-                                          </Box>
-                                          <Box
-                                            sx={{
-                                              display: "flex",
-                                              gap: 1,
-                                              alignItems: "center",
-                                            }}
-                                          >
-                                            <Typography
-                                              variant="caption"
-                                              color="text.secondary"
-                                            >
-                                              <strong>
-                                                Restored (v{edit.sourceVersion}
-                                                ):
-                                              </strong>
-                                            </Typography>
-                                            <PromptCard
-                                              sx={{
-                                                flex: 1,
-                                                fontSize: "0.75rem",
-                                                padding: "6px 10px",
-                                              }}
-                                            >
-                                              {edit.newPrompt ||
-                                                edit.restoredPrompt}
-                                            </PromptCard>
-                                          </Box>
-                                        </Box>
-                                      )}
-
-                                    {/* Show single prompt if no comparison available */}
-                                    {(!edit.previousPrompt ||
-                                      !edit.newPrompt ||
-                                      edit.previousPrompt === edit.newPrompt) &&
-                                      (edit.restoredPrompt ||
-                                        edit.newPrompt) && (
-                                        <Box sx={{ mt: 1 }}>
-                                          <Typography
-                                            variant="caption"
-                                            color="info.main"
-                                            sx={{
-                                              mb: 1,
-                                              display: "block",
-                                              fontWeight: 600,
-                                            }}
-                                          >
-                                            Restored prompt from v
-                                            {edit.sourceVersion ||
-                                              edit.restoredFromVersion}
-                                            :
-                                          </Typography>
-                                          <PromptCard
-                                            sx={{
-                                              fontSize: "0.8rem",
-                                              padding: "8px 12px",
-                                            }}
-                                          >
-                                            {edit.restoredPrompt ||
-                                              edit.newPrompt}
-                                          </PromptCard>
-                                        </Box>
-                                      )}
-
-                                    {/* Show additional metadata */}
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        flexWrap: "wrap",
-                                        gap: 0.5,
-                                        mt: 1,
-                                      }}
-                                    >
-                                      {edit.contentGenerated && (
-                                        <Chip
-                                          size="small"
-                                          label="Audio Restored"
-                                          color="success"
-                                          variant="outlined"
-                                          sx={{
-                                            fontSize: "0.7rem",
-                                            height: 20,
-                                          }}
-                                        />
-                                      )}
-                                      {edit.fromCompletedVersion && (
-                                        <Chip
-                                          size="small"
-                                          label="From Completed Version"
-                                          color="info"
-                                          variant="outlined"
-                                          sx={{
-                                            fontSize: "0.7rem",
-                                            height: 20,
-                                          }}
-                                        />
-                                      )}
-                                      {edit.contentPath && (
-                                        <MetadataChip
-                                          icon={<FileAudio />}
-                                          label="Audio File"
-                                          size="small"
-                                          sx={{
-                                            background: alpha(
-                                              theme.palette.success.main,
-                                              0.1
-                                            ),
-                                            borderColor:
-                                              theme.palette.success.main,
-                                            color: theme.palette.success.main,
-                                          }}
-                                        />
-                                      )}
-                                    </Box>
-                                  </Box>
-                                )}
-
-                                {/* Initial Creation Actions */}
-                                {edit.type === "initial_creation" && (
-                                  <Box>
-                                    {(edit.newPrompt || edit.prompt) && (
-                                      <Box sx={{ mt: 1 }}>
-                                        <Typography
-                                          variant="caption"
-                                          color="primary.main"
-                                          sx={{
-                                            mb: 1,
-                                            display: "block",
-                                            fontWeight: 600,
-                                          }}
-                                        >
-                                          Initial prompt:
-                                        </Typography>
-                                        <PromptCard
-                                          sx={{
-                                            fontSize: "0.8rem",
-                                            padding: "8px 12px",
-                                          }}
-                                        >
-                                          {edit.newPrompt || edit.prompt}
-                                        </PromptCard>
-                                      </Box>
-                                    )}
-                                    <Box
-                                      sx={{ display: "flex", gap: 0.5, mt: 1 }}
-                                    >
-                                      {edit.contentGenerated && (
-                                        <Chip
-                                          size="small"
-                                          label="Audio Generated"
-                                          color="success"
-                                          variant="outlined"
-                                          sx={{
-                                            fontSize: "0.7rem",
-                                            height: 20,
-                                          }}
-                                        />
-                                      )}
-                                      {(() => {
-                                        const modelTierInfo = getModelTierInfo(
-                                          edit.enhancedMetadata?.modelTier // ← FIXED: use edit.enhancedMetadata?.modelTier
-                                        );
-                                        return modelTierInfo ? (
-                                          <Tooltip
-                                            title={`Generated with ${modelTierInfo.label} model`}
-                                          >
-                                            <Chip
-                                              icon={modelTierInfo.icon}
-                                              label={modelTierInfo.label}
-                                              size="small"
-                                              sx={{
-                                                height: 20,
-                                                fontSize: "0.7rem",
-                                                fontWeight: 600,
-                                                bgcolor: alpha(
-                                                  modelTierInfo.color,
-                                                  0.1
-                                                ),
-                                                color: modelTierInfo.color,
-                                                border: `1px solid ${alpha(
-                                                  modelTierInfo.color,
-                                                  0.3
-                                                )}`,
-                                                "& .MuiChip-icon": {
-                                                  color: modelTierInfo.color,
-                                                  fontSize: 10,
-                                                },
-                                              }}
-                                            />
-                                          </Tooltip>
-                                        ) : null;
-                                      })()}
-                                    </Box>
-                                  </Box>
-                                )}
-
-                                {/* Fallback for other action types */}
-                                {![
-                                  "prompt_edit",
-                                  "content_generation",
-                                  "version_restoration",
-                                  "initial_creation",
-                                ].includes(edit.type) && (
-                                  <Box>
-                                    {(edit.newPrompt ||
-                                      edit.prompt ||
-                                      edit.originalPrompt) && (
-                                      <Box sx={{ mt: 1 }}>
-                                        <Typography
-                                          variant="caption"
-                                          color="text.secondary"
-                                          sx={{ mb: 1, display: "block" }}
-                                        >
-                                          <strong>Content:</strong>
-                                        </Typography>
-                                        <PromptCard
-                                          sx={{
-                                            fontSize: "0.8rem",
-                                            padding: "8px 12px",
-                                          }}
-                                        >
-                                          {edit.newPrompt ||
-                                            edit.prompt ||
-                                            edit.originalPrompt}
-                                        </PromptCard>
-                                      </Box>
-                                    )}
-                                  </Box>
-                                )}
-                              </Box>
-
-                              {/* Action Footer */}
+                              {/* Footer */}
                               <Divider sx={{ my: 1, opacity: 0.3 }} />
                               <Box
                                 sx={{
@@ -1848,24 +1180,25 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
                   <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
                     sx={{
-                      borderRadius: "12px",
+                      borderRadius: brand.borderRadius,
                       backgroundColor: theme.palette.background.default,
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography variant="subtitle1" fontWeight="700">
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="700"
+                        sx={{ color: "text.primary" }}
+                      >
                         Edit History
                       </Typography>
                       <Chip
                         label="No history"
                         size="small"
                         sx={{
-                          borderRadius: "6px",
+                          borderRadius: brand.borderRadius,
                           background: alpha(theme.palette.warning.main, 0.1),
-                          border: `1px solid ${alpha(
-                            theme.palette.warning.main,
-                            0.3
-                          )}`,
+                          border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
                           color: theme.palette.warning.main,
                           fontSize: "0.7rem",
                           fontWeight: 600,
@@ -1878,14 +1211,14 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
                       p: 2,
                       backgroundColor: theme.palette.background.default,
                       borderTop: `1px solid ${theme.palette.divider}`,
-                      borderBottomLeftRadius: "12px",
-                      borderBottomRightRadius: "12px",
+                      borderBottomLeftRadius: brand.borderRadius,
+                      borderBottomRightRadius: brand.borderRadius,
                     }}
                   >
                     <Typography variant="body2" color="text.secondary">
                       No edit history available for this audio item. This might
-                      be a newly created item or the history data hasn't been
-                      populated yet.
+                      be a newly created item or the history data hasn&apos;t
+                      been populated yet.
                     </Typography>
                   </AccordionDetails>
                 </CompactAccordion>
@@ -1894,7 +1227,7 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
           </Stack>
         </Box>
 
-        {/* Enhanced Footer */}
+        {/* Footer */}
         <Box
           sx={{
             px: 3,
@@ -1920,4 +1253,6 @@ export const VersionHistoryDialog: React.FC<VersionHistoryDialogProps> = ({
       </DialogContent>
     </CompactDialog>
   );
-};
+}
+
+VersionHistoryDialog.displayName = "VersionHistoryDialog";

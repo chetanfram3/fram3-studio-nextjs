@@ -958,6 +958,7 @@ export default function GenericAudioComponent({
             isAudioProcessorCompleted={isAudioProcessorCompleted}
           />
 
+          {/* Version History Dialog */}
           <VersionHistoryDialog
             showVersionHistory={showVersionHistory}
             setShowVersionHistory={setShowVersionHistory}
@@ -965,39 +966,14 @@ export default function GenericAudioComponent({
             totalVersions={totalVersions}
             totalEdits={totalEdits}
             versions={versions}
-            editHistory={(() => {
-              const actionHistory = versions.current?.actions || [];
-              const versionActions: any[] = [];
-
-              if (versions.current?.actions) {
-                versionActions.push(...versions.current.actions);
-              }
-
-              Object.values(versions.archived || {}).forEach((version: any) => {
-                if (version.actions) {
-                  versionActions.push(...version.actions);
-                }
-              });
-
-              const allActions = [...actionHistory, ...versionActions];
-              return allActions.sort((a, b) => {
-                const timestampA =
-                  a.timestamp?._seconds ||
-                  new Date(a.timestamp || 0).getTime() / 1000;
-                const timestampB =
-                  b.timestamp?._seconds ||
-                  new Date(b.timestamp || 0).getTime() / 1000;
-                return timestampB - timestampA;
-              });
-            })()}
             formatDuration={formatDuration}
             validateAudioValue={validateAudioValue}
             audioType={audioType}
+            AudioPlayer={AudioPlayer}
             selectedPlaybackVersion={selectedPlaybackVersion}
             isRestoringVersion={isRestoringVersion}
             handleVersionPlayback={handleVersionPlayback}
             handleRestoreVersion={handleRestoreVersion}
-            AudioPlayer={AudioPlayer}
           />
         </>
       )}
