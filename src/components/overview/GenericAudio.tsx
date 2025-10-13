@@ -37,6 +37,7 @@ import {
 } from "@/services/audioService";
 import { AudioType, AudioStatus } from "@/types/audio";
 import CustomToast from "@/components/common/CustomToast";
+import { VersionHistoryDialog } from "./VersionHistory";
 import { PromptEditDialog } from "./PromptEditDialog";
 import { AudioMenu } from "./AudioMenu";
 import { ModelTier } from "@/components/common/ModelTierSelector";
@@ -955,6 +956,48 @@ export default function GenericAudioComponent({
             hasBeenEdited={hasBeenEdited}
             originalPrompt={originalPrompt}
             isAudioProcessorCompleted={isAudioProcessorCompleted}
+          />
+
+          <VersionHistoryDialog
+            showVersionHistory={showVersionHistory}
+            setShowVersionHistory={setShowVersionHistory}
+            audioConfig={{ name: audioConfig.name }}
+            totalVersions={totalVersions}
+            totalEdits={totalEdits}
+            versions={versions}
+            editHistory={(() => {
+              const actionHistory = versions.current?.actions || [];
+              const versionActions: any[] = [];
+
+              if (versions.current?.actions) {
+                versionActions.push(...versions.current.actions);
+              }
+
+              Object.values(versions.archived || {}).forEach((version: any) => {
+                if (version.actions) {
+                  versionActions.push(...version.actions);
+                }
+              });
+
+              const allActions = [...actionHistory, ...versionActions];
+              return allActions.sort((a, b) => {
+                const timestampA =
+                  a.timestamp?._seconds ||
+                  new Date(a.timestamp || 0).getTime() / 1000;
+                const timestampB =
+                  b.timestamp?._seconds ||
+                  new Date(b.timestamp || 0).getTime() / 1000;
+                return timestampB - timestampA;
+              });
+            })()}
+            formatDuration={formatDuration}
+            validateAudioValue={validateAudioValue}
+            audioType={audioType}
+            selectedPlaybackVersion={selectedPlaybackVersion}
+            isRestoringVersion={isRestoringVersion}
+            handleVersionPlayback={handleVersionPlayback}
+            handleRestoreVersion={handleRestoreVersion}
+            AudioPlayer={AudioPlayer}
           />
         </>
       )}

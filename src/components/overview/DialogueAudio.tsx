@@ -37,6 +37,7 @@ import {
   restoreAudioVersion,
 } from "@/services/audioService";
 import CustomToast from "@/components/common/CustomToast";
+import { VersionHistoryDialog } from "./VersionHistory";
 import { PromptEditDialog } from "./PromptEditDialog";
 import { AudioMenu } from "./AudioMenu";
 import type { UnifiedAudioItem, AudioStatus } from "@/types/audio";
@@ -880,6 +881,49 @@ export default function DialogueAudioComponent({
         />
 
         {/* Version History Dialog */}
+        <VersionHistoryDialog
+          showVersionHistory={showVersionHistory}
+          setShowVersionHistory={setShowVersionHistory}
+          audioConfig={{
+            name: "Dialogue",
+          }}
+          totalVersions={totalVersions}
+          totalEdits={totalEdits}
+          versions={versions}
+          editHistory={(() => {
+            const actionHistory = currentDialogueAudio?.actions || [];
+            const versionActions: any[] = [];
+
+            if (versions.current?.actions) {
+              versionActions.push(...versions.current.actions);
+            }
+
+            Object.values(versions.archived || {}).forEach((version: any) => {
+              if (version.actions) {
+                versionActions.push(...version.actions);
+              }
+            });
+
+            const allActions = [...actionHistory, ...versionActions];
+            return allActions.sort((a, b) => {
+              const timestampA =
+                a.timestamp?._seconds ||
+                new Date(a.timestamp || 0).getTime() / 1000;
+              const timestampB =
+                b.timestamp?._seconds ||
+                new Date(b.timestamp || 0).getTime() / 1000;
+              return timestampB - timestampA;
+            });
+          })()}
+          formatDuration={formatDuration}
+          validateAudioValue={validateAudioValue}
+          audioType="dialogue"
+          selectedPlaybackVersion={selectedPlaybackVersion}
+          isRestoringVersion={isRestoringVersion}
+          handleVersionPlayback={handleVersionPlayback}
+          handleRestoreVersion={handleRestoreVersion}
+          AudioPlayer={AudioPlayer}
+        />
       </Box>
     );
   }
