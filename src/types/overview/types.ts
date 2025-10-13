@@ -215,6 +215,7 @@ export interface Foley {
 }
 
 export interface Music {
+    musicName: string;
     musicContentDescription: string;
     musicGenre: string;
     musicId: number,
