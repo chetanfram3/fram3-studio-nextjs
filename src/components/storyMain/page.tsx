@@ -15,7 +15,7 @@ import { useTheme } from "@mui/material/styles";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Overview from "../overview";
 import MarketResearch from "../market";
-import VideoEditor from "../videoEditor";
+import VideoEditor from "../editor";
 import { VideoLayout } from "../renderedVideos";
 import TabbedAnalytics from "../analytics/TabbedAnalytics";
 import Status from "../status";
