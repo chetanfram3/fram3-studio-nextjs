@@ -233,6 +233,12 @@ interface VersionData {
   [key: string]: unknown;
 }
 
+interface PromptJourney {
+  from?: string;
+  to?: string;
+  wasEdited?: boolean;
+}
+
 interface ActionData {
   type: string;
   timestamp?: { _seconds: number } | string;
@@ -243,6 +249,27 @@ interface ActionData {
   finalPrompt?: string;
   originalPrompt?: string;
   previousPrompt?: string;
+  source?: string;
+  versionContext?: string;
+  versionTransition?: string | null;
+  enhancedMetadata?: {
+    hasVersionTransition: boolean;
+    isVersionCreation: boolean;
+    isContentGeneration: boolean;
+    isInitialCreation: boolean;
+    regenerationReason?: string;
+    wasCompleted?: boolean;
+    duration?: number;
+    model?: string;
+    modelTier?: number;
+    totalEditsBeforeGeneration?: number;
+    promptJourney?: PromptJourney;
+    voiceConfig?: unknown;
+    actorId?: number;
+    narratorId?: number;
+    audioMetrics?: unknown;
+    contentPath?: string;
+  };
   prompt?: string;
   regenerationReason?: string;
   wasCompleted?: boolean;
@@ -352,7 +379,7 @@ export function VersionHistoryDialog({
       case "version_restoration":
         return "info";
       default:
-        return "default";
+        return "primary";
     }
   };
 
@@ -485,6 +512,18 @@ export function VersionHistoryDialog({
         }
       }
 
+      const promptJourney: PromptJourney = {
+        from: action.originalPrompt || action.previousPrompt,
+        to: action.finalPrompt || action.newPrompt || action.prompt,
+        wasEdited:
+          action.promptJourney?.wasEdited ||
+          Boolean(
+            action.originalPrompt &&
+              action.finalPrompt &&
+              action.originalPrompt !== action.finalPrompt
+          ),
+      };
+
       // Enhanced metadata
       const enhancedMetadata = {
         hasVersionTransition: !!versionTransition,
@@ -499,15 +538,7 @@ export function VersionHistoryDialog({
         model: action.model || action.currentModel,
         modelTier: action.modelTier || action.currentModelTier,
         totalEditsBeforeGeneration: action.totalEditsBeforeGeneration,
-        promptJourney: action.promptJourney || {
-          from: action.originalPrompt || action.previousPrompt,
-          to: action.finalPrompt || action.newPrompt || action.prompt,
-          wasEdited:
-            action.promptJourney?.wasEdited ||
-            (action.originalPrompt &&
-              action.finalPrompt &&
-              action.originalPrompt !== action.finalPrompt),
-        },
+        promptJourney: action.promptJourney || promptJourney,
         voiceConfig: action.voiceConfig || action.currentVoiceConfig,
         actorId: action.actorId,
         narratorId: action.narratorId,
