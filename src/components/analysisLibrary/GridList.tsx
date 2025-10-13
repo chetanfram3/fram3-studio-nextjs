@@ -82,7 +82,7 @@ export function GridList({
               onSelect={() => onScriptSelect(script)}
               onViewDetails={() =>
                 router.push(
-                  `/dashboard/story/${script.scriptId}/version/${script.currentVersion}`
+                  `/story/${script.scriptId}/version/${script.currentVersion}`
                 )
               }
               onInfoClick={() => handleInfoClick(script)}

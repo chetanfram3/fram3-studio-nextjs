@@ -196,7 +196,7 @@ export function ProjectGrid({
   useEffect(() => {
     if (scripts.length === 0 && !isLoading) {
       if (allCount === 0) {
-        router.push("/dashboard/script-analysis");
+        router.push("/script-analysis");
         return;
       }
 

@@ -16,6 +16,7 @@ import { LoadingAnimation } from "@/components/common/LoadingAnimation";
 import { capitalizeWords } from "@/utils/textUtils";
 import { useScriptDashboardAnalysis } from "@/hooks/scripts/useScriptDashboardAnalysis";
 import { AnalysisTypeStatus } from "@/types/storyMain/types";
+import StandaloneFeedbackPanel from "@/components/common/FeedbackSystem";
 
 interface MainImageContent {
   type: "actor" | "location";
@@ -592,6 +593,13 @@ export default function Overview({
       </Box>
 
       {/* Feedback Component */}
+      {scriptId && versionId && (
+        <StandaloneFeedbackPanel
+          page="overview"
+          scriptId={scriptId}
+          versionId={versionId}
+        />
+      )}
     </Box>
   );
 }

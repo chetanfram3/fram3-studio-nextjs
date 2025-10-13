@@ -26,7 +26,7 @@ interface BackButtonProps {
 
 export function BackButton({
   sx,
-  homePath = "/dashboard/my-scripts",
+  homePath = "/dashboard",
   showHomeButton = true,
 }: BackButtonProps) {
   const theme = useTheme();

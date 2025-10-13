@@ -42,7 +42,7 @@ const MyLibrary: React.FC = () => {
       return;
     }
     router.push(
-      `/dashboard/story/${script.scriptId}/version/${script.currentVersion}/0`
+      `/story/${script.scriptId}/version/${script.currentVersion}/0`
     );
   };
 
@@ -52,7 +52,7 @@ const MyLibrary: React.FC = () => {
       return;
     }
     router.push(
-      `/dashboard/story/${script.scriptId}/version/${script.currentVersion}/3`
+      `/story/${script.scriptId}/version/${script.currentVersion}/3`
     );
   };
 
