@@ -15,6 +15,7 @@ import { useTheme } from "@mui/material/styles";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Overview from "../overview";
 import MarketResearch from "../market";
+import { StoryBoardLayout } from "../storyBoard";
 import VideoEditor from "../editor";
 import { VideoLayout } from "../renderedVideos";
 import TabbedAnalytics from "../analytics/TabbedAnalytics";
@@ -117,6 +118,19 @@ export default function StoryPage() {
           fallback={<LoadingAnimation message="Loading market research..." />}
         >
           <MarketResearch scriptId={scriptId} versionId={versionId} />
+        </React.Suspense>
+      ),
+    },
+    {
+      label: "Visuals",
+      icon: <ImageIcon fontSize="small" />,
+      component: (
+        <React.Suspense
+          fallback={
+            <LoadingAnimation message="Loading Story Board , Visuals..." />
+          }
+        >
+          <StoryBoardLayout scriptId={scriptId} versionId={versionId} />
         </React.Suspense>
       ),
     },
