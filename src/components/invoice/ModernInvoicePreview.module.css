@@ -1,0 +1,167 @@
+/* ModernInvoicePreview.module.css */
+/* Scoped print styles for the modern invoice preview component */
+
+@media print {
+  /* Hide everything except the invoice when printing */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Show only the invoice container and its children */
+  .invoiceContainer,
+  .invoiceContainer * {
+    visibility: visible;
+  }
+  
+  /* Position the invoice for printing */
+  .invoiceContainer {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    background: white !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Ensure proper A4 sizing */
+  @page {
+    size: A4;
+    margin: 0.5in;
+  }
+  
+  /* Force print mode styling */
+  .invoiceSidebar {
+    background: #f5f5f5 !important;
+    color: black !important;
+  }
+  
+  .invoiceContent {
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Hide action buttons when printing */
+  .invoiceActions {
+    display: none !important;
+  }
+  
+  /* Ensure proper text colors for print */
+  .invoiceContainer * {
+    color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  
+  /* Ensure borders and lines are visible */
+  .invoiceContainer table,
+  .invoiceContainer th,
+  .invoiceContainer td {
+    border-color: #333 !important;
+  }
+  
+  /* Force specific font sizes for print */
+  .invoiceContainer h1 {
+    font-size: 48px !important;
+    color: black !important;
+  }
+  
+  .invoiceContainer h2 {
+    font-size: 36px !important;
+    color: black !important;
+  }
+  
+  .invoiceContainer h3 {
+    font-size: 18px !important;
+    color: black !important;
+  }
+  
+  .invoiceContainer p,
+  .invoiceContainer span {
+    font-size: 12px !important;
+    color: black !important;
+  }
+  
+  .invoiceContainer small,
+  .invoiceContainer .caption {
+    font-size: 10px !important;
+    color: #666 !important;
+  }
+  
+  /* Prevent page breaks in critical sections */
+  .invoiceContainer .no-page-break {
+    page-break-inside: avoid;
+  }
+  
+  /* Ensure QR code is visible */
+  .invoiceContainer .qr-code {
+    border: 1px solid #333 !important;
+  }
+  
+  /* Table optimization for print */
+  .invoiceContainer table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+  
+  .invoiceContainer th,
+  .invoiceContainer td {
+    border: 1px solid #333 !important;
+    padding: 8px !important;
+    text-align: left !important;
+  }
+  
+  .invoiceContainer th {
+    background-color: #f5f5f5 !important;
+    font-weight: bold !important;
+  }
+  
+  /* Ensure totals section is prominent */
+  .invoiceContainer .totals-section {
+    border-top: 2px solid black !important;
+    margin-top: 16px !important;
+    padding-top: 8px !important;
+  }
+}
+
+/* Screen-only styles */
+@media screen {
+  .invoiceContainer {
+    /* Any screen-specific styles can go here */
+  }
+  
+  .invoiceSidebar {
+    /* Sidebar styles for screen */
+  }
+  
+  .invoiceContent {
+    /* Content area styles for screen */
+  }
+  
+  .invoiceActions {
+    /* Action buttons styles for screen */
+  }
+}
+
+/* Utility classes */
+.printOnly {
+  display: none;
+}
+
+.screenOnly {
+  display: block;
+}
+
+@media print {
+  .printOnly {
+    display: block !important;
+  }
+  
+  .screenOnly {
+    display: none !important;
+  }
+}
