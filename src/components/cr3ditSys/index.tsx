@@ -30,6 +30,7 @@ import { CreditMiniSheet } from "./CreditMiniSheet";
 import { BillingCard } from "./Billing";
 import { ApiUsageAnalytics } from "./ApiUsageAnalytics";
 import { Dashboard } from "./Dashboard";
+import { LoadingAnimation } from "@/components/common/LoadingAnimation";
 
 const Cr3ditSys: React.FC = () => {
   const theme = useTheme();
@@ -188,49 +189,7 @@ const Cr3ditSys: React.FC = () => {
 
   // Show loading state if quick stats are loading
   if (quickStatsLoading) {
-    return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        <Box
-          sx={{
-            minHeight: "400px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Stack alignItems="center" spacing={3}>
-            <Box
-              sx={{
-                p: 3,
-                borderRadius: `${brand.borderRadius}px`,
-                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                boxShadow:
-                  theme.palette.mode === "dark"
-                    ? "0 2px 4px rgba(0, 0, 0, 0.3)"
-                    : "0 2px 4px rgba(0, 0, 0, 0.1)",
-              }}
-            >
-              <DiamondIcon
-                animate
-                size={32}
-                sx={{ color: theme.palette.primary.contrastText }}
-              />
-            </Box>
-            <CircularProgress
-              size={40}
-              sx={{ color: theme.palette.primary.main }}
-            />
-            <Typography
-              variant="h6"
-              color="text.secondary"
-              sx={{ fontFamily: brand.fonts.heading }}
-            >
-              Loading Cr3ditSys...
-            </Typography>
-          </Stack>
-        </Box>
-      </Container>
-    );
+    return <LoadingAnimation message="Loading your Cr3ditSys..." />;
   }
 
   const hasError = quickStatsError || invoicesError;
