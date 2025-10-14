@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Menu,
@@ -9,18 +9,19 @@ import {
   Avatar,
   Typography,
   ListItemButton,
-} from '@mui/material';
+} from "@mui/material";
 import {
   DashboardOutlined as DashboardIcon,
   PersonOutline as PersonIcon,
   LogoutOutlined as LogoutIcon,
   PaymentOutlined as PaymentIcon,
   PaymentsOutlined as SubscriptionIcon,
-} from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
-import { auth } from '@/lib/firebase';
-import { EmailVerificationAlert } from './EmailVerificationAlert';
+} from "@mui/icons-material";
+import { useRouter } from "next/navigation";
+import { useTheme } from "@mui/material/styles";
+import { useAuthStore } from "@/store/authStore";
+import { auth } from "@/lib/firebase";
+import { EmailVerificationAlert } from "./EmailVerificationAlert";
 
 interface ProfileMenuProps {
   anchorEl: HTMLElement | null;
@@ -34,6 +35,7 @@ export function ProfileMenu({
   isMobile = false,
 }: ProfileMenuProps) {
   const router = useRouter();
+  const theme = useTheme();
   const { user } = useAuthStore();
 
   const handleMenuItemClick = (path: string) => {
@@ -44,52 +46,52 @@ export function ProfileMenu({
   const handleLogout = async () => {
     onClose();
     await auth.signOut();
-    router.push('/signin');
+    router.push("/signin");
   };
 
   const menuItemStyles = {
-    '& .MuiListItemIcon-root': {
-      color: 'inherit',
+    "& .MuiListItemIcon-root": {
+      color: "inherit",
       minWidth: 36,
     },
-    '&:hover': {
-      bgcolor: 'action.hover',
+    "&:hover": {
+      bgcolor: "action.hover",
     },
   };
 
   const renderMenuContent = () => (
     <Box>
       <Box sx={{ px: 2, py: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Avatar
             src={
               user?.photoURL ||
-              `https://ui-avatars.com/api/?name=${user?.displayName || 'User'}`
+              `https://ui-avatars.com/api/?name=${user?.displayName || "User"}`
             }
-            alt={user?.displayName || 'User'}
+            alt={user?.displayName || "User"}
             sx={{
               width: 48,
               height: 48,
               border: 2,
-              borderColor: 'divider',
+              borderColor: "primary.main",
             }}
           />
           <Box>
             <Typography
               variant="subtitle1"
               sx={{
-                color: 'text.primary',
+                color: "text.primary",
                 fontWeight: 500,
                 lineHeight: 1.2,
               }}
             >
-              {user?.displayName || 'User'}
+              {user?.displayName || "User"}
             </Typography>
             <Typography
               variant="body2"
               sx={{
-                color: 'text.secondary',
-                fontSize: '0.875rem',
+                color: "text.secondary",
+                fontSize: "0.875rem",
               }}
             >
               {user?.email}
@@ -102,7 +104,7 @@ export function ProfileMenu({
 
       <Box sx={{ p: isMobile ? 1 : 0 }}>
         <ListItemButton
-          onClick={() => handleMenuItemClick('/dashboard')}
+          onClick={() => handleMenuItemClick("/dashboard")}
           sx={menuItemStyles}
         >
           <ListItemIcon>
@@ -112,7 +114,7 @@ export function ProfileMenu({
         </ListItemButton>
 
         <ListItemButton
-          onClick={() => handleMenuItemClick('/profile')}
+          onClick={() => handleMenuItemClick("/profile")}
           sx={menuItemStyles}
         >
           <ListItemIcon>
@@ -122,7 +124,7 @@ export function ProfileMenu({
         </ListItemButton>
 
         <ListItemButton
-          onClick={() => handleMenuItemClick('/dashboard/billing')}
+          onClick={() => handleMenuItemClick("/dashboard/billing")}
           sx={menuItemStyles}
         >
           <ListItemIcon>
@@ -132,7 +134,7 @@ export function ProfileMenu({
         </ListItemButton>
 
         <ListItemButton
-          onClick={() => handleMenuItemClick('/dashboard/payments')}
+          onClick={() => handleMenuItemClick("/dashboard/payments")}
           sx={menuItemStyles}
         >
           <ListItemIcon>
@@ -151,9 +153,9 @@ export function ProfileMenu({
           onClick={handleLogout}
           sx={{
             ...menuItemStyles,
-            color: 'secondary.dark',
-            '& .MuiListItemIcon-root': {
-              color: 'secondary.dark',
+            color: "error.main",
+            "& .MuiListItemIcon-root": {
+              color: "error.main",
             },
           }}
         >
@@ -176,8 +178,8 @@ export function ProfileMenu({
       open={Boolean(anchorEl)}
       onClose={onClose}
       onClick={onClose}
-      transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-      anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      transformOrigin={{ horizontal: "right", vertical: "top" }}
+      anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       slotProps={{
         paper: {
           elevation: 1,
@@ -185,16 +187,16 @@ export function ProfileMenu({
             mt: 1.5,
             minWidth: 220,
             maxWidth: 280,
-            bgcolor: 'background.default',
-            borderRadius: 2,
+            bgcolor: "background.paper",
+            borderRadius: theme.shape.borderRadius,
             border: 1,
-            borderColor: 'divider',
-            '& .MuiMenuItem-root': {
+            borderColor: "divider",
+            "& .MuiMenuItem-root": {
               py: 1,
               px: 2,
             },
-            '& .MuiDivider-root': {
-              borderColor: 'divider',
+            "& .MuiDivider-root": {
+              borderColor: "divider",
             },
           },
         },
