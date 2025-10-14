@@ -499,50 +499,6 @@ const ApprovalButton: React.FC<ApprovalButtonProps> = ({
           </IconButton>
         </Tooltip>
       )}
-
-      {/* Debug info in development */}
-      {process.env.NODE_ENV === "development" && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            mt: 1,
-            zIndex: 1000,
-          }}
-        >
-          <Typography variant="caption" color="text.secondary" display="block">
-            Debug: Pipeline: {currentConfig.pipelineKey} | Required:{" "}
-            {analysisTypes.join(", ")}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" display="block">
-            Present: {presentTypes.join(", ") || "none"}
-          </Typography>
-          <Typography variant="caption" color="text.secondary" display="block">
-            Current {currentConfig.pipelineKey}:{" "}
-            {currentPauseBeforeArray.join(", ") || "none"}
-          </Typography>
-          {type === "video" && (
-            <>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-              >
-                Image pauseBefore: {imagePauseBeforeArray.join(", ") || "none"}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-              >
-                Image approved: {isImageApproved ? "Yes" : "No"} | Video
-                blocked: {isVideoBlocked ? "Yes" : "No"}
-              </Typography>
-            </>
-          )}
-        </Box>
-      )}
     </Box>
   );
 };

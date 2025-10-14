@@ -790,9 +790,7 @@ function VideoGenerationProgress({
           className={className}
           sx={{
             position: "relative",
-            background: hasVideoTask
-              ? "linear-gradient(135deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.8) 50%, rgba(0,0,0,0.7) 100%)"
-              : "linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.6) 100%)",
+            background: "secondary",
             backdropFilter: "blur(15px)",
             borderRadius: 0.5,
             borderTop: 1,
@@ -857,7 +855,7 @@ function VideoGenerationProgress({
               <Box>
                 <Typography
                   variant="h6"
-                  color="common.white"
+                  color="text.primary"
                   fontWeight={600}
                   sx={{ lineHeight: 1.2 }}
                 >
