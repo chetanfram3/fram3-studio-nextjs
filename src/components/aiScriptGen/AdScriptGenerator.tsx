@@ -761,8 +761,8 @@ function AdScriptGeneratorContent() {
             sx={{
               mb: 1,
               mr: 1,
-              bgcolor: "background.default",
-              borderRadius: "4px 0 0 4px",
+              bgcolor: "background.paper", // ✅ FIXED: Use background.paper for elevated surfaces
+              borderRadius: `${brand.borderRadius}px 0 0 ${brand.borderRadius}px`, // ✅ FIXED: Use brand radius
               boxShadow: theme.shadows[3],
               borderLeft: 1,
               borderTop: 1,
@@ -792,14 +792,14 @@ function AdScriptGeneratorContent() {
               <IconButton
                 onClick={toggleMode}
                 size="small"
+                color="primary" // ✅ FIXED: Changed from secondary to primary
                 sx={{
-                  bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                  color: "secondary.main",
+                  bgcolor: alpha(theme.palette.primary.main, 0.1), // ✅ FIXED: Use primary
                   height: "100%",
                   borderRadius: 0,
                   p: 1,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
+                    bgcolor: alpha(theme.palette.primary.main, 0.2), // ✅ FIXED: Use primary
                   },
                 }}
               >
@@ -814,6 +814,8 @@ function AdScriptGeneratorContent() {
             <Button
               onClick={toggleSidebar}
               size="small"
+              color="primary" // ✅ FIXED: Changed from secondary to primary
+              variant="contained" // ✅ ADDED: Explicit variant
               endIcon={
                 <ChevronDown
                   size={14}
@@ -828,21 +830,21 @@ function AdScriptGeneratorContent() {
                 />
               }
               sx={{
-                bgcolor: "secondary.main",
-                color: "secondary.contrastText",
                 px: 2,
                 py: 0.75,
                 fontWeight: 500,
                 fontSize: "0.875rem",
                 textTransform: "none",
                 borderRadius: 0,
-                "&:hover": {
-                  bgcolor: alpha(theme.palette.secondary.main, 0.9),
-                },
                 minWidth: "135px",
                 justifyContent: "space-between",
                 transition: "all 0.2s",
                 height: "38px",
+                fontFamily: brand.fonts.body, // ✅ ADDED: Use brand fonts
+                // Remove custom bgcolor/color - let color="primary" handle it
+                "&:hover": {
+                  bgcolor: "primary.dark", // ✅ FIXED: Use primary.dark
+                },
               }}
             >
               {activeMode === "presets" ? "Form Presets" : "Upload Files"}

@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+// src/components/aiScriptGen/components/CampaignDetailsSection.tsx
+"use client";
+
+import { useState, useCallback, useMemo, JSX } from "react";
 import {
   Box,
   Typography,
@@ -7,52 +10,105 @@ import {
   Button,
   Paper,
   Divider,
+  useTheme,
+  alpha,
 } from "@mui/material";
-import { Controller, UseFormReturn } from "react-hook-form";
+import { Controller, type UseFormReturn } from "react-hook-form";
 import { Add } from "@mui/icons-material";
-import { FormValues } from "../types";
+import type { FormValues } from "../types";
 import SectionCloseButton from "./SectionCloseButton";
+import { getCurrentBrand } from "@/config/brandConfig";
 
-interface Props {
+interface CampaignDetailsSectionProps {
   form: UseFormReturn<FormValues>;
 }
 
-const goals = ["Brand Awareness", "Lead Generation", "Sales", "Engagement"];
+type CampaignField = "objectives" | "keyMessages";
 
-const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
+const CampaignDetailsSection = ({
+  form,
+}: CampaignDetailsSectionProps): JSX.Element => {
+  const theme = useTheme();
+  const brand = getCurrentBrand();
   const { control, watch, setValue } = form;
-  const campaign = watch("campaignDetails") || {};
+
+  // State
   const [newObjective, setNewObjective] = useState("");
   const [newKeyMessage, setNewKeyMessage] = useState("");
 
-  const handleAddTag = (
-    field: "objectives" | "keyMessages",
-    value: string,
-    setter: (val: string) => void
-  ) => {
-    if (!value.trim()) return;
-    const current = campaign[field] || [];
-    setValue(`campaignDetails.${field}`, [...current, value.trim()]);
-    setter("");
-  };
+  // Memoize static goal options
+  const goals = useMemo(
+    () => ["Brand Awareness", "Lead Generation", "Sales", "Engagement"],
+    []
+  );
 
-  const handleRemoveTag = (
-    field: "objectives" | "keyMessages",
-    index: number
-  ) => {
-    const current = campaign[field] || [];
-    setValue(
-      `campaignDetails.${field}`,
-      current.filter((_: any, i: number) => i !== index)
-    );
-  };
+  // Watch form values
+  const campaign = watch("campaignDetails") || {};
+
+  // Memoize divider gradient
+  const dividerGradient = useMemo(
+    () =>
+      `linear-gradient(to bottom, ${alpha(theme.palette.primary.main, 0.6)}, ${alpha(
+        theme.palette.primary.main,
+        0.25
+      )})`,
+    [theme.palette.primary.main]
+  );
+
+  // Handlers
+  const handleAddTag = useCallback(
+    (
+      field: CampaignField,
+      value: string,
+      setter: (val: string) => void
+    ): void => {
+      if (!value.trim()) return;
+      const current = campaign[field] || [];
+      setValue(`campaignDetails.${field}`, [...current, value.trim()]);
+      setter("");
+    },
+    [campaign, setValue]
+  );
+
+  const handleRemoveTag = useCallback(
+    (field: CampaignField, index: number): void => {
+      const current = campaign[field] || [];
+      setValue(
+        `campaignDetails.${field}`,
+        current.filter((_: string, i: number) => i !== index)
+      );
+    },
+    [campaign, setValue]
+  );
+
+  const handleGoalSelect = useCallback(
+    (goal: string): void => {
+      setValue("campaignDetails.campaignGoal", goal);
+    },
+    [setValue]
+  );
+
+  const handleKeyDown = useCallback(
+    (
+      e: React.KeyboardEvent<HTMLDivElement>,
+      field: CampaignField,
+      value: string,
+      setter: (val: string) => void
+    ): void => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleAddTag(field, value, setter);
+      }
+    },
+    [handleAddTag]
+  );
 
   return (
     <Paper
       elevation={1}
       sx={{
         p: 3,
-        borderRadius: 1,
+        borderRadius: `${brand.borderRadius}px`,
         bgcolor: "background.paper",
         border: 1,
         borderColor: "divider",
@@ -73,13 +129,16 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
           sx={{
             height: 30,
             width: 4,
-            background: (theme) =>
-              `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+            background: dividerGradient,
             mr: 2,
             borderRadius: 2,
           }}
         />
-        <Typography variant="h5" fontWeight={600}>
+        <Typography
+          variant="h5"
+          fontWeight={600}
+          sx={{ fontFamily: brand.fonts.heading }}
+        >
           Campaign Details
         </Typography>
         <SectionCloseButton
@@ -100,7 +159,11 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
           <Typography
             variant="caption"
             fontWeight={600}
-            sx={{ mb: 1, display: "block" }}
+            sx={{
+              mb: 1,
+              display: "block",
+              fontFamily: brand.fonts.body,
+            }}
           >
             Campaign Name
           </Typography>
@@ -117,6 +180,7 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
                   bgcolor: "background.default",
                   "& .MuiOutlinedInput-root": {
                     color: "text.primary",
+                    fontFamily: brand.fonts.body,
                   },
                 }}
               />
@@ -129,42 +193,47 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
           <Typography
             variant="caption"
             fontWeight={600}
-            sx={{ mb: 1, display: "block" }}
+            sx={{
+              mb: 1,
+              display: "block",
+              fontFamily: brand.fonts.body,
+            }}
           >
             Campaign Goal
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {goals.map((goal) => (
-              <Button
-                key={goal}
-                variant={
-                  campaign.campaignGoal === goal ? "contained" : "outlined"
-                }
-                size="small"
-                onClick={() => setValue("campaignDetails.campaignGoal", goal)}
-                sx={{
-                  bgcolor:
-                    campaign.campaignGoal === goal
-                      ? "secondary.main"
+            {goals.map((goal) => {
+              const isSelected = campaign.campaignGoal === goal;
+              return (
+                <Button
+                  key={goal}
+                  variant={isSelected ? "contained" : "outlined"}
+                  size="small"
+                  onClick={() => handleGoalSelect(goal)}
+                  sx={{
+                    bgcolor: isSelected
+                      ? alpha(theme.palette.primary.main, 0.2)
                       : "transparent",
-                  color:
-                    campaign.campaignGoal === goal
-                      ? "secondary.contrastText"
-                      : "text.primary",
-                  "&:hover": {
-                    bgcolor:
-                      campaign.campaignGoal === goal
-                        ? "secondary.dark"
-                        : "action.hover",
-                  },
-                  textTransform: "none",
-                  fontSize: "0.75rem",
-                  py: 0.5,
-                }}
-              >
-                {goal}
-              </Button>
-            ))}
+                    borderColor: isSelected
+                      ? alpha(theme.palette.primary.dark, 0.3)
+                      : "divider",
+                    color: isSelected ? "primary.main" : "text.primary",
+                    "&:hover": {
+                      bgcolor: isSelected ? "primary.main" : "action.hover",
+                      color: isSelected
+                        ? "primary.contrastText"
+                        : "text.primary",
+                    },
+                    textTransform: "none",
+                    fontSize: "0.75rem",
+                    py: 0.5,
+                    fontFamily: brand.fonts.body,
+                  }}
+                >
+                  {goal}
+                </Button>
+              );
+            })}
           </Box>
         </Box>
       </Box>
@@ -175,7 +244,7 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
           mt: 3,
           p: 2,
           bgcolor: "background.default",
-          borderRadius: 2,
+          borderRadius: `${brand.borderRadius}px`,
           border: 1,
           borderColor: "divider",
           display: "grid",
@@ -188,7 +257,11 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
           <Typography
             variant="caption"
             fontWeight={600}
-            sx={{ mb: 1, display: "block" }}
+            sx={{
+              mb: 1,
+              display: "block",
+              fontFamily: brand.fonts.body,
+            }}
           >
             Objectives
           </Typography>
@@ -200,8 +273,15 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
                 onDelete={() => handleRemoveTag("objectives", i)}
                 size="small"
                 sx={{
-                  bgcolor: "secondary.main",
-                  color: "secondary.contrastText",
+                  bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  color: "primary.main",
+                  fontFamily: brand.fonts.body,
+                  "& .MuiChip-deleteIcon": {
+                    color: "primary.main",
+                    "&:hover": {
+                      color: "primary.dark",
+                    },
+                  },
                 }}
               />
             ))}
@@ -214,24 +294,28 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
               value={newObjective}
               onChange={(e) => setNewObjective(e.target.value)}
               onKeyDown={(e) =>
-                e.key === "Enter" &&
-                handleAddTag("objectives", newObjective, setNewObjective)
+                handleKeyDown(e, "objectives", newObjective, setNewObjective)
               }
               sx={{
                 bgcolor: "background.paper",
                 "& .MuiOutlinedInput-root": {
                   color: "text.primary",
+                  fontFamily: brand.fonts.body,
                 },
               }}
             />
             <Button
               variant="contained"
+              color="primary"
               size="small"
               disabled={!newObjective.trim()}
               onClick={() =>
                 handleAddTag("objectives", newObjective, setNewObjective)
               }
-              sx={{ minWidth: 40 }}
+              sx={{
+                minWidth: 40,
+                fontFamily: brand.fonts.body,
+              }}
             >
               <Add fontSize="small" />
             </Button>
@@ -243,7 +327,11 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
           <Typography
             variant="caption"
             fontWeight={600}
-            sx={{ mb: 1, display: "block" }}
+            sx={{
+              mb: 1,
+              display: "block",
+              fontFamily: brand.fonts.body,
+            }}
           >
             Key Messages
           </Typography>
@@ -255,8 +343,15 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
                 onDelete={() => handleRemoveTag("keyMessages", i)}
                 size="small"
                 sx={{
-                  bgcolor: "secondary.main",
-                  color: "secondary.contrastText",
+                  bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  color: "primary.main",
+                  fontFamily: brand.fonts.body,
+                  "& .MuiChip-deleteIcon": {
+                    color: "primary.main",
+                    "&:hover": {
+                      color: "primary.dark",
+                    },
+                  },
                 }}
               />
             ))}
@@ -269,24 +364,28 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
               value={newKeyMessage}
               onChange={(e) => setNewKeyMessage(e.target.value)}
               onKeyDown={(e) =>
-                e.key === "Enter" &&
-                handleAddTag("keyMessages", newKeyMessage, setNewKeyMessage)
+                handleKeyDown(e, "keyMessages", newKeyMessage, setNewKeyMessage)
               }
               sx={{
                 bgcolor: "background.paper",
                 "& .MuiOutlinedInput-root": {
                   color: "text.primary",
+                  fontFamily: brand.fonts.body,
                 },
               }}
             />
             <Button
               variant="contained"
+              color="primary"
               size="small"
               disabled={!newKeyMessage.trim()}
               onClick={() =>
                 handleAddTag("keyMessages", newKeyMessage, setNewKeyMessage)
               }
-              sx={{ minWidth: 40 }}
+              sx={{
+                minWidth: 40,
+                fontFamily: brand.fonts.body,
+              }}
             >
               <Add fontSize="small" />
             </Button>
@@ -294,12 +393,16 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
         </Box>
       </Box>
 
-      {/* Additional Campaign Details (Collapsible) */}
+      {/* Additional Campaign Details */}
       <Box sx={{ mt: 3 }}>
         <Typography
           variant="caption"
           fontWeight={600}
-          sx={{ mb: 1, display: "block" }}
+          sx={{
+            mb: 1,
+            display: "block",
+            fontFamily: brand.fonts.body,
+          }}
         >
           Offer / Promotion Details
         </Typography>
@@ -317,6 +420,7 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
                 bgcolor: "background.default",
                 "& .MuiOutlinedInput-root": {
                   color: "text.primary",
+                  fontFamily: brand.fonts.body,
                 },
               }}
             />
@@ -326,7 +430,12 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
         <Typography
           variant="caption"
           fontWeight={600}
-          sx={{ mb: 1, mt: 3, display: "block" }}
+          sx={{
+            mb: 1,
+            mt: 3,
+            display: "block",
+            fontFamily: brand.fonts.body,
+          }}
         >
           Mandatories / Legal Disclaimers
         </Typography>
@@ -344,6 +453,7 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
                 bgcolor: "background.default",
                 "& .MuiOutlinedInput-root": {
                   color: "text.primary",
+                  fontFamily: brand.fonts.body,
                 },
               }}
             />
@@ -353,5 +463,7 @@ const CampaignDetailsSection: React.FC<Props> = ({ form }) => {
     </Paper>
   );
 };
+
+CampaignDetailsSection.displayName = "CampaignDetailsSection";
 
 export default CampaignDetailsSection;

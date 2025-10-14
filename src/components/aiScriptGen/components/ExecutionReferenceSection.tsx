@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+// src/components/aiScriptGen/components/ExecutionReferenceSection.tsx
+"use client";
+
+import { useState, useCallback, useMemo, JSX } from "react";
 import {
   Box,
   Typography,
@@ -19,74 +22,104 @@ import {
   Sun,
   Plus,
 } from "lucide-react";
-import { Controller, UseFormReturn } from "react-hook-form";
-import { FormValues } from "../types";
+import { Controller, type UseFormReturn } from "react-hook-form";
+import type { FormValues } from "../types";
 import SectionCloseButton from "./SectionCloseButton";
+import { getCurrentBrand } from "@/config/brandConfig";
 
 interface ExecutionReferenceSectionProps {
   form: UseFormReturn<FormValues>;
 }
 
-const commonConstraintsOptions = [
-  {
-    label: "Single location",
-    value: "single-location",
-    icon: <MapPin size={14} />,
-  },
-  {
-    label: "No complex VFX",
-    value: "no-vfx",
-    icon: <Clapperboard size={14} />,
-  },
-  {
-    label: "Stock footage only",
-    value: "stock-footage",
-    icon: <ShoppingCart size={14} />,
-  },
-  {
-    label: "Limited budget",
-    value: "low-budget",
-    icon: <DollarSign size={14} />,
-  },
-  { label: "No dialogue", value: "no-dialogue", icon: <Music size={14} /> },
-  {
-    label: "Natural lighting",
-    value: "natural-lighting",
-    icon: <Sun size={14} />,
-  },
-];
+interface ConstraintOption {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}
 
-const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
+const ExecutionReferenceSection = ({
   form,
-}) => {
+}: ExecutionReferenceSectionProps): JSX.Element => {
   const { control, setValue, watch } = form;
   const theme = useTheme();
+  const brand = getCurrentBrand();
 
+  // State
+  const [newConstraint, setNewConstraint] = useState("");
+
+  // Memoize static constraint options
+  const commonConstraintsOptions: ConstraintOption[] = useMemo(
+    () => [
+      {
+        label: "Single location",
+        value: "single-location",
+        icon: <MapPin size={14} />,
+      },
+      {
+        label: "No complex VFX",
+        value: "no-vfx",
+        icon: <Clapperboard size={14} />,
+      },
+      {
+        label: "Stock footage only",
+        value: "stock-footage",
+        icon: <ShoppingCart size={14} />,
+      },
+      {
+        label: "Limited budget",
+        value: "low-budget",
+        icon: <DollarSign size={14} />,
+      },
+      {
+        label: "No dialogue",
+        value: "no-dialogue",
+        icon: <Music size={14} />,
+      },
+      {
+        label: "Natural lighting",
+        value: "natural-lighting",
+        icon: <Sun size={14} />,
+      },
+    ],
+    []
+  );
+
+  // Watch form values
   const constraints =
     watch("executionReference.productionConstraints.commonConstraints") || [];
   const customConstraints =
     watch("executionReference.productionConstraints.customConstraints") || [];
-  const extractionNotes =
-    watch("executionReference.referenceFiles.extractionNotes") || "";
 
-  const [newConstraint, setNewConstraint] = useState("");
+  // Memoize divider gradient
+  const dividerGradient = useMemo(
+    () =>
+      `linear-gradient(to bottom, ${alpha(theme.palette.primary.main, 0.6)}, ${alpha(
+        theme.palette.primary.main,
+        0.25
+      )})`,
+    [theme.palette.primary.main]
+  );
 
-  const handleToggleCommon = (value: string) => {
-    const current = [...constraints];
-    if (current.includes(value)) {
-      setValue(
-        "executionReference.productionConstraints.commonConstraints",
-        current.filter((c) => c !== value)
-      );
-    } else {
-      setValue("executionReference.productionConstraints.commonConstraints", [
-        ...current,
-        value,
-      ]);
-    }
-  };
+  // Handlers
+  const handleToggleCommon = useCallback(
+    (value: string): void => {
+      const current = [...constraints];
+      if (current.includes(value)) {
+        setValue(
+          "executionReference.productionConstraints.commonConstraints",
+          current.filter((c) => c !== value)
+        );
+      } else {
+        setValue("executionReference.productionConstraints.commonConstraints", [
+          ...current,
+          value,
+        ]);
+      }
+    },
+    [constraints, setValue]
+  );
 
-  const handleAddCustom = () => {
+  const handleAddCustom = useCallback((): void => {
     if (newConstraint.trim()) {
       setValue("executionReference.productionConstraints.customConstraints", [
         ...customConstraints,
@@ -94,22 +127,35 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
       ]);
       setNewConstraint("");
     }
-  };
+  }, [newConstraint, customConstraints, setValue]);
 
-  const handleRemoveCustom = (index: number) => {
-    const updated = customConstraints.filter((_, i) => i !== index);
-    setValue(
-      "executionReference.productionConstraints.customConstraints",
-      updated
-    );
-  };
+  const handleRemoveCustom = useCallback(
+    (index: number): void => {
+      const updated = customConstraints.filter((_, i) => i !== index);
+      setValue(
+        "executionReference.productionConstraints.customConstraints",
+        updated
+      );
+    },
+    [customConstraints, setValue]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>): void => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleAddCustom();
+      }
+    },
+    [handleAddCustom]
+  );
 
   return (
     <Paper
       elevation={1}
       sx={{
         p: 3,
-        borderRadius: 2,
+        borderRadius: `${brand.borderRadius}px`,
         bgcolor: "background.paper",
         border: 1,
         borderColor: "divider",
@@ -124,13 +170,16 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
           sx={{
             height: 30,
             width: 4,
-            background: (theme) =>
-              `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+            background: dividerGradient,
             mr: 2,
             borderRadius: 2,
           }}
         />
-        <Typography variant="h5" fontWeight={600}>
+        <Typography
+          variant="h5"
+          fontWeight={600}
+          sx={{ fontFamily: brand.fonts.heading }}
+        >
           Execution & Reference
         </Typography>
         <SectionCloseButton
@@ -144,10 +193,10 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
         sx={{
           mb: 1.5,
           border: "1px solid",
-          borderRadius: 1,
+          borderRadius: `${brand.borderRadius}px`,
           borderColor: "divider",
           p: 2,
-          bgcolor: theme.palette.background.default,
+          bgcolor: "background.default",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
@@ -157,13 +206,16 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
             sx={{
               height: 24,
               width: 4,
-              background: (theme) =>
-                `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+              background: dividerGradient,
               mr: 1,
               borderRadius: 2,
             }}
           />
-          <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            sx={{ mb: 1, fontFamily: brand.fonts.heading }}
+          >
             Production Constraints
           </Typography>
         </Box>
@@ -171,7 +223,11 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ mb: 1, display: "block" }}
+          sx={{
+            mb: 1,
+            display: "block",
+            fontFamily: brand.fonts.body,
+          }}
         >
           Common Constraints
         </Typography>
@@ -184,46 +240,46 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
             mb: 2,
           }}
         >
-          {commonConstraintsOptions.map((option) => (
-            <Button
-              key={option.value}
-              onClick={() => handleToggleCommon(option.value)}
-              variant={
-                constraints.includes(option.value) ? "contained" : "outlined"
-              }
-              startIcon={option.icon}
-              sx={{
-                textTransform: "none",
-                fontSize: "0.75rem",
-                justifyContent: "flex-start",
-                bgcolor: constraints.includes(option.value)
-                  ? alpha(theme.palette.secondary.main, 0.2)
-                  : "transparent",
-                color: constraints.includes(option.value)
-                  ? "secondary.main"
-                  : "text.primary",
-                borderColor: constraints.includes(option.value)
-                  ? alpha(theme.palette.secondary.dark, 0.3)
-                  : "divider",
-                "&:hover": {
-                  bgcolor: constraints.includes(option.value)
-                    ? "secondary.main"
-                    : "action.hover",
-                  color: constraints.includes(option.value)
-                    ? "secondary.contrastText"
-                    : "text.primary",
-                },
-              }}
-            >
-              {option.label}
-            </Button>
-          ))}
+          {commonConstraintsOptions.map((option) => {
+            const isSelected = constraints.includes(option.value);
+            return (
+              <Button
+                key={option.value}
+                onClick={() => handleToggleCommon(option.value)}
+                variant={isSelected ? "contained" : "outlined"}
+                startIcon={option.icon}
+                sx={{
+                  textTransform: "none",
+                  fontSize: "0.75rem",
+                  justifyContent: "flex-start",
+                  bgcolor: isSelected
+                    ? alpha(theme.palette.primary.main, 0.2)
+                    : "transparent",
+                  color: isSelected ? "primary.main" : "text.primary",
+                  borderColor: isSelected
+                    ? alpha(theme.palette.primary.dark, 0.3)
+                    : "divider",
+                  fontFamily: brand.fonts.body,
+                  "&:hover": {
+                    bgcolor: isSelected ? "primary.main" : "action.hover",
+                    color: isSelected ? "primary.contrastText" : "text.primary",
+                  },
+                }}
+              >
+                {option.label}
+              </Button>
+            );
+          })}
         </Box>
 
         <Typography
           variant="caption"
           color="text.secondary"
-          sx={{ mb: 1, display: "block" }}
+          sx={{
+            mb: 1,
+            display: "block",
+            fontFamily: brand.fonts.body,
+          }}
         >
           Custom Constraints
         </Typography>
@@ -235,8 +291,15 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
               label={constraint}
               onDelete={() => handleRemoveCustom(index)}
               sx={{
-                bgcolor: "secondary.main",
-                color: "secondary.contrastText",
+                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                color: "primary.main",
+                fontFamily: brand.fonts.body,
+                "& .MuiChip-deleteIcon": {
+                  color: "primary.main",
+                  "&:hover": {
+                    color: "primary.dark",
+                  },
+                },
               }}
             />
           ))}
@@ -249,23 +312,22 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
             placeholder="Add custom constraint"
             value={newConstraint}
             onChange={(e) => setNewConstraint(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAddCustom();
-            }}
+            onKeyDown={handleKeyDown}
             sx={{
               bgcolor: "background.default",
               "& .MuiOutlinedInput-root": {
                 color: "text.primary",
+                fontFamily: brand.fonts.body,
               },
             }}
           />
           <Button
             variant="contained"
+            color="primary"
             onClick={handleAddCustom}
             sx={{
               minWidth: 40,
-              bgcolor: "secondary.main",
-              "&:hover": { bgcolor: "secondary.dark" },
+              fontFamily: brand.fonts.body,
             }}
           >
             <Plus size={18} />
@@ -278,10 +340,10 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
         sx={{
           mb: 1.5,
           border: "1px solid",
-          borderRadius: 1,
+          borderRadius: `${brand.borderRadius}px`,
           borderColor: "divider",
           p: 2,
-          bgcolor: theme.palette.background.default,
+          bgcolor: "background.default",
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
@@ -291,13 +353,16 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
             sx={{
               height: 24,
               width: 4,
-              background: (theme) =>
-                `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+              background: dividerGradient,
               mr: 1,
               borderRadius: 2,
             }}
           />
-          <Typography variant="body2" fontWeight={600} sx={{ mb: 1 }}>
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            sx={{ mb: 1, fontFamily: brand.fonts.heading }}
+          >
             Reference Files
           </Typography>
         </Box>
@@ -305,8 +370,12 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
         <Typography
           variant="caption"
           color="text.secondary"
-          textAlign={"center"}
-          sx={{ mb: 1, display: "block" }}
+          textAlign="center"
+          sx={{
+            mb: 1,
+            display: "block",
+            fontFamily: brand.fonts.body,
+          }}
         >
           Extraction Notes
         </Typography>
@@ -324,6 +393,7 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
                 bgcolor: "background.default",
                 "& .MuiOutlinedInput-root": {
                   color: "text.primary",
+                  fontFamily: brand.fonts.body,
                 },
               }}
             />
@@ -333,5 +403,7 @@ const ExecutionReferenceSection: React.FC<ExecutionReferenceSectionProps> = ({
     </Paper>
   );
 };
+
+ExecutionReferenceSection.displayName = "ExecutionReferenceSection";
 
 export default ExecutionReferenceSection;

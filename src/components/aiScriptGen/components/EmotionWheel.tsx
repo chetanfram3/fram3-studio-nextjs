@@ -1,45 +1,72 @@
-import React, { useState, useRef } from "react";
-import { Box, useTheme, alpha } from "@mui/material";
-import { demographicData } from "../data/demographicData";
+// src/components/aiScriptGen/components/EmotionWheel.tsx
+'use client';
+
+import { useState, useRef, useCallback, useMemo, JSX } from 'react';
+import { Box, useTheme, alpha } from '@mui/material';
+import { demographicData } from '../data/demographicData';
+import { getCurrentBrand } from '@/config/brandConfig';
 
 interface EmotionWheelProps {
   selectedEmotion: string;
   onSelectEmotion: (emotion: string) => void;
 }
 
-const EmotionWheel: React.FC<EmotionWheelProps> = ({
+interface HoverCoords {
+  x: number;
+  y: number;
+}
+
+const EmotionWheel = ({
   selectedEmotion,
   onSelectEmotion,
-}) => {
+}: EmotionWheelProps): JSX.Element => {
   const theme = useTheme();
-  const [hoveredEmotion, setHoveredEmotion] = useState<string | null>(null);
-  const [hoverCoords, setHoverCoords] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+  const brand = getCurrentBrand();
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const handleEmotionHover = (
-    emotion: string,
-    event: React.MouseEvent<SVGGElement, MouseEvent>
-  ) => {
-    setHoveredEmotion(emotion);
-    if (svgRef.current) {
-      const rect = svgRef.current.getBoundingClientRect();
-      setHoverCoords({
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-      });
-    }
-  };
+  // State
+  const [hoveredEmotion, setHoveredEmotion] = useState<string | null>(null);
+  const [hoverCoords, setHoverCoords] = useState<HoverCoords | null>(null);
 
-  const handleEmotionLeave = () => {
+  // Memoize emotion segments
+  const emotionSegments = useMemo(
+    () => demographicData.emotionSegments,
+    []
+  );
+
+  // Handlers
+  const handleEmotionHover = useCallback(
+    (emotion: string, event: React.MouseEvent<SVGGElement, MouseEvent>): void => {
+      setHoveredEmotion(emotion);
+      if (svgRef.current) {
+        const rect = svgRef.current.getBoundingClientRect();
+        setHoverCoords({
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top,
+        });
+      }
+    },
+    []
+  );
+
+  const handleEmotionLeave = useCallback((): void => {
     setHoveredEmotion(null);
     setHoverCoords(null);
-  };
+  }, []);
 
-  const isEmotionHighlighted = (emotion: string) =>
-    hoveredEmotion ? hoveredEmotion === emotion : selectedEmotion === emotion;
+  const handleEmotionClick = useCallback(
+    (emotion: string): void => {
+      onSelectEmotion(emotion);
+    },
+    [onSelectEmotion]
+  );
+
+  const isEmotionHighlighted = useCallback(
+    (emotion: string): boolean => {
+      return hoveredEmotion ? hoveredEmotion === emotion : selectedEmotion === emotion;
+    },
+    [hoveredEmotion, selectedEmotion]
+  );
 
   return (
     <Box
@@ -47,8 +74,8 @@ const EmotionWheel: React.FC<EmotionWheelProps> = ({
         mt: 1,
         width: 320,
         height: 320,
-        position: "relative",
-        filter: "drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.15))",
+        position: 'relative',
+        filter: 'drop-shadow(0px 4px 12px rgba(0, 0, 0, 0.15))',
       }}
     >
       <svg
@@ -56,10 +83,10 @@ const EmotionWheel: React.FC<EmotionWheelProps> = ({
         viewBox="0 0 100 100"
         width="100%"
         height="100%"
-        style={{ display: "block" }}
+        style={{ display: 'block' }}
       >
         <defs>
-          {demographicData.emotionSegments.map((segment) => (
+          {emotionSegments.map((segment) => (
             <radialGradient
               key={segment.gradientId}
               id={segment.gradientId}
@@ -75,7 +102,7 @@ const EmotionWheel: React.FC<EmotionWheelProps> = ({
           ))}
         </defs>
 
-        {demographicData.emotionSegments.map((segment) => {
+        {emotionSegments.map((segment) => {
           const startAngle = (segment.startAngle * Math.PI) / 180;
           const endAngle = (segment.endAngle * Math.PI) / 180;
 
@@ -85,7 +112,7 @@ const EmotionWheel: React.FC<EmotionWheelProps> = ({
           const y2 = 50 + 45 * Math.sin(endAngle);
 
           const largeArcFlag =
-            segment.endAngle - segment.startAngle <= 180 ? "0" : "1";
+            segment.endAngle - segment.startAngle <= 180 ? '0' : '1';
 
           const textAngle =
             ((segment.startAngle + segment.endAngle) / 2) * (Math.PI / 180);
@@ -104,24 +131,24 @@ const EmotionWheel: React.FC<EmotionWheelProps> = ({
           return (
             <g
               key={segment.emotion}
-              onClick={() => onSelectEmotion(segment.emotion)}
+              onClick={() => handleEmotionClick(segment.emotion)}
               onMouseEnter={(e) => handleEmotionHover(segment.emotion, e)}
               onMouseMove={(e) => handleEmotionHover(segment.emotion, e)}
               onMouseLeave={handleEmotionLeave}
-              style={{ cursor: "pointer" }}
+              style={{ cursor: 'pointer' }}
               data-emotion={segment.emotion}
             >
               <path
                 d={`M 50 50 L ${x1} ${y1} A 45 45 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
                 fill={`url(#${segment.gradientId})`}
-                stroke={isSelected ? "#FFFFFF" : "#121212"}
-                strokeWidth={isSelected ? "1.5" : "0.5"}
+                stroke={isSelected ? '#FFFFFF' : '#121212'}
+                strokeWidth={isSelected ? '1.5' : '0.5'}
                 style={{
                   opacity: isHighlighted ? 1 : 0.75,
-                  transition: "all 0.3s ease",
-                  transform: isHighlighted ? "scale(1.02)" : "scale(1)",
-                  transformOrigin: "center",
-                  filter: isHighlighted ? "brightness(1.1)" : "none",
+                  transition: 'all 0.3s ease',
+                  transform: isHighlighted ? 'scale(1.02)' : 'scale(1)',
+                  transformOrigin: 'center',
+                  filter: isHighlighted ? 'brightness(1.1)' : 'none',
                 }}
               />
               <text
@@ -131,10 +158,11 @@ const EmotionWheel: React.FC<EmotionWheelProps> = ({
                 dominantBaseline="central"
                 fontSize="3"
                 fill="#000"
-                fontWeight={isHighlighted ? "bold" : "normal"}
+                fontWeight={isHighlighted ? 'bold' : 'normal'}
+                fontFamily={brand.fonts.body}
                 transform={`rotate(${adjustedRotation}, ${textX}, ${textY})`}
                 style={{
-                  pointerEvents: "none",
+                  pointerEvents: 'none',
                   opacity: isHighlighted ? 1 : 0.9,
                 }}
               >
@@ -153,21 +181,22 @@ const EmotionWheel: React.FC<EmotionWheelProps> = ({
       {hoveredEmotion && hoverCoords && (
         <Box
           sx={{
-            position: "absolute",
+            position: 'absolute',
             left: hoverCoords.x,
             top: hoverCoords.y,
-            transform: "translate(-50%, -120%)",
+            transform: 'translate(-50%, -120%)',
             px: 1.5,
             py: 0.5,
-            bgcolor: alpha(theme.palette.secondary.main, 0.7),
-            border: `1px solid ${alpha(theme.palette.secondary.dark, 0.5)}`,
-            color: theme.palette.secondary.contrastText,
-            borderRadius: "16px",
-            fontSize: "0.75rem",
+            bgcolor: alpha(theme.palette.primary.main, 0.9),
+            border: `1px solid ${alpha(theme.palette.primary.dark, 0.5)}`,
+            color: 'primary.contrastText',
+            borderRadius: '16px',
+            fontSize: '0.75rem',
             fontWeight: 500,
-            pointerEvents: "none",
-            transition: "all 0.1s ease",
-            whiteSpace: "nowrap",
+            fontFamily: brand.fonts.body,
+            pointerEvents: 'none',
+            transition: 'all 0.1s ease',
+            whiteSpace: 'nowrap',
             zIndex: 10,
           }}
         >
@@ -177,5 +206,7 @@ const EmotionWheel: React.FC<EmotionWheelProps> = ({
     </Box>
   );
 };
+
+EmotionWheel.displayName = 'EmotionWheel';
 
 export default EmotionWheel;

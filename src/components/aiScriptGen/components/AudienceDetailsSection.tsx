@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+// src/components/aiScriptGen/components/AudienceDetailsSection.tsx
+"use client";
+
+import { useState, useCallback, useMemo, JSX } from "react";
 import {
   Box,
   Typography,
@@ -18,159 +21,187 @@ import {
   KeyboardArrowUp as ChevronUpIcon,
   KeyboardArrowDown as ChevronDownIcon,
 } from "@mui/icons-material";
-import { UseFormReturn } from "react-hook-form";
-import { FormValues } from "../types";
+import { type UseFormReturn } from "react-hook-form";
+import type { FormValues } from "../types";
 import EmotionWheel from "./EmotionWheel";
 import GenderIdentityPicker from "./GenderIdentityPicker";
 import EmotionalArc from "./EmotionalArc";
 import { demographicData } from "../data/demographicData";
 import SectionCloseButton from "./SectionCloseButton";
+import { getCurrentBrand } from "@/config/brandConfig";
 
 interface AudienceDetailsSectionProps {
   form: UseFormReturn<FormValues>;
 }
 
-const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
+type EmotionSelectionMode = "start" | "middle" | "end";
+
+const AudienceDetailsSection = ({
   form,
-}) => {
+}: AudienceDetailsSectionProps): JSX.Element => {
   const theme = useTheme();
+  const brand = getCurrentBrand();
+
+  // State
   const [currentPanel, setCurrentPanel] = useState("");
-  const [emotionSelectionMode, setEmotionSelectionMode] = useState<
-    "start" | "middle" | "end"
-  >("start");
+  const [emotionSelectionMode, setEmotionSelectionMode] =
+    useState<EmotionSelectionMode>("start");
   const [isDraggingEmotion, setIsDraggingEmotion] = useState<number | null>(
     null
   );
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  // Updated to match new type structure
+  // Watch form values
   const audienceDetails = form.watch("audienceDetails") || {};
 
-  // Toggle age range selection
-  const handleToggleAgeRange = (range: string) => {
-    const currentAgeRanges = audienceDetails.demographics?.age || [];
-    if (currentAgeRanges.includes(range)) {
+  // Memoize static data
+  const sexOptions = useMemo(() => demographicData.sexOptions, []);
+  const ageRanges = useMemo(() => demographicData.ageRanges, []);
+  const emotionSegments = useMemo(() => demographicData.emotionSegments, []);
+
+  // Memoize divider gradient
+  const dividerGradient = useMemo(
+    () =>
+      `linear-gradient(to bottom, ${alpha(theme.palette.primary.main, 0.6)}, ${alpha(
+        theme.palette.primary.main,
+        0.25
+      )})`,
+    [theme.palette.primary.main]
+  );
+
+  // Handlers
+  const handleToggleAgeRange = useCallback(
+    (range: string): void => {
+      const currentAgeRanges = audienceDetails.demographics?.age || [];
+      if (currentAgeRanges.includes(range)) {
+        form.setValue(
+          "audienceDetails.demographics.age",
+          currentAgeRanges.filter((r) => r !== range),
+          { shouldDirty: true }
+        );
+      } else {
+        form.setValue(
+          "audienceDetails.demographics.age",
+          [...currentAgeRanges, range],
+          { shouldDirty: true }
+        );
+      }
+    },
+    [audienceDetails.demographics?.age, form]
+  );
+
+  const handleEmotionSelect = useCallback(
+    (emotion: string): void => {
+      const currentEmotionList =
+        audienceDetails.emotionalTone?.emotionList || [];
       form.setValue(
-        "audienceDetails.demographics.age",
-        currentAgeRanges.filter((r) => r !== range),
+        "audienceDetails.emotionalTone.emotionList",
+        [...currentEmotionList, emotion].slice(-3),
         { shouldDirty: true }
       );
-    } else {
+
+      const currentEmotions = audienceDetails.emotionalTone?.emotionalArc || [];
+      let newEmotions = [...currentEmotions];
+
+      if (currentEmotions.length < 3) {
+        newEmotions = [
+          ...currentEmotions,
+          {
+            emotion,
+            intensity: audienceDetails.emotionalTone?.emotionIntensity || 60,
+          },
+        ];
+        if (currentEmotions.length === 0) setEmotionSelectionMode("middle");
+        else if (currentEmotions.length === 1) setEmotionSelectionMode("end");
+      } else {
+        if (emotionSelectionMode === "start")
+          newEmotions[0] = {
+            emotion,
+            intensity: audienceDetails.emotionalTone?.emotionIntensity || 60,
+          };
+        else if (emotionSelectionMode === "middle")
+          newEmotions[1] = {
+            emotion,
+            intensity: audienceDetails.emotionalTone?.emotionIntensity || 60,
+          };
+        else
+          newEmotions[2] = {
+            emotion,
+            intensity: audienceDetails.emotionalTone?.emotionIntensity || 60,
+          };
+      }
+
+      form.setValue("audienceDetails.emotionalTone.emotionalArc", newEmotions, {
+        shouldDirty: true,
+      });
+    },
+    [audienceDetails, emotionSelectionMode, form]
+  );
+
+  const handleEmotionIntensityChange = useCallback(
+    (_event: Event, newValue: number | number[]): void => {
       form.setValue(
-        "audienceDetails.demographics.age",
-        [...currentAgeRanges, range],
-        {
-          shouldDirty: true,
-        }
+        "audienceDetails.emotionalTone.emotionIntensity",
+        typeof newValue === "number" ? newValue : newValue[0],
+        { shouldDirty: true }
       );
-    }
-  };
+    },
+    [form]
+  );
 
-  // Handle emotion selection
-  const handleEmotionSelect = (emotion: string) => {
-    // Update the emotionList array with the selected emotion
-    const currentEmotionList = audienceDetails.emotionalTone?.emotionList || [];
-    form.setValue(
-      "audienceDetails.emotionalTone.emotionList",
-      [...currentEmotionList, emotion].slice(-3), // Keep only last 3 emotions
-      { shouldDirty: true }
-    );
-
-    const currentEmotions = audienceDetails.emotionalTone?.emotionalArc || [];
-    let newEmotions = [...currentEmotions];
-
-    if (currentEmotions.length < 3) {
-      newEmotions = [
-        ...currentEmotions,
-        {
-          emotion,
-          intensity: audienceDetails.emotionalTone?.emotionIntensity || 60,
-        },
-      ];
-      if (currentEmotions.length === 0) setEmotionSelectionMode("middle");
-      else if (currentEmotions.length === 1) setEmotionSelectionMode("end");
-    } else {
-      if (emotionSelectionMode === "start")
-        newEmotions[0] = {
-          emotion,
-          intensity: audienceDetails.emotionalTone?.emotionIntensity || 60,
-        };
-      else if (emotionSelectionMode === "middle")
-        newEmotions[1] = {
-          emotion,
-          intensity: audienceDetails.emotionalTone?.emotionIntensity || 60,
-        };
-      else
-        newEmotions[2] = {
-          emotion,
-          intensity: audienceDetails.emotionalTone?.emotionIntensity || 60,
-        };
-    }
-
-    form.setValue("audienceDetails.emotionalTone.emotionalArc", newEmotions, {
-      shouldDirty: true,
-    });
-  };
-
-  // Handle emotion intensity change
-  const handleEmotionIntensityChange = (
-    _event: Event,
-    newValue: number | number[]
-  ) => {
-    form.setValue(
-      "audienceDetails.emotionalTone.emotionIntensity",
-      typeof newValue === "number" ? newValue : newValue[0],
-      { shouldDirty: true }
-    );
-  };
-
-  // Handle drag and drop for emotion reordering
-  const handleDragStart = (index: number) => {
+  const handleDragStart = useCallback((index: number): void => {
     setIsDraggingEmotion(index);
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  };
+  const handleDragOver = useCallback(
+    (e: React.DragEvent, index: number): void => {
+      e.preventDefault();
+      setDragOverIndex(index);
+    },
+    []
+  );
 
-  const handleDrop = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (isDraggingEmotion === null) return;
+  const handleDrop = useCallback(
+    (e: React.DragEvent, index: number): void => {
+      e.preventDefault();
+      if (isDraggingEmotion === null) return;
 
-    const currentEmotions = audienceDetails.emotionalTone.emotionalArc || [];
-    const updated = [...currentEmotions];
-    const [draggedEmotion] = updated.splice(isDraggingEmotion, 1);
-    updated.splice(index, 0, draggedEmotion);
+      const currentEmotions = audienceDetails.emotionalTone.emotionalArc || [];
+      const updated = [...currentEmotions];
+      const [draggedEmotion] = updated.splice(isDraggingEmotion, 1);
+      updated.splice(index, 0, draggedEmotion);
 
-    form.setValue("audienceDetails.emotionalTone.emotionalArc", updated, {
-      shouldDirty: true,
-    });
+      form.setValue("audienceDetails.emotionalTone.emotionalArc", updated, {
+        shouldDirty: true,
+      });
+      setIsDraggingEmotion(null);
+      setDragOverIndex(null);
+    },
+    [isDraggingEmotion, audienceDetails, form]
+  );
+
+  const handleDragEnd = useCallback((): void => {
     setIsDraggingEmotion(null);
     setDragOverIndex(null);
-  };
+  }, []);
 
-  const handleDragEnd = () => {
-    setIsDraggingEmotion(null);
-    setDragOverIndex(null);
-  };
+  const removeEmotion = useCallback(
+    (index: number): void => {
+      const currentEmotions = audienceDetails.emotionalTone.emotionalArc || [];
+      const newEmotions = currentEmotions.filter((_, i) => i !== index);
 
-  // Remove an emotion
-  const removeEmotion = (index: number) => {
-    const currentEmotions = audienceDetails.emotionalTone.emotionalArc || [];
-    const newEmotions = currentEmotions.filter((_, i) => i !== index);
+      form.setValue("audienceDetails.emotionalTone.emotionalArc", newEmotions, {
+        shouldDirty: true,
+      });
 
-    form.setValue("audienceDetails.emotionalTone.emotionalArc", newEmotions, {
-      shouldDirty: true,
-    });
+      if (newEmotions.length === 0) setEmotionSelectionMode("start");
+      else if (newEmotions.length === 1) setEmotionSelectionMode("middle");
+      else setEmotionSelectionMode("end");
+    },
+    [audienceDetails, form]
+  );
 
-    if (newEmotions.length === 0) setEmotionSelectionMode("start");
-    else if (newEmotions.length === 1) setEmotionSelectionMode("middle");
-    else setEmotionSelectionMode("end");
-  };
-
-  // Reset all emotions
-  const resetEmotions = () => {
+  const resetEmotions = useCallback((): void => {
     form.setValue("audienceDetails.emotionalTone.emotionalArc", [], {
       shouldDirty: true,
     });
@@ -178,52 +209,72 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
       shouldDirty: true,
     });
     setEmotionSelectionMode("start");
-  };
+  }, [form]);
 
-  // Get color for an emotion
-  const getEmotionColor = (emotion: string) => {
-    const emotionSegment = demographicData.emotionSegments.find(
-      (segment) => segment.emotion === emotion
-    );
-    return emotionSegment ? emotionSegment.color1 : "#FFFFFF";
-  };
-
-  const handleToggleSex = (sexId: string) => {
-    const currentSelectedSex = audienceDetails.demographics?.sex || [];
-    const currentSexArray = Array.isArray(currentSelectedSex)
-      ? currentSelectedSex
-      : currentSelectedSex
-      ? [currentSelectedSex]
-      : [];
-
-    // Toggle logic: add or remove based on current selection
-    if (currentSexArray.includes(sexId)) {
-      form.setValue(
-        "audienceDetails.demographics.sex",
-        currentSexArray.filter((id) => id !== sexId),
-        { shouldDirty: true }
+  const getEmotionColor = useCallback(
+    (emotion: string): string => {
+      const emotionSegment = emotionSegments.find(
+        (segment) => segment.emotion === emotion
       );
-    } else {
-      form.setValue(
-        "audienceDetails.demographics.sex",
-        [...currentSexArray, sexId],
-        { shouldDirty: true }
-      );
-    }
-  };
+      return emotionSegment ? emotionSegment.color1 : "#FFFFFF";
+    },
+    [emotionSegments]
+  );
+
+  const handleToggleSex = useCallback(
+    (sexId: string): void => {
+      const currentSelectedSex = audienceDetails.demographics?.sex || [];
+      const currentSexArray = Array.isArray(currentSelectedSex)
+        ? currentSelectedSex
+        : currentSelectedSex
+          ? [currentSelectedSex]
+          : [];
+
+      if (currentSexArray.includes(sexId)) {
+        form.setValue(
+          "audienceDetails.demographics.sex",
+          currentSexArray.filter((id) => id !== sexId),
+          { shouldDirty: true }
+        );
+      } else {
+        form.setValue(
+          "audienceDetails.demographics.sex",
+          [...currentSexArray, sexId],
+          { shouldDirty: true }
+        );
+      }
+    },
+    [audienceDetails.demographics?.sex, form]
+  );
+
+  const togglePanel = useCallback(
+    (panel: string): void => {
+      setCurrentPanel(currentPanel === panel ? "" : panel);
+    },
+    [currentPanel]
+  );
+
+  // Compute emotion arc progress percentage
+  const emotionArcProgress = useMemo(() => {
+    const length = audienceDetails.emotionalTone?.emotionalArc?.length || 0;
+    if (length === 0) return 0;
+    if (length === 1) return 33;
+    if (length === 2) return 66;
+    return 100;
+  }, [audienceDetails.emotionalTone?.emotionalArc]);
 
   return (
     <Paper
       elevation={0}
       sx={{
         p: { xs: 2, sm: 3 },
-        borderRadius: 1,
-        bgcolor: theme.palette.background.paper,
+        borderRadius: `${brand.borderRadius}px`,
+        bgcolor: "background.paper",
         border: 1,
-        borderColor: theme.palette.divider,
+        borderColor: "divider",
         mb: 4,
         position: "relative",
-        width: "100%", // Ensure the Paper takes full width
+        width: "100%",
       }}
     >
       <SectionCloseButton
@@ -237,18 +288,21 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
           sx={{
             height: 30,
             width: 4,
-            background: (theme) =>
-              `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+            background: dividerGradient,
             mr: 2,
             borderRadius: 2,
           }}
         />
-        <Typography variant="h5" fontWeight={600}>
+        <Typography
+          variant="h5"
+          fontWeight={600}
+          sx={{ fontFamily: brand.fonts.heading }}
+        >
           Audience Details
         </Typography>
       </Box>
 
-      {/* Main Container - This is the key part that's been fixed */}
+      {/* Main Container */}
       <Box
         sx={{
           display: "flex",
@@ -271,18 +325,19 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
               flexGrow: 1,
               display: "flex",
               flexDirection: "column",
-              bgcolor: theme.palette.background.paper,
+              bgcolor: "background.paper",
               border: 0,
-              borderRadius: 1,
+              borderRadius: `${brand.borderRadius}px`,
               boxSizing: "border-box",
               width: "100%",
             }}
           >
+            {/* Demographics Section */}
             <Box
               sx={{
-                bgcolor: theme.palette.background.default,
+                bgcolor: "background.default",
                 border: "1px solid",
-                borderRadius: 1,
+                borderRadius: `${brand.borderRadius}px`,
                 borderColor: "divider",
                 mt: 0,
               }}
@@ -303,17 +358,21 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                   sx={{
                     height: 22,
                     width: 4,
-                    background: (theme) =>
-                      `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                    background: dividerGradient,
                     mr: 1,
                     borderRadius: 2,
                   }}
                 />
-                <Typography variant="subtitle2" fontWeight={500}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={500}
+                  sx={{ fontFamily: brand.fonts.heading }}
+                >
                   Demographics
                 </Typography>
               </Box>
 
+              {/* Sex Selection */}
               <Box sx={{ px: 2, mb: 1.5 }}>
                 <Typography
                   variant="caption"
@@ -323,13 +382,13 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                     fontWeight: 500,
                     color: "text.secondary",
                     textAlign: "center",
+                    fontFamily: brand.fonts.body,
                   }}
                 >
                   Sex
                 </Typography>
                 <Box sx={{ display: "flex", gap: 1 }}>
-                  {demographicData.sexOptions.map((option) => {
-                    // Check if the current option is selected
+                  {sexOptions.map((option) => {
                     const sexValue = audienceDetails.demographics.sex;
                     const isSelected = Array.isArray(sexValue)
                       ? sexValue.includes(option.id)
@@ -344,24 +403,26 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         sx={{
                           flex: 1,
                           border: 1,
+                          borderStyle: "solid",
                           bgcolor: isSelected
-                            ? alpha(theme.palette.secondary.main, 0.2)
-                            : "background.paper",
+                            ? alpha(theme.palette.primary.main, 0.2)
+                            : "transparent",
                           borderColor: isSelected
-                            ? alpha(theme.palette.secondary.dark, 0.3)
+                            ? alpha(theme.palette.primary.dark, 0.3)
                             : "divider",
-                          color: isSelected ? "secondary.main" : "text.primary",
+                          color: isSelected ? "primary.main" : "text.primary",
                           "&:hover": {
                             bgcolor: isSelected
-                              ? "secondary.main"
+                              ? "primary.main"
                               : "action.hover",
                             color: isSelected
-                              ? "secondary.contrastText"
+                              ? "primary.contrastText"
                               : "text.primary",
                           },
                           textTransform: "none",
                           py: 0.1,
                           fontSize: "0.80rem",
+                          fontFamily: brand.fonts.body,
                         }}
                       >
                         {option.label}
@@ -385,9 +446,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                           form.setValue(
                             "audienceDetails.demographics.customSex",
                             e.target.value,
-                            {
-                              shouldDirty: true,
-                            }
+                            { shouldDirty: true }
                           )
                         }
                         sx={{
@@ -395,10 +454,11 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                           bgcolor: "background.paper",
                           "& .MuiInputBase-input": {
                             textAlign: "center",
+                            fontFamily: brand.fonts.body,
                           },
                           "& .MuiOutlinedInput-root": {
                             "&.Mui-focused fieldset": {
-                              borderColor: "secondary.main",
+                              borderColor: "primary.main",
                             },
                           },
                         }}
@@ -409,10 +469,12 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                 })()}
               </Box>
 
+              {/* Gender Identity Picker */}
               <Box sx={{ px: 2, mb: 1.5 }}>
                 <GenderIdentityPicker form={form} />
               </Box>
 
+              {/* Age Demographics */}
               <Box sx={{ px: 2, mb: 1.5 }}>
                 <Typography
                   variant="caption"
@@ -422,6 +484,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                     fontWeight: 500,
                     color: "text.secondary",
                     textAlign: "center",
+                    fontFamily: brand.fonts.body,
                   }}
                 >
                   Age Demographics
@@ -434,7 +497,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                     width: "100%",
                   }}
                 >
-                  {demographicData.ageRanges.map((demo) => {
+                  {ageRanges.map((demo) => {
                     const isSelected = (
                       audienceDetails.demographics?.age || []
                     ).includes(demo.range);
@@ -446,24 +509,24 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         sx={{
                           p: 1,
                           border: 1,
-                          borderRadius: 1,
+                          borderRadius: `${brand.borderRadius}px`,
                           cursor: "pointer",
                           display: "flex",
                           flexDirection: "column",
                           bgcolor: isSelected
-                            ? alpha(theme.palette.secondary.main, 0.2)
-                            : theme.palette.background.paper,
+                            ? alpha(theme.palette.primary.main, 0.2)
+                            : "background.paper",
                           borderColor: isSelected
-                            ? alpha(theme.palette.secondary.dark, 0.3)
-                            : theme.palette.divider,
+                            ? alpha(theme.palette.primary.dark, 0.3)
+                            : "divider",
                           transition: "all 0.2s",
                           "&:hover": {
                             bgcolor: isSelected
-                              ? alpha(theme.palette.secondary.main, 0.3)
-                              : alpha(theme.palette.secondary.main, 0.4),
+                              ? "primary.main"
+                              : alpha(theme.palette.primary.main, 0.1),
                             borderColor: isSelected
-                              ? theme.palette.secondary.main
-                              : alpha(theme.palette.text.primary, 0.2),
+                              ? "primary.dark"
+                              : alpha(theme.palette.primary.main, 0.3),
                           },
                         }}
                       >
@@ -481,8 +544,9 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                               fontWeight: 600,
                               fontSize: "0.8rem",
                               color: isSelected
-                                ? theme.palette.secondary.main
-                                : theme.palette.text.primary,
+                                ? "primary.main"
+                                : "text.primary",
+                              fontFamily: brand.fonts.body,
                             }}
                           >
                             {demo.range}
@@ -493,7 +557,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                               sx={{
                                 width: 16,
                                 height: 16,
-                                color: theme.palette.secondary.main,
+                                color: "primary.main",
                               }}
                             />
                           )}
@@ -503,8 +567,9 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                           sx={{
                             fontSize: "0.7rem",
                             color: isSelected
-                              ? alpha(theme.palette.secondary.main, 0.8)
-                              : theme.palette.text.secondary,
+                              ? alpha(theme.palette.primary.main, 0.8)
+                              : "text.secondary",
+                            fontFamily: brand.fonts.body,
                           }}
                         >
                           {demo.label}
@@ -515,14 +580,15 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                 </Box>
               </Box>
 
+              {/* Custom Age Range */}
               <Box
                 sx={{
                   py: 1.5,
-                  bgcolor: theme.palette.background.paper,
+                  bgcolor: "background.paper",
                   border: "1px solid",
                   borderColor: "divider",
                   m: 2,
-                  borderRadius: 1,
+                  borderRadius: `${brand.borderRadius}px`,
                 }}
               >
                 <Typography
@@ -533,6 +599,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                     fontWeight: 500,
                     color: "text.secondary",
                     textAlign: "center",
+                    fontFamily: brand.fonts.body,
                   }}
                 >
                   Custom Age Range
@@ -564,9 +631,19 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       )
                     }
                     inputProps={{ min: 0, max: 100 }}
-                    sx={{ width: 65, bgcolor: "background.paper" }}
+                    sx={{
+                      width: 65,
+                      bgcolor: "background.paper",
+                      "& .MuiInputBase-input": {
+                        fontFamily: brand.fonts.body,
+                      },
+                    }}
                   />
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ fontFamily: brand.fonts.body }}
+                  >
                     to
                   </Typography>
                   <TextField
@@ -588,16 +665,24 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       )
                     }
                     inputProps={{ min: 0, max: 100 }}
-                    sx={{ width: 65, bgcolor: "background.paper" }}
+                    sx={{
+                      width: 65,
+                      bgcolor: "background.paper",
+                      "& .MuiInputBase-input": {
+                        fontFamily: brand.fonts.body,
+                      },
+                    }}
                   />
                 </Box>
               </Box>
             </Box>
+
+            {/* Audience Psychology Section */}
             <Box
               sx={{
-                bgcolor: theme.palette.background.default,
+                bgcolor: "background.default",
                 border: "1px solid",
-                borderRadius: 1,
+                borderRadius: `${brand.borderRadius}px`,
                 borderColor: "divider",
                 mt: 1,
               }}
@@ -618,21 +703,26 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                   sx={{
                     height: 22,
                     width: 4,
-                    background: (theme) =>
-                      `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                    background: dividerGradient,
                     mr: 1,
                     borderRadius: 2,
                   }}
                 />
-                <Typography variant="subtitle2" fontWeight={500}>
+                <Typography
+                  variant="subtitle2"
+                  fontWeight={500}
+                  sx={{ fontFamily: brand.fonts.heading }}
+                >
                   Audience Psychology
                 </Typography>
               </Box>
+
+              {/* Target Audience Persona */}
               <Box
                 sx={{
                   mb: 1.5,
                   border: "1px solid",
-                  borderRadius: 1,
+                  borderRadius: `${brand.borderRadius}px`,
                   borderColor: "divider",
                   p: 2,
                 }}
@@ -653,6 +743,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       display: "flex",
                       alignItems: "center",
                       gap: 0.5,
+                      fontFamily: brand.fonts.body,
                     }}
                   >
                     <Divider
@@ -661,8 +752,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       sx={{
                         height: 18,
                         width: 4,
-                        background: (theme) =>
-                          `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                        background: dividerGradient,
                         mr: 0.5,
                         borderRadius: 2,
                       }}
@@ -681,6 +771,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       borderRadius: 5,
                       fontSize: "0.65rem",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
                   >
                     Who they are
@@ -696,19 +787,24 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                     form.setValue(
                       "audienceDetails.audiencePersona",
                       e.target.value,
-                      {
-                        shouldDirty: true,
-                      }
+                      { shouldDirty: true }
                     )
                   }
-                  sx={{ bgcolor: "background.paper" }}
+                  sx={{
+                    bgcolor: "background.paper",
+                    "& .MuiInputBase-input": {
+                      fontFamily: brand.fonts.body,
+                    },
+                  }}
                 />
               </Box>
+
+              {/* Psychographics */}
               <Box
                 sx={{
                   mb: 1.5,
                   border: "1px solid",
-                  borderRadius: 1,
+                  borderRadius: `${brand.borderRadius}px`,
                   borderColor: "divider",
                   p: 2,
                 }}
@@ -729,6 +825,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       display: "flex",
                       alignItems: "center",
                       gap: 0.5,
+                      fontFamily: brand.fonts.body,
                     }}
                   >
                     <Divider
@@ -737,8 +834,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       sx={{
                         height: 18,
                         width: 4,
-                        background: (theme) =>
-                          `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                        background: dividerGradient,
                         mr: 0.5,
                         borderRadius: 2,
                       }}
@@ -757,6 +853,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       borderRadius: 5,
                       fontSize: "0.65rem",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
                   >
                     Traits & values
@@ -772,30 +869,35 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                     form.setValue(
                       "audienceDetails.psychographics",
                       e.target.value,
-                      {
-                        shouldDirty: true,
-                      }
+                      { shouldDirty: true }
                     )
                   }
-                  sx={{ bgcolor: "background.paper" }}
+                  sx={{
+                    bgcolor: "background.paper",
+                    "& .MuiInputBase-input": {
+                      fontFamily: brand.fonts.body,
+                    },
+                  }}
                 />
               </Box>
+
+              {/* Pain Points & Aspirations Grid */}
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr", // Two equal columns
+                  gridTemplateColumns: "1fr 1fr",
                   gap: 2,
                   px: 1,
                   mb: 1.5,
                   width: "100%",
                 }}
               >
-                {/* Pain Points Section */}
+                {/* Pain Points */}
                 <Box
                   sx={{
                     p: 1,
                     border: "1px solid",
-                    borderRadius: 1,
+                    borderRadius: `${brand.borderRadius}px`,
                     borderColor: "divider",
                   }}
                 >
@@ -816,6 +918,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         alignItems: "center",
                         gap: 0.5,
                         fontSize: "0.65rem",
+                        fontFamily: brand.fonts.body,
                       }}
                     >
                       <Divider
@@ -824,8 +927,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         sx={{
                           height: 16,
                           width: 4,
-                          background: (theme) =>
-                            `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                          background: dividerGradient,
                           mr: 0.25,
                           borderRadius: 2,
                         }}
@@ -844,6 +946,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         borderRadius: 5,
                         fontSize: "0.6rem",
                         color: "text.secondary",
+                        fontFamily: brand.fonts.body,
                       }}
                     >
                       Challenges
@@ -852,31 +955,36 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                   <TextField
                     fullWidth
                     multiline
-                    rows={2} // Increased from 1 to 2 for twice the height
+                    rows={2}
                     placeholder="Describe specific problems or frustrations of the audience"
                     value={audienceDetails.painPoints || ""}
                     onChange={(e) =>
                       form.setValue(
                         "audienceDetails.painPoints",
                         e.target.value,
-                        { shouldDirty: true }
+                        {
+                          shouldDirty: true,
+                        }
                       )
                     }
                     sx={{
                       bgcolor: "background.paper",
                       "& .MuiInputBase-root": {
-                        minHeight: "80px", // Additional height control
+                        minHeight: "80px",
+                      },
+                      "& .MuiInputBase-input": {
+                        fontFamily: brand.fonts.body,
                       },
                     }}
                   />
                 </Box>
 
-                {/* Aspirations Section */}
+                {/* Aspirations */}
                 <Box
                   sx={{
                     p: 1,
                     border: "1px solid",
-                    borderRadius: 1,
+                    borderRadius: `${brand.borderRadius}px`,
                     borderColor: "divider",
                   }}
                 >
@@ -897,6 +1005,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         alignItems: "center",
                         gap: 0.5,
                         fontSize: "0.65rem",
+                        fontFamily: brand.fonts.body,
                       }}
                     >
                       <Divider
@@ -905,8 +1014,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         sx={{
                           height: 16,
                           width: 4,
-                          background: (theme) =>
-                            `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                          background: dividerGradient,
                           mr: 0.25,
                           borderRadius: 2,
                         }}
@@ -925,6 +1033,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         borderRadius: 5,
                         fontSize: "0.6rem",
                         color: "text.secondary",
+                        fontFamily: brand.fonts.body,
                       }}
                     >
                       Goals
@@ -933,31 +1042,38 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                   <TextField
                     fullWidth
                     multiline
-                    rows={2} // Increased from 1 to 2 for twice the height
+                    rows={2}
                     placeholder="Describe hopes, dreams, or desired future states of the audience"
                     value={audienceDetails.aspirations || ""}
                     onChange={(e) =>
                       form.setValue(
                         "audienceDetails.aspirations",
                         e.target.value,
-                        { shouldDirty: true }
+                        {
+                          shouldDirty: true,
+                        }
                       )
                     }
                     sx={{
                       bgcolor: "background.paper",
                       "& .MuiInputBase-root": {
-                        minHeight: "80px", // Additional height control
+                        minHeight: "80px",
+                      },
+                      "& .MuiInputBase-input": {
+                        fontFamily: brand.fonts.body,
                       },
                     }}
                   />
                 </Box>
               </Box>
+
+              {/* Interests & Activities (Collapsible) */}
               <Box sx={{ px: 2, mb: 2 }}>
                 <Box
                   sx={{
                     border: 1,
                     borderColor: "divider",
-                    borderRadius: 1,
+                    borderRadius: `${brand.borderRadius}px`,
                     bgcolor: "background.paper",
                   }}
                 >
@@ -970,11 +1086,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       cursor: "pointer",
                       "&:hover": { bgcolor: "action.hover" },
                     }}
-                    onClick={() =>
-                      setCurrentPanel(
-                        currentPanel === "interests" ? "" : "interests"
-                      )
-                    }
+                    onClick={() => togglePanel("interests")}
                   >
                     <Typography
                       variant="caption"
@@ -984,6 +1096,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         display: "flex",
                         alignItems: "center",
                         gap: 0.5,
+                        fontFamily: brand.fonts.body,
                       }}
                     >
                       <Divider
@@ -992,15 +1105,18 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         sx={{
                           height: 16,
                           width: 4,
-                          background: (theme) =>
-                            `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                          background: dividerGradient,
                           mr: 0.5,
                           borderRadius: 2,
                         }}
                       />
                       Interests & Activities
                     </Typography>
-                    <IconButton size="small" sx={{ color: "text.secondary" }}>
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      sx={{ color: "text.secondary" }}
+                    >
                       {currentPanel === "interests" ? (
                         <ChevronUpIcon fontSize="small" />
                       ) : (
@@ -1021,12 +1137,15 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                           form.setValue(
                             "audienceDetails.interestActivities",
                             e.target.value,
-                            {
-                              shouldDirty: true,
-                            }
+                            { shouldDirty: true }
                           )
                         }
-                        sx={{ bgcolor: "background.paper" }}
+                        sx={{
+                          bgcolor: "background.paper",
+                          "& .MuiInputBase-input": {
+                            fontFamily: brand.fonts.body,
+                          },
+                        }}
                       />
                     </Box>
                   </Collapse>
@@ -1036,7 +1155,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
           </Paper>
         </Box>
 
-        {/* Right Column */}
+        {/* Right Column - Emotional Tone */}
         <Box sx={{ width: { xs: "100%", md: "50%" }, pl: { xs: 0, md: 1.5 } }}>
           <Paper
             elevation={0}
@@ -1045,9 +1164,9 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
               flexGrow: 1,
               display: "flex",
               flexDirection: "column",
-              bgcolor: theme.palette.background.default,
+              bgcolor: "background.default",
               border: 0,
-              borderRadius: 1,
+              borderRadius: `${brand.borderRadius}px`,
               boxSizing: "border-box",
               width: "100%",
             }}
@@ -1068,13 +1187,16 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                 sx={{
                   height: 22,
                   width: 4,
-                  background: (theme) =>
-                    `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                  background: dividerGradient,
                   mr: 1,
                   borderRadius: 2,
                 }}
               />
-              <Typography variant="subtitle2" fontWeight={500}>
+              <Typography
+                variant="subtitle2"
+                fontWeight={500}
+                sx={{ fontFamily: brand.fonts.heading }}
+              >
                 Emotional Tone
               </Typography>
             </Box>
@@ -1085,7 +1207,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                 sx={{
                   p: 1.5,
                   bgcolor: "background.paper",
-                  borderRadius: 1,
+                  borderRadius: `${brand.borderRadius}px`,
                   border: "1px solid",
                   borderColor: "divider",
                   width: "100%",
@@ -1103,19 +1225,21 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                     variant="caption"
                     color="text.primary"
                     fontWeight={400}
+                    sx={{ fontFamily: brand.fonts.body }}
                   >
                     Currently selecting:
                   </Typography>
                   <Typography
                     variant="caption"
-                    color="secondary.main"
+                    color="primary.main"
                     fontWeight={600}
+                    sx={{ fontFamily: brand.fonts.body }}
                   >
                     {emotionSelectionMode === "start"
                       ? "Starting Emotion"
                       : emotionSelectionMode === "middle"
-                      ? "Middle Emotion"
-                      : "Ending Emotion"}
+                        ? "Middle Emotion"
+                        : "Ending Emotion"}
                   </Typography>
                 </Box>
                 <Box
@@ -1134,23 +1258,10 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                       left: 0,
                       top: 0,
                       height: "100%",
-                      bgcolor: "secondary.main",
+                      bgcolor: "primary.main",
                       borderRadius: 5,
                       transition: "width 0.3s ease-in-out",
-                    }}
-                    style={{
-                      width: `${
-                        (audienceDetails.emotionalTone?.emotionalArc?.length ||
-                          0) === 0
-                          ? 0
-                          : (audienceDetails.emotionalTone?.emotionalArc
-                              ?.length || 0) === 1
-                          ? 33
-                          : (audienceDetails.emotionalTone?.emotionalArc
-                              ?.length || 0) === 2
-                          ? 66
-                          : 100
-                      }%`,
+                      width: `${emotionArcProgress}%`,
                     }}
                   />
                 </Box>
@@ -1188,7 +1299,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                 sx={{
                   p: 1.5,
                   bgcolor: "background.paper",
-                  borderRadius: 1,
+                  borderRadius: `${brand.borderRadius}px`,
                   border: "1px solid",
                   borderColor: "divider",
                   textAlign: "center",
@@ -1204,7 +1315,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
               >
                 <Typography
                   variant="subtitle2"
-                  color="secondary.main"
+                  color="primary.main"
                   sx={{
                     fontWeight: 700,
                     mb: 0.5,
@@ -1217,6 +1328,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                     WebkitBoxOrient: "vertical",
                     fontSize: "0.875rem",
                     lineHeight: 1.2,
+                    fontFamily: brand.fonts.heading,
                   }}
                 >
                   {audienceDetails.emotionalTone?.emotionList?.length
@@ -1243,10 +1355,10 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                     WebkitBoxOrient: "vertical",
                     fontSize: "0.625rem",
                     lineHeight: 1.1,
+                    fontFamily: brand.fonts.body,
                   }}
                 >
                   {(() => {
-                    // Safely access the latest emotion
                     const emotionList =
                       audienceDetails.emotionalTone?.emotionList;
                     const latestEmotion =
@@ -1254,11 +1366,9 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                         ? emotionList[emotionList.length - 1]
                         : null;
 
-                    // Find the description for the emotion
                     return latestEmotion
-                      ? demographicData.emotionSegments.find(
-                          (e) => e.emotion === latestEmotion
-                        )?.description ||
+                      ? emotionSegments.find((e) => e.emotion === latestEmotion)
+                          ?.description ||
                           "Select an emotion to see its description"
                       : "Select an emotion to see its description";
                   })()}
@@ -1276,6 +1386,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                   display: "block",
                   color: "text.secondary",
                   textAlign: "center",
+                  fontFamily: brand.fonts.body,
                 }}
               >
                 Emotion Intensity
@@ -1291,6 +1402,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                   variant="caption"
                   color="text.secondary"
                   fontWeight="600"
+                  sx={{ fontFamily: brand.fonts.body }}
                 >
                   Subtle
                 </Typography>
@@ -1298,6 +1410,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                   variant="caption"
                   color="text.secondary"
                   fontWeight="600"
+                  sx={{ fontFamily: brand.fonts.body }}
                 >
                   Intense
                 </Typography>
@@ -1308,22 +1421,34 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                 min={0}
                 max={100}
                 sx={{
-                  color: "secondary.main",
-                  height: 3,
+                  color: "primary.main",
+                  height: 8,
                   width: "100%",
                   boxSizing: "border-box",
-                  "& .MuiSlider-thumb": {
-                    width: 14,
-                    height: 14,
-                    borderRadius: "50%",
-                    transition: "all 0.2s ease-in-out",
-                    "&:hover, &.Mui-active": {
-                      boxShadow: `0px 0px 0px 8px ${theme.palette.secondary.main}26`,
-                    },
+                  "& .MuiSlider-track": {
+                    border: "none",
+                    height: 8,
                   },
                   "& .MuiSlider-rail": {
-                    opacity: 0.3,
-                    backgroundColor: "secondary.main",
+                    height: 8,
+                    opacity: 0.5,
+                    backgroundColor: theme.palette.divider,
+                  },
+                  "& .MuiSlider-thumb": {
+                    width: 18,
+                    height: 18,
+                    border: "2px solid #FFFFFF",
+                    backgroundColor: "primary.main",
+                    "&:focus, &:hover, &.Mui-active, &.Mui-focusVisible": {
+                      boxShadow: "inherit",
+                    },
+                  },
+                  "& .MuiSlider-mark": {
+                    backgroundColor: "primary.main",
+                    height: 8,
+                    width: 8,
+                    borderRadius: "50%",
+                    marginTop: 0,
                   },
                 }}
               />
@@ -1333,7 +1458,8 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
                   display: "block",
                   textAlign: "center",
                   mt: 1,
-                  color: "secondary.main",
+                  color: "primary.main",
+                  fontFamily: brand.fonts.body,
                 }}
               >
                 {audienceDetails.emotionalTone.emotionIntensity || 60}%
@@ -1360,5 +1486,7 @@ const AudienceDetailsSection: React.FC<AudienceDetailsSectionProps> = ({
     </Paper>
   );
 };
+
+AudienceDetailsSection.displayName = "AudienceDetailsSection";
 
 export default AudienceDetailsSection;

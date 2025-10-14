@@ -1,78 +1,48 @@
+// src/components/aiScriptGen/components/InputField.tsx
 "use client";
 
-import React from "react";
 import {
   Box,
   Typography,
   TextField,
-  TextFieldProps,
-  SxProps,
-  Theme,
+  type TextFieldProps,
+  useTheme,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import { alpha } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
+import { JSX } from "react";
 
-// ==========================================
-// TYPE DEFINITIONS
-// ==========================================
 interface InputFieldProps extends Omit<TextFieldProps, "variant"> {
   label: React.ReactNode;
   multiline?: boolean;
   rows?: number;
-  sx?: SxProps<Theme>;
 }
 
-/**
- * InputField - Custom text input field component
- *
- * Performance optimizations:
- * - React 19 compiler auto-optimizes (no manual memo needed)
- * - Theme-aware styling (no hardcoded colors)
- * - Proper sx prop typing
- *
- * Porting standards:
- * - 100% type safe (no any types)
- * - Uses theme palette for all colors (primary instead of secondary)
- * - Uses brand config for fonts
- * - No hardcoded colors or spacing
- * - Follows MUI v7 patterns
- * - Supports both light and dark modes
- */
-export default function InputField({
+const InputField = ({
   label,
   placeholder,
   multiline = false,
   rows = 1,
   sx = {},
   ...props
-}: InputFieldProps) {
-  // ==========================================
-  // THEME & BRANDING
-  // ==========================================
+}: InputFieldProps): JSX.Element => {
   const theme = useTheme();
   const brand = getCurrentBrand();
 
-  // ==========================================
-  // RENDER
-  // ==========================================
   return (
     <Box sx={sx}>
-      {label && (
-        <Typography
-          variant="subtitle1"
-          component="label"
-          sx={{
-            display: "block",
-            mb: 1.5,
-            fontWeight: 500,
-            color: "text.primary",
-            fontFamily: brand.fonts.body,
-          }}
-        >
-          {label}
-        </Typography>
-      )}
+      <Typography
+        variant="subtitle1"
+        component="label"
+        sx={{
+          display: "block",
+          mb: 1.5,
+          fontWeight: 500,
+          color: "text.primary",
+          fontFamily: brand.fonts.heading,
+        }}
+      >
+        {label}
+      </Typography>
 
       <TextField
         fullWidth
@@ -80,45 +50,44 @@ export default function InputField({
         multiline={multiline}
         rows={rows}
         sx={{
+          bgcolor: "background.default",
           "& .MuiOutlinedInput-root": {
             color: "text.primary",
-            bgcolor: "background.paper",
+            fontFamily: brand.fonts.body,
             "& fieldset": {
-              border: "none",
+              borderColor: "divider",
             },
-            "&:hover": {
-              bgcolor:
-                theme.palette.mode === "dark"
-                  ? alpha(theme.palette.background.paper, 0.7)
-                  : alpha(theme.palette.action.hover, 0.5),
+            "&:hover fieldset": {
+              borderColor: "divider",
             },
-            "&.Mui-focused": {
-              bgcolor:
-                theme.palette.mode === "dark"
-                  ? alpha(theme.palette.background.paper, 0.7)
-                  : alpha(theme.palette.action.hover, 0.5),
-              outline: `1px solid ${theme.palette.primary.main}`,
+            "&.Mui-focused fieldset": {
+              borderColor: "primary.main",
+            },
+            "&.Mui-error fieldset": {
+              borderColor: "error.main",
             },
           },
           "& .MuiInputBase-input": {
-            padding: "12px 14px",
-            fontSize: "0.95rem",
             fontFamily: brand.fonts.body,
           },
           "& .MuiInputBase-input::placeholder": {
-            color: "text.disabled",
+            color: theme.palette.mode === "dark" ? "#666" : "#9E9E9E",
             opacity: 1,
           },
-        }}
-        InputProps={{
-          sx: {
-            border: "none",
+          "& .MuiFormHelperText-root": {
+            fontFamily: brand.fonts.body,
+            color: "text.secondary",
+            "&.Mui-error": {
+              color: "error.main",
+            },
           },
         }}
         {...props}
       />
     </Box>
   );
-}
+};
 
 InputField.displayName = "InputField";
+
+export default InputField;

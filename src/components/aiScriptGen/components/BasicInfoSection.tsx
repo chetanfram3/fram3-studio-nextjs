@@ -1,23 +1,24 @@
-import React from "react";
-import { Box, useTheme } from "@mui/material";
-import { Controller, UseFormReturn } from "react-hook-form";
-import { FormValues } from "../types";
+// src/components/aiScriptGen/components/BasicInfoSection.tsx
+"use client";
+
+import { Box } from "@mui/material";
+import { Controller, type UseFormReturn } from "react-hook-form";
+import type { FormValues } from "../types";
 import InputField from "./InputField";
+import { JSX } from "react";
 
 interface BasicInfoSectionProps {
   form: UseFormReturn<FormValues>;
 }
 
-const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ form }) => {
-  const theme = useTheme();
-
+const BasicInfoSection = ({ form }: BasicInfoSectionProps): JSX.Element => {
   return (
     <Box sx={{ mb: 3 }}>
       {/* Two-column layout with Project, Brand, Product in first column and Logline in second column */}
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "34% 66%" }, // First column takes 34%, second takes 66%
+          gridTemplateColumns: { xs: "1fr", md: "34% 66%" },
           gap: 3,
         }}
       >
@@ -96,7 +97,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ form }) => {
                 label="Logline / Concept"
                 placeholder="Describe the main concept of your commercial"
                 multiline
-                rows={12} // Make it taller to match the height of all three inputs in the first column
+                rows={12}
                 error={!!fieldState.error}
                 helperText={fieldState.error?.message}
                 sx={{
@@ -113,5 +114,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ form }) => {
     </Box>
   );
 };
+
+BasicInfoSection.displayName = "BasicInfoSection";
 
 export default BasicInfoSection;

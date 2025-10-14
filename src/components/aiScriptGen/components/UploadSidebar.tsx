@@ -490,7 +490,7 @@ export default function UploadSidebar({
           flexDirection: "column-reverse",
           maxHeight: "calc(100vh - 200px)",
           overflow: "hidden",
-          bgcolor: "background.default",
+          bgcolor: "background.paper",
           borderRadius: `${brand.borderRadius}px 0 0 ${brand.borderRadius}px`,
           border: 1,
           borderColor: "divider",
@@ -580,7 +580,7 @@ export default function UploadSidebar({
             </Typography>
           </Box>
 
-          {/* Upload Area */}
+          {/* Upload Area - FIXED */}
           <Box
             sx={{
               border: 3,
@@ -589,9 +589,10 @@ export default function UploadSidebar({
               borderStyle: "dashed",
               p: 3,
               textAlign: "center",
+              // ✅ FIXED: Use background.paper for elevated surfaces
               bgcolor: isDragging
                 ? alpha(theme.palette.primary.main, 0.05)
-                : alpha(theme.palette.background.default, 0.5),
+                : "background.paper",
               cursor: isOverFileLimit ? "not-allowed" : "pointer",
               transition: "all 0.2s",
               "&:hover": {
@@ -712,7 +713,7 @@ export default function UploadSidebar({
             }}
           />
 
-          {/* File List */}
+          {/* File List - FIXED */}
           <Box
             sx={{
               flex: "0 0 auto",
@@ -757,13 +758,14 @@ export default function UploadSidebar({
                   )}
                 </Box>
 
+                {/* ✅ FIXED: Use background.paper for Paper component */}
                 <Paper
                   variant="outlined"
                   sx={{
                     height: "auto",
                     maxHeight: 200,
                     overflow: "auto",
-                    bgcolor: alpha(theme.palette.background.default, 0.5),
+                    bgcolor: "background.paper",
                   }}
                 >
                   <List dense sx={{ py: 0 }}>
