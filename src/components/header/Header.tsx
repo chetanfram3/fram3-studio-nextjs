@@ -20,6 +20,7 @@ import { ProjectSearch } from "@/components/search/ProjectSearch";
 import SubscriptionBadge from "@/components/common/SubscriptionBadge";
 import { Logo } from "./Logo";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import CreditBalance from "@/components/credits/CreditBalance";
 
 export function Header() {
   const theme = useTheme();
@@ -72,6 +73,7 @@ export function Header() {
             </Box>
           ) : (
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <CreditBalance size="small" variant="outlined" showUSD={false} />
               <SubscriptionBadge />
               <ProjectSearch />
               <Divider
