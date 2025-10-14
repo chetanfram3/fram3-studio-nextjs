@@ -63,7 +63,7 @@ export function ScriptContent({
   const handleEdit = useCallback(() => {
     if (genScriptId && genScriptVersionNumber && genScriptVersionNumber > 0) {
       router.push(
-        `/dashboard/scripts/generated/${genScriptId}/${genScriptVersionNumber}`
+        `/ai-script-editor/generated/${genScriptId}/${genScriptVersionNumber}`
       );
     } else {
       // Fall back to the original onEdit prop if conditions aren't met

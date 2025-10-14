@@ -85,7 +85,7 @@ export default function EditorHeader({
     if (analyzedScriptId && analyzedVersionId) {
       startTransition(() => {
         router.push(
-          `/dashboard/story/${analyzedScriptId}/version/${analyzedVersionId}/3`
+          `/story/${analyzedScriptId}/version/${analyzedVersionId}/3`
         );
       });
     }
