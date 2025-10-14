@@ -20,14 +20,13 @@ import VideoEditor from "../editor";
 import { VideoLayout } from "../renderedVideos";
 import TabbedAnalytics from "../analytics/TabbedAnalytics";
 import Status from "../status";
+import { ComingSoon } from "@/components/common/ComingSoon";
 import { useScriptDashboardAnalysis } from "@/hooks/scripts/useScriptDashboardAnalysis";
 import { LoadingAnimation } from "@/components/common/LoadingAnimation";
 import { AnalysisInProgress } from "@/components/common/AnalysisInProgress";
 import { ScriptHeader } from "./ScriptHeader";
 import DebugButton from "@/components/common/DebugButton";
 import type { ScriptInfo } from "@/types/storyMain/types";
-import { SubscriptionGate } from "@/components/common/SubscriptionGate";
-import { SubscriptionLevels } from "@/config/constants";
 import { useSubscription } from "@/hooks/auth/useSubscription";
 import {
   DashboardOutlined as DashboardIcon,
@@ -144,6 +143,18 @@ export default function StoryPage() {
           <Status scriptInfo={scriptInfo} refetch={refetch} />,
         </React.Suspense>
       ),
+    },
+    {
+      label: "Coming Soon",
+      icon: <ExploreIcon fontSize="small" />,
+      component: (
+        <React.Suspense
+          fallback={<LoadingAnimation message="Loading 3D World..." />}
+        >
+          <ComingSoon message="AI-powered 3D Scene Explorer is coming soon! We're training our models." />
+        </React.Suspense>
+      ),
+      isPremium: true,
     },
     {
       label: "Editor",
