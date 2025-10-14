@@ -91,7 +91,7 @@ export function useNavigationItems() {
       },
       {
         label: "Script Editor",
-        path: "/script-editor",
+        path: "/ai-script-editor",
         Icon: EditIcon,
       },
       {

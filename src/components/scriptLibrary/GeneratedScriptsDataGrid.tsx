@@ -620,7 +620,7 @@ export const GeneratedScriptsDataGrid: React.FC<
             <IconButton
               size="small"
               onClick={() =>
-                router.push(`/scripts/generated/${params.row.id}`)
+                router.push(`/ai-script-editor/generated/${params.row.id}`)
               }
               sx={{
                 color: "text.secondary",
