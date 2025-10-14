@@ -78,3 +78,14 @@ export interface CreateUserPayload {
     rawId?: string;
   }>;
 }
+
+/**
+ * Type for partial profile updates
+ * Allows updating nested fields without requiring all properties
+ */
+export type ProfileUpdate = Partial<Omit<UserProfile, 'extendedInfo' | 'metadata'>> & {
+  extendedInfo?: {
+    details?: Partial<UserProfile['extendedInfo']['details']>;
+  };
+  metadata?: Partial<UserProfile['metadata']>;
+};

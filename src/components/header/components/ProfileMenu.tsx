@@ -124,7 +124,7 @@ export function ProfileMenu({
         </ListItemButton>
 
         <ListItemButton
-          onClick={() => handleMenuItemClick("/dashboard/billing")}
+          onClick={() => handleMenuItemClick("/billing")}
           sx={menuItemStyles}
         >
           <ListItemIcon>
@@ -134,7 +134,7 @@ export function ProfileMenu({
         </ListItemButton>
 
         <ListItemButton
-          onClick={() => handleMenuItemClick("/dashboard/payments")}
+          onClick={() => handleMenuItemClick("/payments")}
           sx={menuItemStyles}
         >
           <ListItemIcon>
