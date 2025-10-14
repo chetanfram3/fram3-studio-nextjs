@@ -34,7 +34,7 @@ export function Logo() {
   }, []);
 
   const handleLogoClick = () => {
-    router.push("/");
+    router.push("/dashboard");
   };
 
   return (
