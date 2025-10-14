@@ -106,6 +106,43 @@ export default function ScriptEditorPage() {
     []
   );
 
+  // Calculate version-related data unconditionally (BEFORE any returns)
+  const versionToLoad = requestedVersion || script?.currentVersion;
+
+  // Find the specific version
+  const currentVersion = useMemo(
+    () => script?.versions?.find((v) => v.versionNumber === versionToLoad),
+    [script?.versions, versionToLoad]
+  );
+
+  // Prepare script data with memoization
+  const scriptData: Partial<ScriptData> = useMemo(
+    () => ({
+      scriptTitle:
+        currentVersion?.scriptTitle || script?.scriptTitle || "Untitled Script",
+      scriptNarrativeParagraph: currentVersion?.scriptNarrativeParagraph || "",
+      scriptAV: currentVersion?.scriptAV || "",
+      script: currentVersion?.scriptAV || "",
+      scriptDuration:
+        currentVersion?.estimatedDuration || script?.targetDuration || 0,
+      estimatedDuration: currentVersion?.estimatedDuration,
+      mode: "TV Commercial",
+      disclaimer: script?.disclaimer,
+      conceptSummary: {},
+      strategicContextSummary: {},
+      suggestedVisualElements: [],
+      suggestedAudioCues: [],
+    }),
+    [currentVersion, script]
+  );
+
+  const currentUrlVersion = useMemo(
+    () => (version ? parseInt(version, 10) : script?.currentVersion),
+    [version, script?.currentVersion]
+  );
+
+  // NOW we can do conditional returns
+
   // If no genScriptId, show the editor with default/empty data
   if (!genScriptId) {
     return (
@@ -211,16 +248,6 @@ export default function ScriptEditorPage() {
     );
   }
 
-  // Success state - script loaded from server
-  // Use requested version if provided, otherwise use current version
-  const versionToLoad = requestedVersion || script.currentVersion;
-
-  // Find the specific version
-  const currentVersion = useMemo(
-    () => script.versions.find((v) => v.versionNumber === versionToLoad),
-    [script.versions, versionToLoad]
-  );
-
   // If requested version doesn't exist, show error
   if (requestedVersion && !currentVersion) {
     logger.error("Version not found", { requestedVersion, genScriptId });
@@ -273,31 +300,7 @@ export default function ScriptEditorPage() {
     );
   }
 
-  // Prepare script data with memoization
-  const scriptData: Partial<ScriptData> = useMemo(
-    () => ({
-      scriptTitle: currentVersion?.scriptTitle || script.scriptTitle,
-      scriptNarrativeParagraph: currentVersion?.scriptNarrativeParagraph || "",
-      scriptAV: currentVersion?.scriptAV || "",
-      script: currentVersion?.scriptAV || "",
-      scriptDuration:
-        currentVersion?.estimatedDuration || script.targetDuration || 0,
-      estimatedDuration: currentVersion?.estimatedDuration,
-      mode: "TV Commercial",
-      disclaimer: script.disclaimer,
-      conceptSummary: {},
-      strategicContextSummary: {},
-      suggestedVisualElements: [],
-      suggestedAudioCues: [],
-    }),
-    [currentVersion, script]
-  );
-
-  const currentUrlVersion = useMemo(
-    () => (version ? parseInt(version, 10) : script.currentVersion),
-    [version, script.currentVersion]
-  );
-
+  // Success state - script loaded from server
   return (
     <ScriptorLayout>
       <Box
