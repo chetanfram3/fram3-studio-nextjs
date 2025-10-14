@@ -1,4 +1,4 @@
-// app/dashboard/scripts/generated/[genScriptId]/[[...version]]/page.tsx
+// src/components/scriptEditor/page.tsx
 "use client";
 
 import { useParams, useRouter } from "next/navigation";

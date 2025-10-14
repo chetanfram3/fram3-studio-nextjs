@@ -1,4 +1,4 @@
-// components/scripts/ScriptEditor.tsx
+// src/components/scriptEditor/ScriptEditor.tsx
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
