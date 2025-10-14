@@ -4,7 +4,7 @@ import { AuthGuard } from "@/components/auth";
 import ScriptLibraryPage from "@/components/scriptLibrary";
 
 /**
- * Payments Page
+ * Ai Script Library Page
  * Protected route - requires authentication
  */
 export default function ProfilePage() {
