@@ -29,6 +29,7 @@ interface VideoMetadata {
  * Enhanced version data with all fields
  */
 interface EnhancedVersionData {
+    modelTier: number | undefined;
     version: number;
     videoSignedUrl: string;
     lipsyncVideoSignedUrl?: string;
@@ -142,6 +143,7 @@ interface GenerateVideoResponse {
  * Enhanced video versions response interface
  */
 export interface EnhancedVideoVersionsResponse {
+    editHistory: HistoryItem[] | undefined;
     totalVersions: number;
     currentVersion: number;
     currentVideoVersion: number;
