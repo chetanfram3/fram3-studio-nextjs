@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Button, Tooltip } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { BugReportOutlined as DebugIcon } from "@mui/icons-material";
@@ -21,7 +20,7 @@ export function DebugButton({ scriptId, versionId }: DebugButtonProps) {
   }
 
   const handleDebugClick = () => {
-    const debugUrl = `/dashboard/scripts/${scriptId}/version/${versionId}`;
+    const debugUrl = `/scripts/${scriptId}/version/${versionId}`;
     window.open(debugUrl, "_blank");
   };
 
@@ -31,12 +30,11 @@ export function DebugButton({ scriptId, versionId }: DebugButtonProps) {
         onClick={handleDebugClick}
         variant="contained"
         size="small"
+        color="primary"
         sx={{
           minWidth: "auto",
           px: 1.5,
           py: 0.5,
-          color: theme.palette.warning.main,
-          backgroundColor: theme.palette.warning.light,
           transition: theme.transitions.create(
             ["background-color", "transform", "box-shadow"],
             { duration: theme.transitions.duration.short }
@@ -45,8 +43,6 @@ export function DebugButton({ scriptId, versionId }: DebugButtonProps) {
           fontWeight: 500,
           fontSize: "0.8rem",
           "&:hover": {
-            backgroundColor: theme.palette.warning.main,
-            color: theme.palette.warning.contrastText,
             transform: "translateY(-1px)",
             boxShadow: theme.shadows[4],
           },
@@ -71,5 +67,7 @@ export function DebugButton({ scriptId, versionId }: DebugButtonProps) {
     </Tooltip>
   );
 }
+
+DebugButton.displayName = "DebugButton";
 
 export default DebugButton;
