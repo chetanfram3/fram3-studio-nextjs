@@ -1,16 +1,16 @@
-// src/components/analysisLibrary/ProjectGrid.tsx
+//src/components/analysisLibrary/ProjectGrid.tsx
+
 "use client";
 
 import {
   useEffect,
-  useState,
   useCallback,
   useMemo,
   Suspense,
   startTransition,
 } from "react";
 import { Box, CircularProgress } from "@mui/material";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useScripts } from "@/hooks/scripts/useScripts";
 import { GridList } from "./GridList";
 import { GridNavigation } from "./GridNavigation";
@@ -20,13 +20,10 @@ import { useAuthStore } from "@/store/authStore";
 import CustomToast from "@/components/common/CustomToast";
 import logger from "@/utils/logger";
 
-// ===========================
-// TYPE DEFINITIONS
-// ===========================
-
 interface ProjectGridProps {
   selectedScript: Script | null;
   onScriptSelect: (script: Script | null) => void;
+  savedScriptId: string | null;
 }
 
 interface PaginationState {
@@ -46,51 +43,48 @@ interface UserPreferences {
   isFavourite?: boolean;
 }
 
-// ===========================
-// HELPER FUNCTIONS
-// ===========================
-
-/**
- * Get saved preferences from localStorage
- * Only runs on client-side
- */
 const getSavedPreferences = (): Record<string, unknown> | null => {
   if (typeof window === "undefined") return null;
-
   try {
     const savedPrefs = localStorage.getItem("scriptGridPreferences");
     return savedPrefs ? JSON.parse(savedPrefs) : null;
   } catch (error) {
-    logger.error("Error reading preferences from localStorage:", error);
+    logger.error("Error reading preferences:", error);
     return null;
   }
 };
 
-/**
- * Save preferences to localStorage
- * Only runs on client-side
- */
 const savePreferences = (prefs: UserPreferences): void => {
   if (typeof window === "undefined") return;
-
   try {
     const current = getSavedPreferences() || {};
     localStorage.setItem(
       "scriptGridPreferences",
-      JSON.stringify({
-        ...current,
-        ...prefs,
-      })
+      JSON.stringify({ ...current, ...prefs })
     );
-    logger.debug("Preferences saved to localStorage:", prefs);
   } catch (error) {
-    logger.error("Error saving preferences to localStorage:", error);
+    logger.error("Error saving preferences:", error);
   }
 };
 
-// ===========================
-// LOADING FALLBACK COMPONENT
-// ===========================
+const saveCurrentPage = (page: number): void => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem("scriptGridCurrentPage", page.toString());
+  } catch (error) {
+    logger.error("Error saving page:", error);
+  }
+};
+
+const getSavedCurrentPage = (): number | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const saved = localStorage.getItem("scriptGridCurrentPage");
+    return saved ? parseInt(saved, 10) : null;
+  } catch (error) {
+    return null;
+  }
+};
 
 function GridLoadingFallback() {
   return (
@@ -108,27 +102,24 @@ function GridLoadingFallback() {
   );
 }
 
-// ===========================
-// MAIN COMPONENT
-// ===========================
-
 export function ProjectGrid({
   selectedScript,
   onScriptSelect,
+  savedScriptId,
 }: ProjectGridProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
 
-  // Get saved preferences or defaults (client-side only)
   const savedPrefs = useMemo(() => getSavedPreferences(), []);
+  const savedPage = useMemo(() => getSavedCurrentPage(), []);
 
-  // Initial query parameters with persistence
   const initialPageSize = (savedPrefs?.pageSize as number) || 4;
   const initialSortField = (savedPrefs?.sortField as string) || "createdAt";
   const initialSortOrder = (savedPrefs?.sortOrder as string) || "desc";
   const initialIsFavourite = (savedPrefs?.isFavourite as boolean) || false;
+  const initialPageNumber = savedPage || 1;
 
-  // Use scripts hook with persisted defaults
   const {
     scripts = [],
     totalCount = 0,
@@ -141,15 +132,14 @@ export function ProjectGrid({
     allCount = 0,
     isLoading = false,
     updateQueryParams,
-    refetch,
   } = useScripts({
     initialPageSize,
+    initialPageNumber,
     initialSortField,
     initialSortOrder,
     initialIsFavourite,
   });
 
-  // Pagination state management with useMemo for optimization
   const paginationState = useMemo<PaginationState>(
     () => ({
       currentPage,
@@ -171,71 +161,98 @@ export function ProjectGrid({
     ]
   );
 
-  // Check if the currently selected script still exists in the scripts list
+  // Restore URL params from localStorage
   useEffect(() => {
-    if (!isLoading && selectedScript) {
-      const scriptStillExists = scripts.some(
-        (script) => script.scriptId === selectedScript.scriptId
-      );
+    if (!updateQueryParams) return;
 
-      if (!scriptStillExists) {
-        // Selected script no longer exists (probably deleted)
-        // Select first available script or clear if none available
-        startTransition(() => {
-          if (scripts.length > 0) {
-            onScriptSelect(scripts[0]);
-          } else {
-            onScriptSelect(null);
-          }
-        });
+    const hasUrlParams =
+      searchParams.get("pageNumber") || searchParams.get("pageSize");
+    if (!hasUrlParams && (savedPage || savedPrefs)) {
+      const paramsToRestore: Record<string, string | number | boolean> = {};
+      if (savedPage && savedPage > 1) paramsToRestore.pageNumber = savedPage;
+      if (savedPrefs?.pageSize && savedPrefs.pageSize !== 4) {
+        paramsToRestore.pageSize = savedPrefs.pageSize as number;
+      }
+      if (savedPrefs?.sortField && savedPrefs.sortField !== "createdAt") {
+        paramsToRestore.sortField = savedPrefs.sortField as string;
+      }
+      if (savedPrefs?.sortOrder && savedPrefs.sortOrder !== "desc") {
+        paramsToRestore.sortOrder = savedPrefs.sortOrder as string;
+      }
+      if (savedPrefs?.isFavourite) paramsToRestore.isFavourite = true;
+
+      if (Object.keys(paramsToRestore).length > 0) {
+        updateQueryParams(paramsToRestore);
       }
     }
-  }, [scripts, selectedScript, isLoading, onScriptSelect]);
+  }, [searchParams, savedPage, savedPrefs, updateQueryParams]);
 
-  // Effect to handle script selection and navigation
+  // Save page to localStorage
+  useEffect(() => {
+    if (currentPage > 0) saveCurrentPage(currentPage);
+  }, [currentPage]);
+
+  // ✅ SINGLE UNIFIED EFFECT for script selection
+  useEffect(() => {
+    // Wait for scripts to load
+    if (isLoading || scripts.length === 0) return;
+
+    // If already have selection and it exists in current list, keep it
+    if (selectedScript) {
+      const exists = scripts.some(
+        (s) => s.scriptId === selectedScript.scriptId
+      );
+      if (exists) return; // Keep current selection
+
+      // Selected script deleted or not on this page - select first
+      logger.debug("Selected script not found, selecting first");
+      onScriptSelect(scripts[0]);
+      return;
+    }
+
+    // No selection yet - try to restore or select first
+    if (savedScriptId) {
+      const savedScript = scripts.find((s) => s.scriptId === savedScriptId);
+      if (savedScript) {
+        logger.debug("Restoring saved script:", savedScriptId);
+        onScriptSelect(savedScript);
+        return;
+      }
+    }
+
+    // Default: select first script
+    logger.debug("Selecting first script");
+    onScriptSelect(scripts[0]);
+  }, [scripts, isLoading, selectedScript, savedScriptId, onScriptSelect]);
+
+  // Edge case: no scripts
   useEffect(() => {
     if (scripts.length === 0 && !isLoading) {
       if (allCount === 0) {
         router.push("/script-analysis");
         return;
       }
-
       if (isFavourite && updateQueryParams) {
-        updateQueryParams({
-          isFavourite: false,
-          pageNumber: 1,
-        });
+        updateQueryParams({ isFavourite: false, pageNumber: 1 });
         CustomToast.info(
           "Please select some Favourites from your library first!"
         );
       }
-    } else if (scripts.length > 0 && !selectedScript) {
-      const firstScript = scripts[0];
-      if (firstScript) {
-        startTransition(() => {
-          onScriptSelect(firstScript);
-        });
-      }
     }
   }, [
-    scripts,
-    selectedScript,
-    currentPage,
+    scripts.length,
+    isLoading,
     allCount,
     isFavourite,
-    isLoading,
-    onScriptSelect,
     router,
     updateQueryParams,
   ]);
 
-  // Handler functions with type safety and optimization
+  // Handlers
   const handlePageChange = useCallback(
     (newPage: number): void => {
       if (updateQueryParams && newPage > 0) {
-        startTransition(() => {
-          updateQueryParams({ pageNumber: newPage });
-        });
+        startTransition(() => updateQueryParams({ pageNumber: newPage }));
       }
     },
     [updateQueryParams]
@@ -244,15 +261,10 @@ export function ProjectGrid({
   const handlePageSizeChange = useCallback(
     (newPageSize: number): void => {
       if (updateQueryParams && newPageSize > 0) {
-        // Save preference to localStorage
         savePreferences({ pageSize: newPageSize });
-
-        startTransition(() => {
-          updateQueryParams({
-            pageSize: newPageSize,
-            pageNumber: 1,
-          });
-        });
+        startTransition(() =>
+          updateQueryParams({ pageSize: newPageSize, pageNumber: 1 })
+        );
       }
     },
     [updateQueryParams]
@@ -261,19 +273,14 @@ export function ProjectGrid({
   const handleSortChange = useCallback(
     (field: string, order: string): void => {
       if (updateQueryParams && field && order) {
-        // Save preferences to localStorage
-        savePreferences({
-          sortField: field,
-          sortOrder: order,
-        });
-
-        startTransition(() => {
+        savePreferences({ sortField: field, sortOrder: order });
+        startTransition(() =>
           updateQueryParams({
             sortField: field,
             sortOrder: order,
             pageNumber: 1,
-          });
-        });
+          })
+        );
       }
     },
     [updateQueryParams]
@@ -282,25 +289,16 @@ export function ProjectGrid({
   const handleFavouriteChange = useCallback(
     (newIsFavourite: boolean): void => {
       if (updateQueryParams) {
-        // Save preference to localStorage
         savePreferences({ isFavourite: newIsFavourite });
-
-        startTransition(() => {
-          updateQueryParams({
-            isFavourite: newIsFavourite,
-            pageNumber: 1,
-          });
-        });
+        startTransition(() =>
+          updateQueryParams({ isFavourite: newIsFavourite, pageNumber: 1 })
+        );
       }
     },
     [updateQueryParams]
   );
 
-  // Safe render with null checks
-  if (!updateQueryParams) {
-    logger.warn("ProjectGrid: updateQueryParams is undefined");
-    return null;
-  }
+  if (!updateQueryParams) return null;
 
   return (
     <Box>
@@ -343,5 +341,4 @@ export function ProjectGrid({
 }
 
 ProjectGrid.displayName = "ProjectGrid";
-
 export default ProjectGrid;

@@ -1,4 +1,5 @@
-// src/components/analysisLibrary/MyLibrary.tsx
+//src/components/analysisLibrary/MyLibrary.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,9 +13,28 @@ import type { Script } from "@/types/scripts";
 import { useAuthStore } from "@/store/authStore";
 import logger from "@/utils/logger";
 
-// ===========================
-// MAIN COMPONENT
-// ===========================
+const saveSelectedScriptId = (scriptId: string | null): void => {
+  if (typeof window === "undefined") return;
+  try {
+    if (scriptId) {
+      localStorage.setItem("selectedScriptId", scriptId);
+    } else {
+      localStorage.removeItem("selectedScriptId");
+    }
+  } catch (error) {
+    logger.error("Error saving selected script ID:", error);
+  }
+};
+
+const getSavedScriptId = (): string | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem("selectedScriptId");
+  } catch (error) {
+    logger.error("Error reading selected script ID:", error);
+    return null;
+  }
+};
 
 const MyLibrary: React.FC = () => {
   const router = useRouter();
@@ -22,44 +42,35 @@ const MyLibrary: React.FC = () => {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
-  // Reset cache and selected script when user changes
+  // Reset when user changes
   useEffect(() => {
-    logger.debug("MyLibrary: User changed, resetting selected script");
-    // Clear selected script when user changes
     setSelectedScript(null);
-
-    // Cleanup function to invalidate queries when component unmounts
+    saveSelectedScriptId(null);
     return () => {
-      queryClient.invalidateQueries({
-        queryKey: ["scriptDashboardAnalysis"],
-      });
+      queryClient.invalidateQueries({ queryKey: ["scriptDashboardAnalysis"] });
     };
-  }, [user?.uid, queryClient]); // FIXED: Removed selectedScript from dependencies
+  }, [user?.uid, queryClient]);
+
+  // Persist selected script
+  useEffect(() => {
+    if (selectedScript) {
+      saveSelectedScriptId(selectedScript.scriptId);
+    }
+  }, [selectedScript]);
 
   const handleViewScript = (script: Script): void => {
-    if (!script?.scriptId || !script?.currentVersion) {
-      logger.error("MyLibrary: Invalid script data for viewing");
-      return;
-    }
-    router.push(
-      `/story/${script.scriptId}/version/${script.currentVersion}/0`
-    );
+    if (!script?.scriptId || !script?.currentVersion) return;
+    router.push(`/story/${script.scriptId}/version/${script.currentVersion}/0`);
   };
 
   const handleEditScript = (script: Script): void => {
-    if (!script?.scriptId || !script?.currentVersion) {
-      logger.error("MyLibrary: Invalid script data for editing");
-      return;
-    }
-    router.push(
-      `/story/${script.scriptId}/version/${script.currentVersion}/3`
-    );
+    if (!script?.scriptId || !script?.currentVersion) return;
+    router.push(`/story/${script.scriptId}/version/${script.currentVersion}/3`);
   };
 
   const renderFeaturedProject = () => {
-    // Show skeleton while waiting for script selection
+    // ✅ SIMPLIFIED: Only check if script exists
     if (!selectedScript) {
-      logger.debug("MyLibrary: No selected script, showing skeleton");
       return <FeaturedProjectSkeleton />;
     }
 
@@ -76,28 +87,16 @@ const MyLibrary: React.FC = () => {
       favourite = false,
     } = selectedScript;
 
-    // Validate required properties
     if (!scriptId || !currentVersion) {
-      logger.error("MyLibrary: Missing required script properties", {
-        scriptId,
-        currentVersion,
-      });
       return <FeaturedProjectSkeleton />;
     }
 
-    // Safe timestamp conversion
     const createdTimestamp = createdAt?._seconds
       ? createdAt._seconds * 1000
       : Date.now();
     const modifiedTimestamp = lastModifiedAt?._seconds
       ? lastModifiedAt._seconds * 1000
       : Date.now();
-
-    logger.debug("MyLibrary: Rendering FeaturedProject", {
-      scriptId,
-      currentVersion,
-      thumbnailPath,
-    });
 
     return (
       <FeaturedProject
@@ -124,6 +123,7 @@ const MyLibrary: React.FC = () => {
       <ProjectGrid
         selectedScript={selectedScript}
         onScriptSelect={setSelectedScript}
+        savedScriptId={getSavedScriptId()}
       />
     </Box>
   );
