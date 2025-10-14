@@ -81,7 +81,7 @@ export function useNavigationItems() {
       },
       {
         label: "Ai Script Library",
-        path: "/dashboard/ai-script/library",
+        path: "/ai-script-library",
         Icon: AutoMode,
       },
       {
