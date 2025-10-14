@@ -558,7 +558,7 @@ export default function CreditLoadingPage() {
   };
 
   const handleComplete = () => {
-    router.push("/dashboard/billing");
+    router.push("/billing");
   };
 
   // Handle profile updates using TanStack Query mutation

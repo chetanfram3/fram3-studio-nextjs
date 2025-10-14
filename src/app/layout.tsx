@@ -8,6 +8,7 @@ import {
   Open_Sans,
   Space_Grotesk,
 } from "next/font/google";
+import Script from "next/script";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import EmotionRegistry from "@/lib/EmotionRegistry";
 import "./globals.css";
@@ -15,7 +16,7 @@ import { ThemeProvider } from "@/theme";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { ClientLayoutWrapper } from "@/components/layout/ClientLayoutWrapper";
-import { ToastProvider } from "@/providers/ToastProvider"; 
+import { ToastProvider } from "@/providers/ToastProvider";
 
 // Get current brand for metadata and HTML attributes
 const brand = getCurrentBrand();
@@ -96,6 +97,11 @@ export default function RootLayout({
         <link rel="icon" href={brand.logo.favicon} />
       </head>
       <body className={inter.className}>
+        {/* Load Razorpay script before application loads */}
+        <Script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          strategy="beforeInteractive"
+        />
         <EmotionRegistry options={{ key: "mui" }}>
           <AppRouterCacheProvider>
             <ThemeProvider>
