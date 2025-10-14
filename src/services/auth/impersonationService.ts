@@ -3,7 +3,7 @@ import { signInWithCustomToken } from 'firebase/auth';
 import logger from '@/utils/logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+const INTERNAL_API_KEY = process.env.NEXT_PUBLIC_INTERNAL_API_KEY;
 
 export interface ImpersonationResponse {
     token: string;

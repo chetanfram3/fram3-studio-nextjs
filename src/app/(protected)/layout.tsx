@@ -9,6 +9,7 @@ import { Box } from "@mui/material";
 import { initializeFCM } from "@/services/fcmService";
 import { useNotificationStore } from "@/store/notificationStore";
 import logger from "@/utils/logger";
+import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
 
 export default function ProtectedLayout({
   children,
@@ -99,6 +100,7 @@ export default function ProtectedLayout({
               pr: 10,
             }}
           >
+            <ImpersonationBanner />
             {/* Header */}
             <Header />
 
