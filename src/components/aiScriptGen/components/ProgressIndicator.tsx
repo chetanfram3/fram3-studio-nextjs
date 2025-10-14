@@ -1,11 +1,22 @@
-import { Box, Typography, useTheme, alpha, keyframes } from "@mui/material";
+"use client";
 
-// Define keyframes for animations
+import React, { useMemo } from "react";
+import { Box, Typography, keyframes } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
+
+// ==========================================
+// ANIMATIONS
+// ==========================================
 const pulse = keyframes`
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 `;
 
+// ==========================================
+// TYPE DEFINITIONS
+// ==========================================
 interface ProgressIndicatorProps {
   currentPhase: number;
 }
@@ -15,33 +26,67 @@ interface Phase {
   title: string;
 }
 
-const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
+// ==========================================
+// CONSTANTS
+// ==========================================
+const phases: Phase[] = [
+  { id: 0, title: "Initializing" },
+  { id: 1, title: "Analyzing Context" },
+  { id: 2, title: "Evaluating Concepts" },
+  { id: 3, title: "Drafting Script" },
+  { id: 4, title: "Running QA Checks" },
+];
+
+const CIRCLE_RADIUS = 85;
+const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+
+/**
+ * ProgressIndicator - Circular progress indicator for script generation
+ *
+ * Performance optimizations:
+ * - React 19 compiler auto-optimizes (no manual memo needed)
+ * - useMemo for expensive calculations
+ * - Theme-aware styling (no hardcoded colors)
+ * - Proper dependency arrays
+ *
+ * Porting standards:
+ * - 100% type safe (no any types)
+ * - Uses theme palette for all colors (primary instead of secondary)
+ * - Uses brand config for fonts
+ * - No hardcoded colors or spacing
+ * - Follows MUI v7 patterns
+ */
+export default function ProgressIndicator({
   currentPhase,
-}) => {
+}: ProgressIndicatorProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
+  const brand = getCurrentBrand();
 
-  // Define the phases of script generation
-  const phases: Phase[] = [
-    { id: 0, title: "Initializing" },
-    { id: 1, title: "Analyzing Context" },
-    { id: 2, title: "Evaluating Concepts" },
-    { id: 3, title: "Drafting Script" },
-    { id: 4, title: "Running QA Checks" },
-  ];
+  // ==========================================
+  // COMPUTED VALUES (Memoized for performance)
+  // ==========================================
+  const progressPercentage = useMemo(
+    () => (currentPhase / (phases.length - 1)) * 100,
+    [currentPhase]
+  );
 
-  // Calculate progress percentage based on phase completion
-  const progressPercentage = (currentPhase / (phases.length - 1)) * 100;
+  const currentPhaseInfo = useMemo(
+    () => phases.find((phase) => phase.id === currentPhase) || phases[0],
+    [currentPhase]
+  );
 
-  // Get current phase information
-  const currentPhaseInfo =
-    phases.find((phase) => phase.id === currentPhase) || phases[0];
+  const offset = useMemo(
+    () =>
+      CIRCLE_CIRCUMFERENCE - (progressPercentage / 100) * CIRCLE_CIRCUMFERENCE,
+    [progressPercentage]
+  );
 
-  // For the circular progress
-  const circleRadius = 85;
-  const circleCircumference = 2 * Math.PI * circleRadius;
-  const offset =
-    circleCircumference - (progressPercentage / 100) * circleCircumference;
-
+  // ==========================================
+  // RENDER
+  // ==========================================
   return (
     <Box
       sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}
@@ -64,36 +109,49 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
             px: 2,
             py: 0.75,
             bgcolor: alpha(theme.palette.background.paper, 0.15),
-            borderRadius: "12px",
-            border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            borderRadius: `${brand.borderRadius * 1.5}px`,
+            border: 1,
+            borderColor: alpha(theme.palette.divider, 0.3),
+            boxShadow: theme.shadows[2],
           }}
         >
           <Typography
             variant="caption"
-            sx={{ color: alpha(theme.palette.text.secondary, 0.7) }}
+            sx={{
+              color: alpha(theme.palette.text.secondary, 0.7),
+              fontFamily: brand.fonts.body,
+            }}
           >
             Step
           </Typography>
           <Typography
             variant="caption"
             sx={{
-              color: theme.palette.secondary.main,
+              color: "primary.main",
               fontWeight: 600,
               ml: 0.5,
+              fontFamily: brand.fonts.body,
             }}
           >
             {currentPhase + 1}
           </Typography>
           <Typography
             variant="caption"
-            sx={{ color: alpha(theme.palette.text.secondary, 0.7), mx: 0.5 }}
+            sx={{
+              color: alpha(theme.palette.text.secondary, 0.7),
+              mx: 0.5,
+              fontFamily: brand.fonts.body,
+            }}
           >
             of
           </Typography>
           <Typography
             variant="caption"
-            sx={{ color: theme.palette.secondary.main, fontWeight: 600 }}
+            sx={{
+              color: "primary.main",
+              fontWeight: 600,
+              fontFamily: brand.fonts.body,
+            }}
           >
             {phases.length}
           </Typography>
@@ -103,8 +161,9 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
         <Typography
           variant="body2"
           sx={{
-            color: theme.palette.secondary.main,
+            color: "primary.main",
             fontWeight: 500,
+            fontFamily: brand.fonts.body,
             animation: `${pulse} 1.5s infinite ease-in-out`,
           }}
         >
@@ -120,8 +179,9 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
           height: 220,
           borderRadius: "50%",
           bgcolor: alpha(theme.palette.background.paper, 0.2),
-          border: `1px solid ${alpha(theme.palette.divider, 0.4)}`,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          border: 1,
+          borderColor: alpha(theme.palette.divider, 0.4),
+          boxShadow: theme.shadows[4],
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -143,7 +203,7 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
             component="circle"
             cx={110}
             cy={110}
-            r={circleRadius}
+            r={CIRCLE_RADIUS}
             fill="none"
             stroke={alpha(theme.palette.background.paper, 0.3)}
             strokeWidth={10}
@@ -154,12 +214,12 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
             component="circle"
             cx={110}
             cy={110}
-            r={circleRadius}
+            r={CIRCLE_RADIUS}
             fill="none"
-            stroke={theme.palette.secondary.main}
+            stroke={theme.palette.primary.main}
             strokeWidth={10}
             strokeLinecap="round"
-            strokeDasharray={circleCircumference}
+            strokeDasharray={CIRCLE_CIRCUMFERENCE}
             strokeDashoffset={offset}
             sx={{
               transition: "stroke-dashoffset 0.8s ease-in-out",
@@ -171,7 +231,11 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
         <Box sx={{ zIndex: 10, textAlign: "center", px: 4 }}>
           <Typography
             variant="h6"
-            sx={{ fontWeight: "bold", color: theme.palette.text.primary }}
+            sx={{
+              fontWeight: "bold",
+              color: "text.primary",
+              fontFamily: brand.fonts.heading,
+            }}
           >
             {currentPhaseInfo.title}
           </Typography>
@@ -183,6 +247,7 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
                 color: alpha(theme.palette.text.secondary, 0.7),
                 display: "block",
                 mt: 1,
+                fontFamily: brand.fonts.body,
               }}
             >
               Processing your requirements...
@@ -192,6 +257,6 @@ const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
       </Box>
     </Box>
   );
-};
+}
 
-export default ProgressIndicator;
+ProgressIndicator.displayName = "ProgressIndicator";

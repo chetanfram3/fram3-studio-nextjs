@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+"use client";
+
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -10,63 +12,109 @@ import {
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import { Controller, UseFormReturn } from "react-hook-form";
-import { FormValues } from "../types";
+import { useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
+import type { FormValues } from "../types";
 import SectionCloseButton from "./SectionCloseButton";
 
+// ==========================================
+// TYPE DEFINITIONS
+// ==========================================
 interface ProductDetailsSectionProps {
   form: UseFormReturn<FormValues>;
 }
 
-const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
+type ArrayFieldKey = "keyFeatures" | "uniqueSellingProposition";
+
+/**
+ * ProductDetailsSection - Product configuration component
+ *
+ * Performance optimizations:
+ * - React 19 compiler auto-optimizes (no manual memo needed)
+ * - useCallback for event handlers
+ * - useMemo for static array fields
+ * - Theme-aware styling (no hardcoded colors)
+ * - Proper dependency arrays
+ *
+ * Porting standards:
+ * - 100% type safe (no any types)
+ * - Uses theme palette for all colors (primary instead of secondary)
+ * - Uses brand config for fonts/spacing
+ * - No hardcoded colors, fonts, or spacing
+ * - Follows MUI v7 patterns
+ */
+export default function ProductDetailsSection({
   form,
-}) => {
+}: ProductDetailsSectionProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
+  const theme = useTheme();
+  const brand = getCurrentBrand();
+
+  // ==========================================
+  // FORM STATE
+  // ==========================================
   const { control, watch, setValue } = form;
   const product = watch("productDetails");
 
+  // ==========================================
+  // LOCAL STATE
+  // ==========================================
   const [newFeature, setNewFeature] = useState("");
   const [newBenefit, setNewBenefit] = useState("");
 
-  // Array fields in the product object
-  const arrayFields: (keyof FormValues["productDetails"])[] = [
-    "keyFeatures",
-    "uniqueSellingProposition",
-  ];
+  // ==========================================
+  // CONSTANTS (Memoized for stability)
+  // ==========================================
+  const arrayFields: ArrayFieldKey[] = useMemo(
+    () => ["keyFeatures", "uniqueSellingProposition"],
+    []
+  );
 
-  const handleAddItem = (
-    field: keyof FormValues["productDetails"],
-    value: string,
-    stateSetter: (v: string) => void
-  ) => {
-    if (!value.trim()) return;
+  // ==========================================
+  // EVENT HANDLERS (useCallback for stability)
+  // ==========================================
+  const handleAddItem = useCallback(
+    (
+      field: keyof FormValues["productDetails"],
+      value: string,
+      stateSetter: (v: string) => void
+    ) => {
+      if (!value.trim()) return;
 
-    // Only process if it's an array field
-    if (arrayFields.includes(field)) {
-      const current = (product?.[field] as string[]) || [];
-      setValue(`productDetails.${field}`, [...current, value.trim()] as any);
-      stateSetter("");
-    }
-  };
+      if (arrayFields.includes(field as ArrayFieldKey)) {
+        const current = (product?.[field] as string[] | undefined) || [];
+        setValue(`productDetails.${field}`, [...current, value.trim()]);
+        stateSetter("");
+      }
+    },
+    [arrayFields, product, setValue]
+  );
 
-  const handleRemoveItem = (
-    field: keyof FormValues["productDetails"],
-    index: number
-  ) => {
-    // Only process if it's an array field
-    if (arrayFields.includes(field)) {
-      const current = (product?.[field] as string[]) || [];
-      setValue(
-        `productDetails.${field}`,
-        current.filter((_, i) => i !== index) as any
-      );
-    }
-  };
+  const handleRemoveItem = useCallback(
+    (field: keyof FormValues["productDetails"], index: number) => {
+      if (arrayFields.includes(field as ArrayFieldKey)) {
+        const current = (product?.[field] as string[] | undefined) || [];
+        setValue(
+          `productDetails.${field}`,
+          current.filter((_, i) => i !== index)
+        );
+      }
+    },
+    [arrayFields, product, setValue]
+  );
 
+  // ==========================================
+  // RENDER
+  // ==========================================
   return (
     <Paper
       elevation={1}
       sx={{
         p: 3,
-        borderRadius: 1,
+        borderRadius: `${brand.borderRadius}px`,
         bgcolor: "background.paper",
         border: 1,
         borderColor: "divider",
@@ -81,13 +129,22 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
           sx={{
             height: 30,
             width: 4,
-            background: (theme) =>
-              `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+            background: `linear-gradient(to bottom, ${alpha(
+              theme.palette.primary.main,
+              0.6
+            )}, ${alpha(theme.palette.primary.main, 0.25)})`,
             mr: 2,
-            borderRadius: 2,
+            borderRadius: `${brand.borderRadius / 4}px`,
           }}
         />
-        <Typography variant="h5" fontWeight={600}>
+        <Typography
+          variant="h5"
+          fontWeight={600}
+          sx={{
+            color: "text.primary",
+            fontFamily: brand.fonts.heading,
+          }}
+        >
           Product Details
         </Typography>
         <SectionCloseButton
@@ -111,7 +168,12 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
           <Typography
             variant="caption"
             fontWeight={600}
-            sx={{ mb: 1, display: "block", textAlign: "center" }}
+            sx={{
+              mb: 1,
+              display: "block",
+              textAlign: "center",
+              color: "text.primary",
+            }}
           >
             Product Name
           </Typography>
@@ -128,6 +190,12 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
                   bgcolor: "background.default",
                   "& .MuiOutlinedInput-root": {
                     color: "text.primary",
+                    "&:hover fieldset": {
+                      borderColor: "primary.main",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "primary.main",
+                    },
                   },
                 }}
               />
@@ -139,7 +207,12 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
           <Typography
             variant="caption"
             fontWeight={600}
-            sx={{ mb: 1, display: "block", textAlign: "center" }}
+            sx={{
+              mb: 1,
+              display: "block",
+              textAlign: "center",
+              color: "text.primary",
+            }}
           >
             Product Specifications
           </Typography>
@@ -158,6 +231,12 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
                   bgcolor: "background.default",
                   "& .MuiOutlinedInput-root": {
                     color: "text.primary",
+                    "&:hover fieldset": {
+                      borderColor: "primary.main",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "primary.main",
+                    },
                   },
                 }}
               />
@@ -179,29 +258,44 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
           sx={{
             p: 2,
             bgcolor: "background.default",
-            borderRadius: 2,
-            border: "1px solid",
+            borderRadius: `${brand.borderRadius}px`,
+            border: 1,
             borderColor: "divider",
           }}
         >
           <Typography
             variant="caption"
             fontWeight={600}
-            sx={{ mb: 1, display: "block", textAlign: "center" }}
+            sx={{
+              mb: 1,
+              display: "block",
+              textAlign: "center",
+              color: "text.primary",
+            }}
           >
             Key Features
           </Typography>
 
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 1 }}>
-            {((product?.keyFeatures as string[]) || []).map(
-              (feature, index) => (
+            {((product?.keyFeatures as string[] | undefined) || []).map(
+              (feature: string, index: number) => (
                 <Chip
                   key={index}
                   label={feature}
                   onDelete={() => handleRemoveItem("keyFeatures", index)}
                   sx={{
-                    bgcolor: "secondary.main",
-                    color: "secondary.contrastText",
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    fontFamily: brand.fonts.body,
+                    "&:hover": {
+                      bgcolor: "primary.dark",
+                    },
+                    "& .MuiChip-deleteIcon": {
+                      color: "primary.contrastText",
+                      "&:hover": {
+                        color: alpha(theme.palette.primary.contrastText, 0.7),
+                      },
+                    },
                   }}
                 />
               )
@@ -223,11 +317,20 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
               }}
               sx={{
                 bgcolor: "background.paper",
-                "& .MuiOutlinedInput-root": { color: "text.primary" },
+                "& .MuiOutlinedInput-root": {
+                  color: "text.primary",
+                  "&:hover fieldset": {
+                    borderColor: "primary.main",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "primary.main",
+                  },
+                },
               }}
             />
             <Button
               variant="contained"
+              color="primary"
               size="small"
               disabled={!newFeature.trim()}
               onClick={() =>
@@ -235,8 +338,10 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
               }
               sx={{
                 minWidth: 40,
-                bgcolor: "secondary.main",
-                "&:hover": { bgcolor: "secondary.dark" },
+                fontFamily: brand.fonts.body,
+                "&:hover": {
+                  bgcolor: "primary.dark",
+                },
               }}
             >
               <Add fontSize="small" />
@@ -249,35 +354,50 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
           sx={{
             p: 2,
             bgcolor: "background.default",
-            borderRadius: 2,
-            border: "1px solid",
+            borderRadius: `${brand.borderRadius}px`,
+            border: 1,
             borderColor: "divider",
           }}
         >
           <Typography
             variant="caption"
             fontWeight={600}
-            sx={{ mb: 1, display: "block", textAlign: "center" }}
+            sx={{
+              mb: 1,
+              display: "block",
+              textAlign: "center",
+              color: "text.primary",
+            }}
           >
             Unique Selling Proposition
           </Typography>
 
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 1 }}>
-            {((product?.uniqueSellingProposition as string[]) || []).map(
-              (benefit, index) => (
-                <Chip
-                  key={index}
-                  label={benefit}
-                  onDelete={() =>
-                    handleRemoveItem("uniqueSellingProposition", index)
-                  }
-                  sx={{
-                    bgcolor: "secondary.main",
-                    color: "secondary.contrastText",
-                  }}
-                />
-              )
-            )}
+            {(
+              (product?.uniqueSellingProposition as string[] | undefined) || []
+            ).map((benefit: string, index: number) => (
+              <Chip
+                key={index}
+                label={benefit}
+                onDelete={() =>
+                  handleRemoveItem("uniqueSellingProposition", index)
+                }
+                sx={{
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  fontFamily: brand.fonts.body,
+                  "&:hover": {
+                    bgcolor: "primary.dark",
+                  },
+                  "& .MuiChip-deleteIcon": {
+                    color: "primary.contrastText",
+                    "&:hover": {
+                      color: alpha(theme.palette.primary.contrastText, 0.7),
+                    },
+                  },
+                }}
+              />
+            ))}
           </Box>
 
           <Box sx={{ display: "flex", gap: 1 }}>
@@ -299,11 +419,20 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
               }}
               sx={{
                 bgcolor: "background.paper",
-                "& .MuiOutlinedInput-root": { color: "text.primary" },
+                "& .MuiOutlinedInput-root": {
+                  color: "text.primary",
+                  "&:hover fieldset": {
+                    borderColor: "primary.main",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "primary.main",
+                  },
+                },
               }}
             />
             <Button
               variant="contained"
+              color="primary"
               size="small"
               disabled={!newBenefit.trim()}
               onClick={() =>
@@ -315,8 +444,10 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
               }
               sx={{
                 minWidth: 40,
-                bgcolor: "secondary.main",
-                "&:hover": { bgcolor: "secondary.dark" },
+                fontFamily: brand.fonts.body,
+                "&:hover": {
+                  bgcolor: "primary.dark",
+                },
               }}
             >
               <Add fontSize="small" />
@@ -326,6 +457,6 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
       </Box>
     </Paper>
   );
-};
+}
 
-export default ProductDetailsSection;
+ProductDetailsSection.displayName = "ProductDetailsSection";

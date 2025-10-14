@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+"use client";
+
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   Box,
   Button,
@@ -7,7 +9,6 @@ import {
   IconButton,
   Paper,
   Divider,
-  useTheme,
   Tooltip,
 } from "@mui/material";
 import {
@@ -20,14 +21,31 @@ import {
   DeleteForeverOutlined,
 } from "@mui/icons-material";
 import { X } from "lucide-react";
-import CustomToast from "@/components/common/CustomToast";
-import { FormValues } from "../types";
-import { defaultFormValues } from "../data/defaultFormValues";
-import logger from "@/utils/logger";
+import { useTheme } from "@mui/material/styles";
 import { alpha } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
+import CustomToast from "@/components/common/CustomToast";
+import logger from "@/utils/logger";
+import type { FormValues } from "../types";
+import { defaultFormValues } from "../data/defaultFormValues";
 import { exportFormValues } from "../utils/presetUtils";
 
-// Default presets that will always be available
+// ==========================================
+// TYPE DEFINITIONS
+// ==========================================
+export interface FormPresetsManagerProps {
+  isOpen: boolean;
+  isUploadSidebarOpen?: boolean;
+  onClose: () => void;
+  currentFormValues: FormValues;
+  onLoadPreset: (preset: FormValues) => void;
+  onExportForm?: () => void;
+  onClearForm?: () => void;
+}
+
+// ==========================================
+// CONSTANTS
+// ==========================================
 const DEFAULT_PRESETS: Record<string, FormValues> = {
   "Basic Ad Template": {
     ...defaultFormValues,
@@ -62,17 +80,26 @@ const DEFAULT_PRESETS: Record<string, FormValues> = {
   },
 };
 
-export interface FormPresetsManagerProps {
-  isOpen: boolean;
-  isUploadSidebarOpen?: boolean; // Add this prop
-  onClose: () => void;
-  currentFormValues: FormValues;
-  onLoadPreset: (preset: FormValues) => void;
-  onExportForm?: () => void;
-  onClearForm?: () => void;
-}
+const STORAGE_KEY = "adScriptGeneratorPresets";
 
-const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
+/**
+ * FormPresetsManager - Form preset management sidebar
+ *
+ * Performance optimizations:
+ * - React 19 compiler auto-optimizes (no manual memo needed)
+ * - useCallback for event handlers
+ * - Proper dependency arrays
+ * - Theme-aware styling (no hardcoded colors)
+ *
+ * Porting standards:
+ * - 100% type safe (no any types)
+ * - Uses theme palette for all colors (primary instead of secondary)
+ * - Uses brand config for fonts/spacing
+ * - No hardcoded colors, fonts, or spacing
+ * - Follows MUI v7 patterns
+ * - Uses logger instead of console
+ */
+export default function FormPresetsManager({
   isOpen,
   isUploadSidebarOpen,
   onClose,
@@ -80,8 +107,16 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
   onLoadPreset,
   onExportForm,
   onClearForm,
-}) => {
+}: FormPresetsManagerProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
+  const brand = getCurrentBrand();
+
+  // ==========================================
+  // STATE & REFS
+  // ==========================================
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [presetName, setPresetName] = useState("");
   const [userPresets, setUserPresets] = useState<Record<string, FormValues>>(
@@ -89,14 +124,19 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
   );
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
+  // ==========================================
+  // EFFECTS
+  // ==========================================
   // Load presets from localStorage on component mount
   useEffect(() => {
-    const savedPresets = localStorage.getItem("adScriptGeneratorPresets");
+    if (typeof window === "undefined") return;
+
+    const savedPresets = localStorage.getItem(STORAGE_KEY);
     if (savedPresets) {
       try {
         setUserPresets(JSON.parse(savedPresets));
       } catch (error) {
-        console.error("Failed to parse saved presets:", error);
+        logger.error("Failed to parse saved presets:", error);
         CustomToast("error", "There was an issue loading your saved presets");
       }
     }
@@ -104,15 +144,17 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
 
   // Save presets to localStorage whenever they change
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     if (Object.keys(userPresets).length > 0) {
-      localStorage.setItem(
-        "adScriptGeneratorPresets",
-        JSON.stringify(userPresets)
-      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(userPresets));
     }
   }, [userPresets]);
 
-  const saveCurrentAsPreset = () => {
+  // ==========================================
+  // EVENT HANDLERS (useCallback for stability)
+  // ==========================================
+  const saveCurrentAsPreset = useCallback(() => {
     if (!presetName.trim()) {
       CustomToast("error", "Please provide a name for this preset");
       return;
@@ -124,11 +166,10 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
     }));
 
     CustomToast("success", `"${presetName}" has been saved for future use`);
-
     setPresetName("");
-  };
+  }, [presetName, currentFormValues]);
 
-  const downloadPreset = (name: string, preset: FormValues) => {
+  const downloadPreset = useCallback((name: string, preset: FormValues) => {
     const dataStr = JSON.stringify(preset, null, 2);
     const dataBlob = new Blob([dataStr], { type: "application/json" });
 
@@ -141,72 +182,76 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
     URL.revokeObjectURL(url);
 
     CustomToast("success", `"${name}" preset has been downloaded`);
-  };
+  }, []);
 
-  // Handle exporting current form
-  const handleExportCurrentForm = () => {
+  const handleExportCurrentForm = useCallback(() => {
     if (onExportForm) {
-      // Use custom handler if provided
       onExportForm();
     } else {
-      // Default export behavior
       exportFormValues(
         currentFormValues,
         `adscript-${currentFormValues.projectName || "untitled"}.json`
       );
       CustomToast("success", "Form configuration exported successfully");
     }
-  };
+  }, [onExportForm, currentFormValues]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFileUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const preset = JSON.parse(event.target?.result as string);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const preset = JSON.parse(event.target?.result as string);
 
-        // Basic validation that it looks like a FormValues object
-        if (!preset.projectName || !preset.brandName || !preset.productName) {
-          throw new Error("Invalid preset format");
+          if (!preset.projectName || !preset.brandName || !preset.productName) {
+            throw new Error("Invalid preset format");
+          }
+
+          const fileName = file.name.replace(/\.(json|txt)$/, "");
+          const presetName = fileName
+            .replace(/-/g, " ")
+            .replace(/preset$/i, "")
+            .trim();
+
+          setUserPresets((prev) => ({
+            ...prev,
+            [presetName]: preset,
+          }));
+
+          CustomToast("success", `"${presetName}" has been imported and saved`);
+        } catch (error) {
+          logger.error("Failed to parse preset file:", error);
+          CustomToast(
+            "error",
+            "The file does not contain a valid preset format"
+          );
         }
 
-        const fileName = file.name.replace(/\.(json|txt)$/, "");
-        const presetName = fileName
-          .replace(/-/g, " ")
-          .replace(/preset$/i, "")
-          .trim();
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      };
 
-        setUserPresets((prev) => ({
-          ...prev,
-          [presetName]: preset,
-        }));
+      reader.readAsText(file);
+    },
+    []
+  );
 
-        CustomToast("success", `"${presetName}" has been imported and saved`);
-      } catch (error) {
-        console.error("Failed to parse preset file:", error);
-        CustomToast("error", "The file does not contain a valid preset format");
-      }
+  const loadPreset = useCallback(
+    (preset: FormValues) => {
+      onLoadPreset(preset);
+      CustomToast(
+        "success",
+        "Form values have been updated with the selected preset"
+      );
+    },
+    [onLoadPreset]
+  );
 
-      // Clear the file input for future use
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    };
-
-    reader.readAsText(file);
-  };
-
-  const loadPreset = (preset: FormValues) => {
-    onLoadPreset(preset);
-    CustomToast(
-      "success",
-      "Form values have been updated with the selected preset"
-    );
-  };
-
-  const removePreset = (name: string) => {
+  const removePreset = useCallback((name: string) => {
     setUserPresets((prev) => {
       const updated = { ...prev };
       delete updated[name];
@@ -214,8 +259,11 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
     });
 
     CustomToast("success", `"${name}" preset has been removed`);
-  };
+  }, []);
 
+  // ==========================================
+  // RENDER
+  // ==========================================
   return (
     <Box
       sx={{
@@ -230,9 +278,6 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
         visibility: isOpen || !isUploadSidebarOpen ? "visible" : "hidden",
       }}
     >
-      {/* Toggle and Action Buttons */}
-
-      {/* Sidebar Container */}
       <Paper
         elevation={2}
         sx={{
@@ -240,8 +285,8 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
           maxHeight: "calc(100vh - 200px)",
           overflow: "hidden",
           bgcolor: "background.paper",
-          borderRadius: "8px 0 0 8px",
-          border: "1px solid",
+          borderRadius: `${brand.borderRadius}px 0 0 ${brand.borderRadius}px`,
+          border: 1,
           borderColor: "divider",
           position: "relative",
           transition: "transform 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67)",
@@ -254,16 +299,16 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
         <Box
           sx={{ p: 2.5, overflow: "auto", maxHeight: "calc(100vh - 200px)" }}
         >
+          {/* Header */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between", // This pushes items to the edges
+              justifyContent: "space-between",
               mb: 3,
-              width: "100%", // Ensure it takes full width
+              width: "100%",
             }}
           >
-            {/* Left side with divider and title grouped together */}
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Divider
                 orientation="vertical"
@@ -271,19 +316,27 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                 sx={{
                   height: 30,
                   width: 4,
-                  background: (theme) =>
-                    `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
-                  mr: 1, // Changed to 1
-                  borderRadius: 2,
+                  background: `linear-gradient(to bottom, ${alpha(
+                    theme.palette.primary.main,
+                    0.6
+                  )}, ${alpha(theme.palette.primary.main, 0.25)})`,
+                  mr: 1,
+                  borderRadius: `${brand.borderRadius / 4}px`,
                 }}
               />
-              <Typography variant="h6" fontWeight={600}>
+              <Typography
+                variant="h6"
+                fontWeight={600}
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.heading,
+                }}
+              >
                 Form Presets
               </Typography>
             </Box>
 
-            {/* Right side with the buttons grouped together */}
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ display: "flex", gap: 1 }}>
               <Tooltip title="Clear Form">
                 <IconButton
                   size="small"
@@ -317,12 +370,12 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
               <Tooltip title="Close Sidebar">
                 <IconButton
                   size="small"
-                  onClick={onClose} // This uses the existing onClose prop
+                  onClick={onClose}
                   sx={{
                     color: "text.secondary",
                     "&:hover": {
                       color: "text.primary",
-                      bgcolor: alpha(theme.palette.grey[500], 0.1),
+                      bgcolor: alpha(theme.palette.divider, 0.2),
                     },
                   }}
                 >
@@ -338,8 +391,8 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
             sx={{
               mb: 2,
               p: 2,
-              bgcolor: theme.palette.background.default,
-              borderRadius: 1,
+              bgcolor: "background.default",
+              borderRadius: `${brand.borderRadius}px`,
             }}
           >
             <Box
@@ -355,16 +408,21 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                 sx={{
                   height: 22,
                   width: 4,
-                  background: (theme) =>
-                    `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                  background: `linear-gradient(to bottom, ${alpha(
+                    theme.palette.primary.main,
+                    0.6
+                  )}, ${alpha(theme.palette.primary.main, 0.25)})`,
                   mr: 1,
-                  borderRadius: 2,
+                  borderRadius: `${brand.borderRadius / 4}px`,
                 }}
               />
               <Typography
                 variant="subtitle2"
                 fontWeight={500}
-                sx={{ color: "text.primary" }}
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.body,
+                }}
               >
                 Save Current Form
               </Typography>
@@ -381,6 +439,17 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                   sx: {
                     height: 36,
                     fontSize: "0.875rem",
+                    fontFamily: brand.fonts.body,
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    "&:hover fieldset": {
+                      borderColor: "primary.main",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "primary.main",
+                    },
                   },
                 }}
               />
@@ -390,9 +459,10 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                   size="small"
                   onClick={saveCurrentAsPreset}
                   sx={{
-                    color: theme.palette.secondary.main,
+                    color: "primary.main",
                     "&:hover": {
-                      color: theme.palette.secondary.dark,
+                      color: "primary.dark",
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
                     },
                   }}
                 >
@@ -422,6 +492,13 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                 textTransform: "none",
                 height: 36,
                 fontSize: "0.875rem",
+                fontFamily: brand.fonts.body,
+                borderColor: "divider",
+                color: "text.primary",
+                "&:hover": {
+                  borderColor: "primary.main",
+                  bgcolor: "action.hover",
+                },
               }}
             >
               Import Preset
@@ -443,16 +520,21 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                 sx={{
                   height: 22,
                   width: 4,
-                  background: (theme) =>
-                    `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                  background: `linear-gradient(to bottom, ${alpha(
+                    theme.palette.primary.main,
+                    0.6
+                  )}, ${alpha(theme.palette.primary.main, 0.25)})`,
                   mr: 1,
-                  borderRadius: 2,
+                  borderRadius: `${brand.borderRadius / 4}px`,
                 }}
               />
               <Typography
                 variant="subtitle2"
                 fontWeight={500}
-                sx={{ color: "text.primary" }}
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.body,
+                }}
               >
                 Default Presets
               </Typography>
@@ -471,17 +553,17 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                     cursor: "pointer",
                     bgcolor:
                       selectedPreset === name
-                        ? alpha(theme.palette.secondary.main, 0.1)
+                        ? alpha(theme.palette.primary.main, 0.1)
                         : "background.paper",
                     borderColor:
                       selectedPreset === name
-                        ? alpha(theme.palette.secondary.main, 0.3)
+                        ? alpha(theme.palette.primary.main, 0.3)
                         : "divider",
                     "&:hover": {
-                      bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                      borderColor: alpha(theme.palette.secondary.main, 0.3),
+                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      borderColor: alpha(theme.palette.primary.main, 0.3),
                     },
-                    borderRadius: 1,
+                    borderRadius: `${brand.borderRadius}px`,
                     transition: "all 0.2s",
                   }}
                 >
@@ -494,9 +576,7 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                     }}
                   >
                     {selectedPreset === name && (
-                      <CheckIcon
-                        sx={{ color: "secondary.main", fontSize: 18 }}
-                      />
+                      <CheckIcon sx={{ color: "primary.main", fontSize: 18 }} />
                     )}
                     <Typography
                       variant="body2"
@@ -505,8 +585,9 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                         fontWeight: selectedPreset === name ? 600 : 400,
                         color:
                           selectedPreset === name
-                            ? "secondary.main"
+                            ? "primary.main"
                             : "text.primary",
+                        fontFamily: brand.fonts.body,
                       }}
                     >
                       {name}
@@ -567,16 +648,21 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                   sx={{
                     height: 22,
                     width: 4,
-                    background: (theme) =>
-                      `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                    background: `linear-gradient(to bottom, ${alpha(
+                      theme.palette.primary.main,
+                      0.6
+                    )}, ${alpha(theme.palette.primary.main, 0.25)})`,
                     mr: 1,
-                    borderRadius: 2,
+                    borderRadius: `${brand.borderRadius / 4}px`,
                   }}
                 />
                 <Typography
                   variant="subtitle2"
                   fontWeight={500}
-                  sx={{ color: "text.primary" }}
+                  sx={{
+                    color: "text.primary",
+                    fontFamily: brand.fonts.body,
+                  }}
                 >
                   Your Presets
                 </Typography>
@@ -604,17 +690,17 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                       cursor: "pointer",
                       bgcolor:
                         selectedPreset === name
-                          ? alpha(theme.palette.secondary.main, 0.1)
+                          ? alpha(theme.palette.primary.main, 0.1)
                           : "background.paper",
                       borderColor:
                         selectedPreset === name
-                          ? alpha(theme.palette.secondary.main, 0.3)
+                          ? alpha(theme.palette.primary.main, 0.3)
                           : "divider",
                       "&:hover": {
-                        bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                        borderColor: alpha(theme.palette.secondary.main, 0.3),
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        borderColor: alpha(theme.palette.primary.main, 0.3),
                       },
-                      borderRadius: 1,
+                      borderRadius: `${brand.borderRadius}px`,
                       transition: "all 0.2s",
                     }}
                   >
@@ -628,7 +714,7 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                     >
                       {selectedPreset === name && (
                         <CheckIcon
-                          sx={{ color: "secondary.main", fontSize: 18 }}
+                          sx={{ color: "primary.main", fontSize: 18 }}
                         />
                       )}
                       <Typography
@@ -638,8 +724,9 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                           fontWeight: selectedPreset === name ? 600 : 400,
                           color:
                             selectedPreset === name
-                              ? "secondary.main"
+                              ? "primary.main"
                               : "text.primary",
+                          fontFamily: brand.fonts.body,
                         }}
                       >
                         {name}
@@ -680,7 +767,6 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                       </IconButton>
                       <IconButton
                         size="small"
-                        color="inherit"
                         onClick={(e) => {
                           e.stopPropagation();
                           removePreset(name);
@@ -693,7 +779,7 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                           },
                         }}
                       >
-                        <X fontSize="small" />
+                        <X size={16} />
                       </IconButton>
                     </Box>
                   </Paper>
@@ -702,14 +788,14 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
             </Box>
           )}
 
-          {/* Preset Detail View - if a preset is selected */}
+          {/* Preset Detail View */}
           {selectedPreset && (
             <Paper
               variant="outlined"
               sx={{
                 p: 2,
-                bgcolor: theme.palette.background.default,
-                borderRadius: 1,
+                bgcolor: "background.default",
+                borderRadius: `${brand.borderRadius}px`,
               }}
             >
               <Box
@@ -732,16 +818,21 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                     sx={{
                       height: 22,
                       width: 4,
-                      background: (theme) =>
-                        `linear-gradient(to bottom, ${theme.palette.secondary.main}99, ${theme.palette.secondary.main}40)`,
+                      background: `linear-gradient(to bottom, ${alpha(
+                        theme.palette.primary.main,
+                        0.6
+                      )}, ${alpha(theme.palette.primary.main, 0.25)})`,
                       mr: 1,
-                      borderRadius: 2,
+                      borderRadius: `${brand.borderRadius / 4}px`,
                     }}
                   />
                   <Typography
                     variant="subtitle2"
                     fontWeight={500}
-                    color="secondary.main"
+                    sx={{
+                      color: "primary.main",
+                      fontFamily: brand.fonts.body,
+                    }}
                   >
                     {selectedPreset}
                   </Typography>
@@ -767,7 +858,13 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
                   </IconButton>
                 </Tooltip>
               </Box>
-              <Box sx={{ color: "text.secondary", pl: 2 }}>
+              <Box
+                sx={{
+                  color: "text.secondary",
+                  pl: 2,
+                  fontFamily: brand.fonts.body,
+                }}
+              >
                 <Typography variant="body2" display="block" sx={{ mb: 0.5 }}>
                   <strong>Brand:</strong>{" "}
                   {DEFAULT_PRESETS[selectedPreset]?.brandName ||
@@ -790,6 +887,6 @@ const FormPresetsManager: React.FC<FormPresetsManagerProps> = ({
       </Paper>
     </Box>
   );
-};
+}
 
-export default FormPresetsManager;
+FormPresetsManager.displayName = "FormPresetsManager";

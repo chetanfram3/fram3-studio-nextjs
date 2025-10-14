@@ -1,43 +1,127 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Box, useTheme, IconButton, Typography } from "@mui/material";
-import { Controller, UseFormReturn } from "react-hook-form";
-import { FormValues } from "../types";
-import InputField from "./InputField";
-import { TrendingUp, Mic } from "lucide-react";
+"use client";
 
-// Add proper type definitions for the Web Speech API
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { Box, IconButton, Typography, keyframes } from "@mui/material";
+import { Controller, UseFormReturn } from "react-hook-form";
+import { useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
+import { TrendingUp, Mic } from "lucide-react";
+import type { FormValues } from "../types";
+import InputField from "./InputField";
+import logger from "@/utils/logger";
+
+// ==========================================
+// TYPE DEFINITIONS
+// ==========================================
 declare global {
   interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
   }
+}
+
+interface SpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  onstart: () => void;
+}
+
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+  message: string;
 }
 
 interface MustHavesSectionProps {
   form: UseFormReturn<FormValues>;
 }
 
-const MustHavesSection: React.FC<MustHavesSectionProps> = ({ form }) => {
+// ==========================================
+// ANIMATIONS
+// ==========================================
+const pulse = keyframes`
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
+`;
+
+/**
+ * MustHavesSection - Must-haves input with speech recognition
+ *
+ * Performance optimizations:
+ * - React 19 compiler auto-optimizes (no manual memo needed)
+ * - useCallback for event handlers
+ * - Proper cleanup in useEffect
+ * - Theme-aware styling (no hardcoded colors)
+ *
+ * Porting standards:
+ * - 100% type safe (no any types)
+ * - Uses theme palette for all colors (primary instead of secondary)
+ * - Uses brand config for fonts
+ * - No hardcoded colors or spacing
+ * - Follows MUI v7 patterns
+ */
+export default function MustHavesSection({ form }: MustHavesSectionProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
+  const brand = getCurrentBrand();
+
+  // ==========================================
+  // STATE & REFS
+  // ==========================================
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const finalTranscriptRef = useRef<string>("");
 
+  // ==========================================
+  // EFFECTS
+  // ==========================================
   useEffect(() => {
     // Initialize speech recognition only once
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognitionAPI =
+      typeof window !== "undefined"
+        ? window.SpeechRecognition || window.webkitSpeechRecognition
+        : null;
 
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
+    if (SpeechRecognitionAPI) {
+      recognitionRef.current = new SpeechRecognitionAPI();
       const recognition = recognitionRef.current;
 
       recognition.lang = "en-US";
       recognition.interimResults = true;
       recognition.continuous = true;
 
-      recognition.onresult = (event: any) => {
-        console.log("Speech recognition result received");
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        logger.debug("Speech recognition result received");
 
         // Start with existing final transcript
         const existingText = finalTranscriptRef.current;
@@ -69,19 +153,18 @@ const MustHavesSection: React.FC<MustHavesSectionProps> = ({ form }) => {
         form.setValue("mustHaves", displayText);
       };
 
-      recognition.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+        logger.error("Speech recognition error:", event.error);
         setIsListening(false);
       };
 
       recognition.onend = () => {
-        console.log("Speech recognition ended");
+        logger.debug("Speech recognition ended");
         setIsListening(false);
       };
 
-      // Add debugging
       recognition.onstart = () => {
-        console.log("Speech recognition started successfully");
+        logger.debug("Speech recognition started successfully");
       };
     }
 
@@ -90,14 +173,16 @@ const MustHavesSection: React.FC<MustHavesSectionProps> = ({ form }) => {
         try {
           recognitionRef.current.stop();
         } catch (e) {
-          console.error("Error stopping speech recognition:", e);
+          logger.error("Error stopping speech recognition:", e);
         }
       }
     };
-  }, [form]);
+  }, [form, isListening]);
 
-  // Speech recognition API
-  const handleMicClick = () => {
+  // ==========================================
+  // EVENT HANDLERS (useCallback for stability)
+  // ==========================================
+  const handleMicClick = useCallback(() => {
     // Check if speech recognition is supported
     if (!recognitionRef.current) {
       alert(
@@ -108,33 +193,36 @@ const MustHavesSection: React.FC<MustHavesSectionProps> = ({ form }) => {
 
     // If already listening, stop
     if (isListening) {
-      console.log("Stopping speech recognition");
+      logger.debug("Stopping speech recognition");
       try {
         recognitionRef.current.stop();
       } catch (e) {
-        console.error("Error stopping speech recognition:", e);
+        logger.error("Error stopping speech recognition:", e);
       }
       setIsListening(false);
       return;
     }
 
     try {
-      console.log("Starting speech recognition");
+      logger.debug("Starting speech recognition");
       // Set initial value from form
       finalTranscriptRef.current = form.getValues("mustHaves") || "";
 
-      // Start recognition directly - modern browsers will automatically request permission
+      // Start recognition
       recognitionRef.current.start();
       setIsListening(true);
     } catch (error) {
-      console.error("Speech recognition failed to start:", error);
+      logger.error("Speech recognition failed to start:", error);
       alert(
-        "Failed to start speech recognition. Make sure you've granted microphone permissions."
+        "Failed to start speech recognition. Make sure you have granted microphone permissions."
       );
       setIsListening(false);
     }
-  };
+  }, [isListening, form]);
 
+  // ==========================================
+  // RENDER
+  // ==========================================
   return (
     <Box sx={{ position: "relative" }}>
       <Box
@@ -146,24 +234,25 @@ const MustHavesSection: React.FC<MustHavesSectionProps> = ({ form }) => {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="subtitle2">Must-Haves</Typography>
-          <TrendingUp size={16} color={theme.palette.secondary.main} />
+          <Typography
+            variant="subtitle2"
+            sx={{
+              color: "text.primary",
+              fontFamily: brand.fonts.body,
+            }}
+          >
+            Must-Haves
+          </Typography>
+          <TrendingUp size={16} color={theme.palette.primary.main} />
         </Box>
         <IconButton
           onClick={handleMicClick}
           size="small"
           sx={{
-            color: isListening
-              ? theme.palette.secondary.main
-              : theme.palette.text.secondary,
-            animation: isListening ? "pulse 1.5s infinite" : "none",
-            "@keyframes pulse": {
-              "0%": { opacity: 1, transform: "scale(1)" },
-              "50%": { opacity: 0.8, transform: "scale(1.1)" },
-              "100%": { opacity: 1, transform: "scale(1)" },
-            },
+            color: isListening ? "primary.main" : "text.secondary",
+            animation: isListening ? `${pulse} 1.5s infinite` : "none",
             "&:hover": {
-              bgcolor: "rgba(0, 0, 0, 0.04)",
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
             },
           }}
           title={
@@ -198,8 +287,16 @@ const MustHavesSection: React.FC<MustHavesSectionProps> = ({ form }) => {
               },
               "& .MuiInputBase-input": {
                 ...(isListening && {
-                  borderBottom: `2px solid ${theme.palette.secondary.main}`,
+                  borderBottom: `2px solid ${theme.palette.primary.main}`,
                 }),
+              },
+              "& .MuiOutlinedInput-root": {
+                "&:hover fieldset": {
+                  borderColor: "primary.main",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "primary.main",
+                },
               },
             }}
             {...field}
@@ -209,6 +306,6 @@ const MustHavesSection: React.FC<MustHavesSectionProps> = ({ form }) => {
       />
     </Box>
   );
-};
+}
 
-export default MustHavesSection;
+MustHavesSection.displayName = "MustHavesSection";

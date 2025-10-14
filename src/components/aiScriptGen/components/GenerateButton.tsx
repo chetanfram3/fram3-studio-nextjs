@@ -1,32 +1,45 @@
-// src/modules/scripts/components/GenerateButton.tsx
-import React, { useState } from "react";
+"use client";
+
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Button,
   Box,
   CircularProgress,
-  useTheme,
   Tooltip,
   Typography,
   Slider,
   Chip,
-  alpha,
   Collapse,
   IconButton,
 } from "@mui/material";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { ChevronDown } from "lucide-react";
+import { useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
 
-// Define generation mode types
+// ==========================================
+// TYPE DEFINITIONS
+// ==========================================
 export type GenerationMode = "fast" | "moderate" | "detailed";
 
-// Map generation modes to their values for slider
-const GENERATION_MODES: {
-  [key: number]: {
-    value: GenerationMode;
-    label: string;
-    description: string;
-  };
-} = {
+interface GenerationModeConfig {
+  value: GenerationMode;
+  label: string;
+  description: string;
+}
+
+interface GenerateButtonProps {
+  isLoading: boolean;
+  onClick?: (mode: GenerationMode) => void;
+  fullWidth?: boolean;
+}
+
+// ==========================================
+// CONSTANTS
+// ==========================================
+const GENERATION_MODES: Record<number, GenerationModeConfig> = {
   0: {
     value: "fast",
     label: "Fast",
@@ -44,39 +57,74 @@ const GENERATION_MODES: {
   },
 };
 
-interface GenerateButtonProps {
-  isLoading: boolean;
-  onClick?: (mode: GenerationMode) => void;
-  fullWidth?: boolean;
-}
-
-const GenerateButton: React.FC<GenerateButtonProps> = ({
+/**
+ * GenerateButton - Script generation button with mode selector
+ *
+ * Performance optimizations:
+ * - React 19 compiler auto-optimizes (no manual memo needed)
+ * - useCallback for event handlers
+ * - useMemo for computed values
+ * - Theme-aware styling (no hardcoded colors)
+ * - Proper dependency arrays
+ *
+ * Porting standards:
+ * - 100% type safe (no any types)
+ * - Uses theme palette for all colors (primary instead of secondary)
+ * - Uses brand config for fonts/spacing
+ * - No hardcoded colors, fonts, or spacing
+ * - Follows MUI v7 patterns
+ * - Added AutoAwesome icon for visual enhancement
+ */
+export default function GenerateButton({
   isLoading,
   onClick,
   fullWidth = true,
-}) => {
+}: GenerateButtonProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
-  const [expanded, setExpanded] = useState(false);
-  const [sliderValue, setSliderValue] = useState<number>(2); // Default to moderate
-  const currentMode = GENERATION_MODES[sliderValue].value;
+  const brand = getCurrentBrand();
 
-  const handleButtonClick = () => {
+  // ==========================================
+  // STATE
+  // ==========================================
+  const [expanded, setExpanded] = useState(false);
+  const [sliderValue, setSliderValue] = useState<number>(1); // Default to moderate
+
+  // ==========================================
+  // COMPUTED VALUES (Memoized for performance)
+  // ==========================================
+  const currentMode = useMemo(
+    () => GENERATION_MODES[sliderValue].value,
+    [sliderValue]
+  );
+
+  // ==========================================
+  // EVENT HANDLERS (useCallback for stability)
+  // ==========================================
+  const handleButtonClick = useCallback(() => {
     if (onClick) {
       onClick(currentMode);
     }
-  };
+  }, [onClick, currentMode]);
 
-  const handleSliderChange = (_: Event, newValue: number | number[]) => {
-    const numericValue = Array.isArray(newValue) ? newValue[0] : newValue;
-    setSliderValue(numericValue);
-  };
+  const handleSliderChange = useCallback(
+    (_event: Event, newValue: number | number[]) => {
+      const numericValue = Array.isArray(newValue) ? newValue[0] : newValue;
+      setSliderValue(numericValue);
+    },
+    []
+  );
 
-  // Handle accordion toggle and prevent event propagation
-  const toggleAccordion = (e: React.MouseEvent) => {
+  const toggleAccordion = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     setExpanded((prev) => !prev);
-  };
+  }, []);
 
+  // ==========================================
+  // RENDER
+  // ==========================================
   return (
     <Box
       sx={{
@@ -92,8 +140,9 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
         sx={{
           width: "100%",
           mb: 2,
-          border: `1px solid ${theme.palette.divider}`,
-          borderRadius: 1,
+          border: 1,
+          borderColor: "divider",
+          borderRadius: `${brand.borderRadius}px`,
           backgroundColor: alpha(theme.palette.background.paper, 0.8),
           overflow: "hidden",
         }}
@@ -109,21 +158,32 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
             p: 1.5,
             borderBottom: expanded ? 1 : 0,
             borderBottomColor: "divider",
+            "&:hover": {
+              bgcolor: "action.hover",
+            },
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body2" fontWeight="medium">
+            <Typography
+              variant="body2"
+              fontWeight="medium"
+              sx={{
+                color: "text.primary",
+                fontFamily: brand.fonts.body,
+              }}
+            >
               Generation Mode
             </Typography>
             <Chip
               label={GENERATION_MODES[sliderValue].label}
               size="small"
               sx={{
-                bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                color: "secondary.main",
+                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                color: "primary.main",
                 fontSize: "0.8rem",
                 height: 20,
                 fontWeight: 500,
+                fontFamily: brand.fonts.body,
               }}
             />
           </Box>
@@ -137,7 +197,7 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
               <InfoOutlinedIcon
                 fontSize="small"
                 sx={{
-                  color: theme.palette.text.secondary,
+                  color: "text.secondary",
                   cursor: "help",
                   mr: 1,
                   fontSize: 16,
@@ -149,6 +209,12 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded((prev) => !prev);
+              }}
+              sx={{
+                color: "text.secondary",
+                "&:hover": {
+                  color: "primary.main",
+                },
               }}
             >
               <ChevronDown
@@ -174,8 +240,24 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
                 px: 1,
               }}
             >
-              <Typography variant="caption">Fast</Typography>
-              <Typography variant="caption">Detailed</Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
+                Fast
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
+                Detailed
+              </Typography>
             </Box>
 
             {/* Enhanced Slider */}
@@ -191,7 +273,7 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
                 { value: 2, label: "" },
               ]}
               sx={{
-                color: "secondary.main",
+                color: "primary.main",
                 height: 8,
                 "& .MuiSlider-track": {
                   border: "none",
@@ -200,19 +282,19 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
                 "& .MuiSlider-rail": {
                   height: 8,
                   opacity: 0.5,
-                  backgroundColor: "#333333",
+                  backgroundColor: alpha(theme.palette.divider, 0.5),
                 },
                 "& .MuiSlider-thumb": {
                   height: 18,
                   width: 18,
-                  border: "2px solid white",
-                  backgroundColor: "secondary.main",
+                  border: `2px solid ${theme.palette.primary.contrastText}`,
+                  backgroundColor: "primary.main",
                   "&:focus, &:hover, &.Mui-active, &.Mui-focusVisible": {
                     boxShadow: "inherit",
                   },
                 },
                 "& .MuiSlider-mark": {
-                  backgroundColor: "secondary.main",
+                  backgroundColor: "primary.main",
                   height: 8,
                   width: 8,
                   borderRadius: "50%",
@@ -224,8 +306,12 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
             {/* Mode Description */}
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mt: 1 }}
+              sx={{
+                display: "block",
+                mt: 1,
+                color: "text.secondary",
+                fontFamily: brand.fonts.body,
+              }}
             >
               {GENERATION_MODES[sliderValue].description}
             </Typography>
@@ -233,42 +319,44 @@ const GenerateButton: React.FC<GenerateButtonProps> = ({
         </Collapse>
       </Box>
 
+      {/* Generate Button */}
       <Button
         fullWidth={fullWidth}
         variant="contained"
+        color="primary"
         disabled={isLoading}
         onClick={handleButtonClick}
         sx={{
-          bgcolor: "secondary.main",
-          color: "secondary.contrastText",
           py: 1.5,
           fontWeight: 600,
+          fontFamily: brand.fonts.body,
           "&:hover": {
-            bgcolor: "secondary.dark",
+            bgcolor: "primary.dark",
           },
           "&.Mui-disabled": {
-            bgcolor:
-              theme.palette.mode === "dark"
-                ? "rgba(255, 215, 0, 0.3)"
-                : "rgba(255, 215, 0, 0.5)",
-            color:
-              theme.palette.mode === "dark"
-                ? "rgba(0, 0, 0, 0.7)"
-                : "rgba(0, 0, 0, 0.5)",
+            bgcolor: alpha(theme.palette.primary.main, 0.3),
+            color: alpha(
+              theme.palette.primary.contrastText,
+              theme.palette.mode === "dark" ? 0.5 : 0.7
+            ),
           },
-          borderRadius: 1,
+          borderRadius: `${brand.borderRadius}px`,
           textTransform: "none",
           fontSize: "1rem",
           minWidth: "200px",
         }}
         startIcon={
-          isLoading ? <CircularProgress size={20} color="inherit" /> : null
+          isLoading ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            <AutoAwesomeIcon />
+          )
         }
       >
         {isLoading ? "Generating..." : "Generate"}
       </Button>
     </Box>
   );
-};
+}
 
-export default GenerateButton;
+GenerateButton.displayName = "GenerateButton";

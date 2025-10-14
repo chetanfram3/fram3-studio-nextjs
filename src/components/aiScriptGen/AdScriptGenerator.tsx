@@ -5,14 +5,14 @@ import {
   useRef,
   useEffect,
   useCallback,
+  useMemo,
   startTransition,
 } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import {
   Box,
-  useTheme,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -25,7 +25,14 @@ import {
   Tooltip,
   alpha,
 } from "@mui/material";
-import { Upload, ChevronUp, ChevronDown, Database } from "lucide-react";
+import { useTheme } from "@mui/material/styles";
+import {
+  Upload,
+  ChevronUp,
+  ChevronDown,
+  Database,
+  Upload as UploadIcon,
+} from "lucide-react";
 import logger from "@/utils/logger";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { useThemeMode } from "@/theme";
@@ -33,13 +40,12 @@ import AudienceDetailsSection from "./components/AudienceDetailsSection";
 import { API_BASE_URL } from "@/config/constants";
 import CustomToast from "@/components/common/CustomToast";
 import ProgressIndicator from "./components/ProgressIndicator";
-
-// Import components
 import ScriptorLayout from "./ScriptorLayout";
 import BasicInfoSection from "./components/BasicInfoSection";
 import FormatCtaSection from "./components/FormatCtaSection";
 import MustHavesSection from "./components/MustHavesSection";
 import GenerateButton from "./components/GenerateButton";
+import type { GenerationMode } from "./components/GenerateButton";
 import LocaleRegionSectionMUI from "./components/LocaleRegionSectionMUI";
 import StoryDetailsSection from "./components/StoryDetailsSection";
 import BrandDetailsSection from "./components/BrandDetailsSection";
@@ -50,19 +56,13 @@ import ExecutionReferenceSection from "./components/ExecutionReferenceSection";
 import SectionToggleMenu from "./components/SectionToggleMenu";
 import FormPresetsManager from "./components/FormPresetsManager";
 import UploadSidebar from "./components/UploadSidebar";
-import { getAuthToken } from "@/services/scriptService";
-import { fetchGeneratedScript } from "@/services/scriptService";
-
-// Import context
+import { getAuthToken, fetchGeneratedScript } from "@/services/scriptService";
 import {
   SectionVisibilityProvider,
   useSectionVisibility,
 } from "./context/SectionVisibilityContext";
-
-// Import types and utilities
 import { formSchema } from "./types";
 import type { FormValues } from "./types";
-import type { GenerationMode } from "./components/GenerateButton";
 import { formToApiPayload } from "./data/formToApiPayload";
 import { defaultFormValues } from "./data/defaultFormValues";
 import {
@@ -71,8 +71,12 @@ import {
   initializeFormValues,
 } from "./utils/presetUtils";
 import CreditErrorDisplay from "@/components/common/CreditErrorDisplay";
+import type { CreditErrorResponse, CreditError } from "@/types";
 
-// Interfaces
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
 interface GenerationState {
   genScriptId: string;
   startTime: number;
@@ -90,64 +94,93 @@ interface UploadData {
   extractionNotes?: string;
 }
 
-interface CreditErrorData {
-  message: string;
-  error: {
-    message: string;
-    details: {
-      code: string;
-      required: number;
-      available: number;
-      reserved: number;
-      shortfall: number;
-      percentageAvailable: number;
-      suggestion: string;
-      estimation: unknown;
-    };
+interface ApiErrorResponse {
+  error?: string | { message: string };
+  message?: string;
+  code?: string;
+  details?: {
+    required?: number;
+    available?: number;
+    reserved?: number;
+    estimation?: Record<string, unknown>;
   };
-  response: {
-    status: number;
-    data: unknown;
-  };
-  scriptId?: string;
-  versionId?: string;
-  route?: string;
-  note?: string;
 }
 
-// Utility function
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+interface CreditErrorWithMessage extends CreditErrorResponse {
+  message: string;
+  response?: {
+    status: number;
+    data: ApiErrorResponse;
+  };
+}
 
-// State management constants
+interface ExtendedCreditError extends Omit<CreditError, "details"> {
+  details: CreditError["details"] & {
+    estimation?: Record<string, unknown> | null;
+  };
+}
+
+// ============================================================================
+// CONSTANTS & UTILITIES
+// ============================================================================
+
 const GENERATION_STATE_KEY = "activeScriptGeneration";
+const POLLING_INTERVAL = 5000; // 5 seconds
+const MAX_POLLING_ATTEMPTS = 60; // 5 minutes
+const GENERATION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+// ============================================================================
+// STATE MANAGEMENT FUNCTIONS
+// ============================================================================
 
 const saveGenerationState = (state: GenerationState): void => {
-  sessionStorage.setItem(GENERATION_STATE_KEY, JSON.stringify(state));
+  try {
+    sessionStorage.setItem(GENERATION_STATE_KEY, JSON.stringify(state));
+  } catch (error) {
+    logger.error("Failed to save generation state:", error);
+  }
 };
 
 const loadGenerationState = (): GenerationState | null => {
-  const saved = sessionStorage.getItem(GENERATION_STATE_KEY);
-  if (!saved) return null;
-
   try {
+    const saved = sessionStorage.getItem(GENERATION_STATE_KEY);
+    if (!saved) return null;
+
     const state = JSON.parse(saved) as GenerationState;
     const elapsed = Date.now() - state.startTime;
-    if (elapsed > 5 * 60 * 1000) {
+
+    if (elapsed > GENERATION_TIMEOUT) {
       sessionStorage.removeItem(GENERATION_STATE_KEY);
       return null;
     }
+
     return state;
-  } catch {
+  } catch (error) {
+    logger.error("Failed to load generation state:", error);
     return null;
   }
 };
 
-// API Response Handler
+const clearGenerationState = (): void => {
+  try {
+    sessionStorage.removeItem(GENERATION_STATE_KEY);
+  } catch (error) {
+    logger.error("Failed to clear generation state:", error);
+  }
+};
+
+// ============================================================================
+// API ERROR HANDLER
+// ============================================================================
+
 const handleApiResponse = async <T = unknown,>(
   response: Response,
   defaultErrorMessage = "API request failed"
 ): Promise<T> => {
-  const responseData = await response.json();
+  const responseData = (await response.json()) as ApiErrorResponse;
 
   if (!response.ok) {
     logger.debug("API Error Response:", {
@@ -156,47 +189,62 @@ const handleApiResponse = async <T = unknown,>(
       data: responseData,
     });
 
-    // Check for credit error
-    if (
+    // Check for credit errors
+    const isCreditError =
       response.status === 402 ||
       (response.status === 403 &&
         responseData.code === "INSUFFICIENT_CREDITS") ||
-      responseData.code === "INSUFFICIENT_CREDITS"
-    ) {
+      responseData.code === "INSUFFICIENT_CREDITS";
+
+    if (isCreditError) {
       logger.debug("Credit error detected, creating structured error");
 
       const required = responseData.details?.required || 1;
       const available = responseData.details?.available || 0;
       const shortfall = Math.max(0, required - available);
-      const percentageAvailable = Math.min(
-        Math.round((available / required) * 100),
-        100
+      const percentageAvailable = String(
+        Math.min(Math.round((available / required) * 100), 100)
       );
 
-      const creditError: CreditErrorData = {
+      // Create the extended credit error matching CreditError structure
+      const extendedError: ExtendedCreditError = {
+        code: responseData.code || "INSUFFICIENT_CREDITS",
         message:
-          responseData.error ||
-          "You don't have enough credits to generate this script.",
-        error: {
-          message: responseData.error || "Insufficient credits",
-          details: {
-            code: responseData.code || "INSUFFICIENT_CREDITS",
-            required,
-            available,
-            reserved: responseData.details?.reserved || 0,
-            shortfall,
-            percentageAvailable,
-            suggestion:
-              shortfall > 0
-                ? `Purchase ${shortfall.toLocaleString()} credits to continue with this operation.`
-                : "Please purchase additional credits to continue.",
-            estimation: responseData.details?.estimation || null,
+          (typeof responseData.error === "string"
+            ? responseData.error
+            : responseData.error?.message) || "Insufficient credits",
+        details: {
+          required,
+          available,
+          shortfall,
+          percentageAvailable,
+          suggestion:
+            shortfall > 0
+              ? `Purchase ${shortfall.toLocaleString()} credits to continue with this operation.`
+              : "Please purchase additional credits to continue.",
+          recommendedPackage: {
+            recommended: "starter",
+            reason: "Best value for your needs",
+            price: 0,
+            credits: shortfall,
+            bonus: 0,
           },
+          estimation: responseData.details?.estimation || null,
         },
+      };
+
+      const creditError: CreditErrorWithMessage = {
+        message: extendedError.message,
+        error: extendedError,
         response: {
           status: response.status,
           data: responseData,
         },
+        status: response.status,
+        scriptId: "",
+        versionId: "",
+        route: "",
+        note: "",
       };
 
       const error = new Error(creditError.message);
@@ -204,9 +252,11 @@ const handleApiResponse = async <T = unknown,>(
       throw error;
     }
 
+    // Handle other errors
     const errorMessage =
-      responseData.error?.message ||
-      responseData.error ||
+      (typeof responseData.error === "string"
+        ? responseData.error
+        : responseData.error?.message) ||
       responseData.message ||
       defaultErrorMessage;
 
@@ -216,48 +266,59 @@ const handleApiResponse = async <T = unknown,>(
   return responseData as T;
 };
 
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 function AdScriptGeneratorContent() {
   const theme = useTheme();
   const brand = getCurrentBrand();
-  const { isDarkMode } = useThemeMode();
   const router = useRouter();
+
+  // State
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const initialFormValues = initializeFormValues(defaultFormValues);
-  const [isFileUploadOpen, setIsFileUploadOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationPhase, setGenerationPhase] = useState(0);
-  const { isVisible } = useSectionVisibility();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isFileUploadOpen, setIsFileUploadOpen] = useState(false);
   const [isUploadSidebarOpen, setIsUploadSidebarOpen] = useState(false);
   const [isPresetsOpen, setIsPresetsOpen] = useState(false);
-  const [creditError, setCreditError] = useState<CreditErrorData | null>(null);
+  const [creditError, setCreditError] = useState<CreditErrorWithMessage | null>(
+    null
+  );
+
+  // Refs
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Hooks
+  const { isVisible } = useSectionVisibility();
+  const initialFormValues = useMemo(
+    () => initializeFormValues(defaultFormValues),
+    []
+  );
 
   // Setup form with validation
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as Resolver<FormValues>,
     defaultValues: initialFormValues,
   });
 
-  const hasCreditError = (): boolean => creditError !== null;
+  // ============================================================================
+  // EFFECTS
+  // ============================================================================
 
-  const clearCreditError = (): void => {
-    setCreditError(null);
-  };
-
-  const clearGenerationState = (): void => {
-    sessionStorage.removeItem(GENERATION_STATE_KEY);
-    setCreditError(null);
-  };
-
-  // Make toggleUploadSidebar accessible globally
+  // Make toggleUploadSidebar globally accessible
   useEffect(() => {
-    const globalWindow = window as typeof window & {
-      toggleUploadSidebar?: () => void;
-    };
-    globalWindow.toggleUploadSidebar = toggleUploadSidebar;
+    if (typeof window !== "undefined") {
+      (
+        window as Window & { toggleUploadSidebar?: () => void }
+      ).toggleUploadSidebar = toggleUploadSidebar;
+    }
 
     return () => {
-      delete globalWindow.toggleUploadSidebar;
+      if (typeof window !== "undefined") {
+        delete (window as Window & { toggleUploadSidebar?: () => void })
+          .toggleUploadSidebar;
+      }
     };
   }, []);
 
@@ -280,10 +341,10 @@ function AdScriptGeneratorContent() {
       }
     };
 
-    checkActiveGeneration();
+    void checkActiveGeneration();
   }, []);
 
-  // Add beforeunload warning when generating
+  // Warn before leaving during generation
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent): void => {
       if (isGenerating) {
@@ -297,7 +358,7 @@ function AdScriptGeneratorContent() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isGenerating]);
 
-  // Save form to localStorage on changes
+  // Auto-save form to localStorage
   useEffect(() => {
     const subscription = form.watch((value) => {
       saveFormToLocalStorage(value as FormValues);
@@ -306,460 +367,497 @@ function AdScriptGeneratorContent() {
     return () => subscription.unsubscribe();
   }, [form]);
 
-  const handleFileChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ): void => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      CustomToast("success", `${files.length} file(s) uploaded successfully!`);
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-    setIsFileUploadOpen(false);
-  };
+  // ============================================================================
+  // CALLBACKS
+  // ============================================================================
 
-  const handleSubmitWithGrounding = async (
-    mode: GenerationMode = "detailed"
-  ): Promise<void> => {
-    logger.debug("Script generation started with mode:", mode);
-
-    setIsGenerating(true);
-    setIsSubmitting(true);
-    setGenerationPhase(0);
-
-    const values = form.getValues();
-    const apiPayload = formToApiPayload(values);
-
-    try {
-      CustomToast("info", "Starting script generation...");
-      const token = await getAuthToken();
-
-      const initiateResponse = await fetch(
-        `${API_BASE_URL}/scripts/generate-script?processingMode=${mode}&grounding=true`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(apiPayload),
-        }
-      );
-
-      const responseData = await handleApiResponse<{ genScriptId: string }>(
-        initiateResponse,
-        "Failed to start script generation"
-      );
-      const { genScriptId } = responseData;
-
-      if (!genScriptId) {
-        throw new Error("No script ID received from server");
+  const handleFileChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>): void => {
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        CustomToast(
+          "success",
+          `${files.length} file(s) uploaded successfully!`
+        );
       }
 
-      saveGenerationState({
-        genScriptId,
-        startTime: Date.now(),
-        mode,
-        formData: values,
-      });
-
-      logger.debug("Received genScriptId:", genScriptId);
-
-      let scriptCompleted = false;
-
-      const checkScriptCompletion = async (): Promise<boolean> => {
-        try {
-          const result = await fetchGeneratedScript(genScriptId);
-
-          if (result.status === "completed") {
-            scriptCompleted = true;
-            return true;
-          } else if (result.status === "failed") {
-            throw new Error("Script generation failed on server");
-          }
-
-          return false;
-        } catch (error) {
-          logger.debug("Script not ready yet:", error);
-          return false;
-        }
-      };
-
-      const simulateProgress = async (): Promise<void> => {
-        const phases = [
-          { phase: 0, duration: 5000, description: "Initializing" },
-          { phase: 1, duration: 30000, description: "Analyzing Context" },
-          { phase: 2, duration: 24000, description: "Evaluating Concepts" },
-          { phase: 3, duration: 30000, description: "Drafting Script" },
-          { phase: 4, duration: 16000, description: "Running QA Checks" },
-        ];
-
-        for (const step of phases) {
-          if (scriptCompleted) break;
-
-          setGenerationPhase(step.phase);
-          logger.debug(`Progress: ${step.description}`);
-
-          const checkInterval = 2500;
-          const checks = Math.ceil(step.duration / checkInterval);
-
-          for (let i = 0; i < checks && !scriptCompleted; i++) {
-            await sleep(
-              Math.min(checkInterval, step.duration - i * checkInterval)
-            );
-          }
-        }
-      };
-
-      const pollForCompletion = async (): Promise<void> => {
-        await sleep(2000);
-
-        const maxAttempts = 60;
-        let attempts = 0;
-
-        while (!scriptCompleted && attempts < maxAttempts) {
-          const isComplete = await checkScriptCompletion();
-
-          if (isComplete) {
-            logger.debug("Script generation completed!");
-            break;
-          }
-
-          attempts++;
-
-          if (attempts < maxAttempts) {
-            await sleep(5000);
-          }
-        }
-
-        if (!scriptCompleted && attempts >= maxAttempts) {
-          throw new Error("Script generation timed out after 5 minutes");
-        }
-      };
-
-      await Promise.all([simulateProgress(), pollForCompletion()]);
-
-      if (scriptCompleted) {
-        clearGenerationState();
-        setGenerationPhase(4);
-        await sleep(1000);
-
-        CustomToast("success", "Script Generated Successfully!");
-
-        setTimeout(() => {
-          router.push(`/dashboard/scripts/generated/${genScriptId}`);
-        }, 500);
-      } else {
-        throw new Error("Script generation did not complete");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
-    } catch (error) {
-      clearGenerationState();
+      setIsFileUploadOpen(false);
+    },
+    []
+  );
 
-      if (error instanceof Error) {
-        const errorWithResponse = error as Error & {
-          response?: { status: number };
+  const handleSubmitWithGrounding = useCallback(
+    async (mode: GenerationMode = "detailed"): Promise<void> => {
+      logger.debug("Script generation started with mode:", mode);
+
+      setIsGenerating(true);
+      setIsSubmitting(true);
+      setGenerationPhase(0);
+
+      const values = form.getValues();
+      const apiPayload = formToApiPayload(values);
+
+      try {
+        CustomToast("info", "Starting script generation...");
+        const token = await getAuthToken();
+
+        const initiateResponse = await fetch(
+          `${API_BASE_URL}/scripts/generate-script?processingMode=${mode}&grounding=true`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(apiPayload),
+          }
+        );
+
+        const responseData = await handleApiResponse<{ genScriptId: string }>(
+          initiateResponse,
+          "Failed to start script generation"
+        );
+
+        const { genScriptId } = responseData;
+
+        if (!genScriptId) {
+          throw new Error("No script ID received from server");
+        }
+
+        saveGenerationState({
+          genScriptId,
+          startTime: Date.now(),
+          mode,
+          formData: values,
+        });
+
+        logger.debug("Received genScriptId:", genScriptId);
+
+        let scriptCompleted = false;
+
+        const checkScriptCompletion = async (): Promise<boolean> => {
+          try {
+            const result = await fetchGeneratedScript(genScriptId);
+
+            if (result.status === "completed") {
+              scriptCompleted = true;
+              return true;
+            } else if (result.status === "failed") {
+              throw new Error("Script generation failed on server");
+            }
+
+            return false;
+          } catch (error) {
+            logger.debug("Script not ready yet:", error);
+            return false;
+          }
         };
 
-        if (errorWithResponse.response?.status) {
-          const status = errorWithResponse.response.status;
+        const simulateProgress = async (): Promise<void> => {
+          const phases = [
+            { phase: 0, duration: 5000, description: "Initializing" },
+            { phase: 1, duration: 30000, description: "Analyzing Context" },
+            { phase: 2, duration: 24000, description: "Evaluating Concepts" },
+            { phase: 3, duration: 30000, description: "Drafting Script" },
+            { phase: 4, duration: 16000, description: "Running QA Checks" },
+          ];
+
+          for (const step of phases) {
+            if (scriptCompleted) break;
+
+            setGenerationPhase(step.phase);
+            logger.debug(`Progress: ${step.description}`);
+
+            const checkInterval = 2500;
+            const checks = Math.ceil(step.duration / checkInterval);
+
+            for (let i = 0; i < checks && !scriptCompleted; i++) {
+              await sleep(
+                Math.min(checkInterval, step.duration - i * checkInterval)
+              );
+            }
+          }
+        };
+
+        const pollForCompletion = async (): Promise<void> => {
+          await sleep(2000);
+
+          let attempts = 0;
+
+          while (!scriptCompleted && attempts < MAX_POLLING_ATTEMPTS) {
+            const isComplete = await checkScriptCompletion();
+
+            if (isComplete) {
+              logger.debug("Script generation completed!");
+              break;
+            }
+
+            attempts++;
+
+            if (attempts < MAX_POLLING_ATTEMPTS) {
+              await sleep(POLLING_INTERVAL);
+            }
+          }
+
+          if (!scriptCompleted && attempts >= MAX_POLLING_ATTEMPTS) {
+            throw new Error("Script generation timed out after 5 minutes");
+          }
+        };
+
+        await Promise.all([simulateProgress(), pollForCompletion()]);
+
+        if (scriptCompleted) {
+          clearGenerationState();
+          setGenerationPhase(4);
+          await sleep(1000);
+
+          CustomToast("success", "Script Generated Successfully!");
+
+          startTransition(() => {
+            router.push(`/dashboard/scripts/generated/${genScriptId}`);
+          });
+        } else {
+          throw new Error("Script generation did not complete");
+        }
+      } catch (error) {
+        clearGenerationState();
+
+        if (error instanceof Error && "response" in error) {
+          const errorWithResponse = error as Error & {
+            response?: { status?: number };
+          };
+          const status = errorWithResponse.response?.status;
+
           if (status === 402 || status === 403) {
             logger.debug("Setting credit error state");
-            setCreditError(error as unknown as CreditErrorData);
+            setCreditError(error as unknown as CreditErrorWithMessage);
             setGenerationPhase(0);
             setIsSubmitting(false);
             setIsGenerating(false);
             return;
           }
         }
+
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to generate script";
+        logger.error("Script generation error:", errorMessage);
+
+        CustomToast("error", errorMessage);
+        setGenerationPhase(0);
+      } finally {
+        setIsSubmitting(false);
+        setIsGenerating(false);
       }
+    },
+    [form, router]
+  );
 
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to generate script";
-      logger.error("Script generation error:", errorMessage);
+  const resumeGeneration = useCallback(
+    async (state: GenerationState): Promise<void> => {
+      const { genScriptId, startTime } = state;
+      const elapsed = Date.now() - startTime;
 
-      CustomToast("error", errorMessage);
-      setGenerationPhase(0);
-    } finally {
-      setIsSubmitting(false);
-      setIsGenerating(false);
-    }
-  };
+      setIsGenerating(true);
+      setIsSubmitting(true);
 
-  const resumeGeneration = async (state: GenerationState): Promise<void> => {
-    const { genScriptId, startTime } = state;
-    const elapsed = Date.now() - startTime;
+      const estimatedPhase = Math.min(Math.floor(elapsed / 7000), 4);
+      setGenerationPhase(estimatedPhase);
 
-    setIsGenerating(true);
-    setIsSubmitting(true);
+      try {
+        const currentStatus = await fetchGeneratedScript(genScriptId);
 
-    const estimatedPhase = Math.min(Math.floor(elapsed / 7000), 4);
-    setGenerationPhase(estimatedPhase);
-
-    try {
-      const currentStatus = await fetchGeneratedScript(genScriptId);
-
-      if (currentStatus.status === "completed") {
-        clearGenerationState();
-        CustomToast("success", "Your script is ready!");
-        router.push(`/dashboard/scripts/generated/${genScriptId}`);
-        return;
-      } else if (currentStatus.status === "failed") {
-        clearGenerationState();
-        throw new Error("Script generation failed");
-      }
-
-      let scriptCompleted = false;
-      const remainingTime = 5 * 60 * 1000 - elapsed;
-      const maxRemainingAttempts = Math.floor(remainingTime / 5000);
-
-      let attempts = 0;
-      while (!scriptCompleted && attempts < maxRemainingAttempts) {
-        await sleep(5000);
-
-        const result = await fetchGeneratedScript(genScriptId);
-
-        if (result.status === "completed") {
-          scriptCompleted = true;
+        if (currentStatus.status === "completed") {
           clearGenerationState();
-          CustomToast("success", "Script Generated Successfully!");
-          router.push(`/dashboard/scripts/generated/${genScriptId}`);
-          break;
-        } else if (result.status === "failed") {
+          CustomToast("success", "Your script is ready!");
+          startTransition(() => {
+            router.push(`/dashboard/scripts/generated/${genScriptId}`);
+          });
+          return;
+        } else if (currentStatus.status === "failed") {
+          clearGenerationState();
           throw new Error("Script generation failed");
         }
 
-        attempts++;
+        let scriptCompleted = false;
+        const remainingTime = GENERATION_TIMEOUT - elapsed;
+        const maxRemainingAttempts = Math.floor(
+          remainingTime / POLLING_INTERVAL
+        );
 
-        const totalElapsed = Date.now() - startTime;
-        const progress = Math.min((totalElapsed / (5 * 60 * 1000)) * 100, 95);
-        const phase = Math.min(Math.floor(progress / 20), 4);
-        setGenerationPhase(phase);
+        let attempts = 0;
+        while (!scriptCompleted && attempts < maxRemainingAttempts) {
+          await sleep(POLLING_INTERVAL);
+
+          const result = await fetchGeneratedScript(genScriptId);
+
+          if (result.status === "completed") {
+            scriptCompleted = true;
+            clearGenerationState();
+            CustomToast("success", "Script Generated Successfully!");
+            startTransition(() => {
+              router.push(`/dashboard/scripts/generated/${genScriptId}`);
+            });
+            break;
+          } else if (result.status === "failed") {
+            throw new Error("Script generation failed");
+          }
+
+          attempts++;
+
+          const totalElapsed = Date.now() - startTime;
+          const progress = Math.min(
+            (totalElapsed / GENERATION_TIMEOUT) * 100,
+            95
+          );
+          const phase = Math.min(Math.floor(progress / 20), 4);
+          setGenerationPhase(phase);
+        }
+
+        if (!scriptCompleted) {
+          throw new Error("Script generation timed out");
+        }
+      } catch (error) {
+        clearGenerationState();
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to generate script";
+        CustomToast("error", errorMessage);
+      } finally {
+        setIsSubmitting(false);
+        setIsGenerating(false);
       }
+    },
+    [router]
+  );
 
-      if (!scriptCompleted) {
-        throw new Error("Script generation timed out");
-      }
-    } catch (error) {
-      clearGenerationState();
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to generate script";
-      CustomToast("error", errorMessage);
-    } finally {
-      setIsSubmitting(false);
-      setIsGenerating(false);
-    }
-  };
+  const onSubmit = useCallback((data: FormValues): void => {
+    // This is intentionally empty - actual submission is handled by Generate button
+    logger.debug("Form submitted:", data);
+  }, []);
 
-  const onSubmit = (_data: FormValues): Promise<void> => {
-    return Promise.resolve();
-  };
+  const handleLoadPreset = useCallback(
+    (preset: FormValues): void => {
+      form.reset(preset);
+      saveFormToLocalStorage(preset);
+    },
+    [form]
+  );
 
-  const handleLoadPreset = (preset: FormValues): void => {
-    form.reset(preset);
-    saveFormToLocalStorage(preset);
-  };
-
-  const handleExportForm = (): void => {
+  const handleExportForm = useCallback((): void => {
+    const values = form.getValues();
     exportFormValues(
-      form.getValues(),
-      `adscript-${form.getValues().projectName || "untitled"}.json`
+      values,
+      `adscript-${values.projectName || "untitled"}.json`
     );
     CustomToast("success", "Form configuration exported successfully");
-  };
+  }, [form]);
 
-  const toggleUploadSidebar = (): void => {
+  const toggleUploadSidebar = useCallback((): void => {
     if (isPresetsOpen) {
       setIsPresetsOpen(false);
     }
     setIsUploadSidebarOpen(!isUploadSidebarOpen);
-  };
+  }, [isPresetsOpen, isUploadSidebarOpen]);
 
-  const handleUploadComplete = (uploadData: UploadData): void => {
-    logger.debug("Files uploaded successfully:", uploadData);
+  const handleUploadComplete = useCallback(
+    (uploadData: UploadData): void => {
+      logger.debug("Files uploaded successfully:", uploadData);
 
-    const extractionNotes =
-      uploadData.extractionNotes ||
-      form.getValues().executionReference.referenceFiles.extractionNotes ||
-      "";
+      const currentValues = form.getValues();
+      const extractionNotes =
+        uploadData.extractionNotes ||
+        currentValues.executionReference.referenceFiles.extractionNotes ||
+        "";
 
-    const updatedFormValues: FormValues = {
-      ...form.getValues(),
-      executionReference: {
-        ...form.getValues().executionReference,
-        referenceFiles: {
-          ...form.getValues().executionReference.referenceFiles,
-          extractionNotes,
-          fileSessionId: uploadData.sessionId,
-          filePaths: uploadData.files.map((file) => file.path),
-          uploadedFiles: uploadData.files.map((file) => ({
-            name: file.originalName,
-            path: file.path,
-          })),
+      const updatedFormValues: FormValues = {
+        ...currentValues,
+        executionReference: {
+          ...currentValues.executionReference,
+          referenceFiles: {
+            extractionNotes,
+            filePaths: uploadData.files.map((file) => file.path),
+          },
         },
-      },
-    };
+      };
 
-    form.reset(updatedFormValues);
-    saveFormToLocalStorage(updatedFormValues);
-    setIsUploadSidebarOpen(false);
-    CustomToast("success", "Files uploaded and form updated successfully");
-  };
+      form.reset(updatedFormValues);
+      saveFormToLocalStorage(updatedFormValues);
+      setIsUploadSidebarOpen(false);
 
-  const handleClearForm = (): void => {
+      CustomToast("success", "Files uploaded and form updated successfully");
+    },
+    [form]
+  );
+
+  const handleClearForm = useCallback((): void => {
     form.reset(defaultFormValues);
     saveFormToLocalStorage(defaultFormValues);
     CustomToast("success", "Form has been cleared");
-  };
+  }, [form]);
 
-  // Unified toggle component
-  const UnifiedToggle = (): JSX.Element => {
-    const [activeMode, setActiveMode] = useState<"presets" | "uploads">(
-      isPresetsOpen ? "presets" : isUploadSidebarOpen ? "uploads" : "uploads"
-    );
+  const handleCreditRetry = useCallback(async (): Promise<void> => {
+    if (!creditError) return;
+    setCreditError(null);
+    await handleSubmitWithGrounding("detailed");
+  }, [creditError, handleSubmitWithGrounding]);
 
-    useEffect(() => {
-      if (isPresetsOpen) setActiveMode("presets");
-      else if (isUploadSidebarOpen) setActiveMode("uploads");
-    }, []);
+  const handlePurchaseCredits = useCallback((): void => {
+    startTransition(() => {
+      router.push("/credits/purchase");
+    });
+  }, [router]);
 
-    const toggleMode = (): void => {
-      if (isPresetsOpen) setIsPresetsOpen(false);
-      if (isUploadSidebarOpen) setIsUploadSidebarOpen(false);
-      setActiveMode(activeMode === "presets" ? "uploads" : "presets");
-    };
+  const handleDismissCreditError = useCallback((): void => {
+    setCreditError(null);
+  }, []);
 
-    const toggleSidebar = (): void => {
-      if (activeMode === "presets") {
-        if (isUploadSidebarOpen) setIsUploadSidebarOpen(false);
-        setIsPresetsOpen(!isPresetsOpen);
-      } else {
+  // ============================================================================
+  // UNIFIED TOGGLE COMPONENT
+  // ============================================================================
+
+  const UnifiedToggle = useMemo(() => {
+    const Component = () => {
+      const [activeMode, setActiveMode] = useState<"presets" | "uploads">(
+        isPresetsOpen ? "presets" : isUploadSidebarOpen ? "uploads" : "uploads"
+      );
+
+      useEffect(() => {
+        if (isPresetsOpen) setActiveMode("presets");
+        else if (isUploadSidebarOpen) setActiveMode("uploads");
+      }, []);
+
+      const toggleMode = useCallback((): void => {
         if (isPresetsOpen) setIsPresetsOpen(false);
-        setIsUploadSidebarOpen(!isUploadSidebarOpen);
-      }
-    };
+        if (isUploadSidebarOpen) setIsUploadSidebarOpen(false);
+        setActiveMode(activeMode === "presets" ? "uploads" : "presets");
+      }, [activeMode]);
 
-    return (
-      <Box
-        sx={{
-          position: "fixed",
-          right: 0,
-          top: "28%",
-          zIndex: theme.zIndex.drawer - 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          pointerEvents: "auto",
-        }}
-      >
+      const toggleSidebar = useCallback((): void => {
+        if (activeMode === "presets") {
+          if (isUploadSidebarOpen) setIsUploadSidebarOpen(false);
+          setIsPresetsOpen(!isPresetsOpen);
+        } else {
+          if (isPresetsOpen) setIsPresetsOpen(false);
+          setIsUploadSidebarOpen(!isUploadSidebarOpen);
+        }
+      }, [activeMode]);
+
+      return (
         <Box
           sx={{
-            mb: 1,
-            mr: 1,
-            bgcolor: "background.default",
-            borderRadius: `${brand.borderRadius}px 0 0 ${brand.borderRadius}px`,
-            boxShadow: theme.shadows[8],
-            borderLeft: 1,
-            borderTop: 1,
-            borderBottom: 1,
-            borderRight: "none",
-            borderColor: "divider",
+            position: "fixed",
+            right: 0,
+            top: "28%",
+            zIndex: theme.zIndex.drawer - 1,
             display: "flex",
-            alignItems: "center",
-            gap: 0,
+            flexDirection: "column",
+            alignItems: "flex-end",
             pointerEvents: "auto",
-            position: "relative",
-            zIndex: theme.zIndex.drawer + 2,
-            transition: "transform 0.2s ease-in-out",
-            "&:hover": {
-              transform: "translateX(-2px)",
-            },
-            overflow: "hidden",
           }}
         >
-          <Tooltip
-            title={
-              activeMode === "presets"
-                ? "Switch to Upload Files"
-                : "Switch to Form Presets"
-            }
-          >
-            <IconButton
-              onClick={toggleMode}
-              size="small"
-              sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                color: "primary.main",
-                height: "100%",
-                borderRadius: 0,
-                p: 1,
-                "&:hover": {
-                  bgcolor: alpha(theme.palette.primary.main, 0.2),
-                },
-              }}
-            >
-              {activeMode === "presets" ? (
-                <Database size={16} />
-              ) : (
-                <Upload size={16} />
-              )}
-            </IconButton>
-          </Tooltip>
-
-          <Button
-            onClick={toggleSidebar}
-            size="small"
-            endIcon={
-              <ChevronDown
-                size={14}
-                style={{
-                  transform:
-                    (activeMode === "presets" && isPresetsOpen) ||
-                    (activeMode === "uploads" && isUploadSidebarOpen)
-                      ? "rotate(180deg)"
-                      : "rotate(0deg)",
-                  transition: "transform 0.3s",
-                }}
-              />
-            }
+          <Box
             sx={{
-              bgcolor: "primary.main",
-              color: "primary.contrastText",
-              px: 2,
-              py: 0.75,
-              fontWeight: 500,
-              fontSize: "0.875rem",
-              textTransform: "none",
-              borderRadius: 0,
+              mb: 1,
+              mr: 1,
+              bgcolor: "background.default",
+              borderRadius: "4px 0 0 4px",
+              boxShadow: theme.shadows[3],
+              borderLeft: 1,
+              borderTop: 1,
+              borderBottom: 1,
+              borderRight: "none",
+              borderColor: "divider",
+              display: "flex",
+              alignItems: "center",
+              gap: 0,
+              pointerEvents: "auto",
+              position: "relative",
+              zIndex: theme.zIndex.drawer + 2,
+              transition: "transform 0.2s ease-in-out",
               "&:hover": {
-                bgcolor: alpha(theme.palette.primary.main, 0.9),
+                transform: "translateX(-2px)",
               },
-              minWidth: "135px",
-              justifyContent: "space-between",
-              transition: "all 0.2s",
-              height: "38px",
+              overflow: "hidden",
             }}
           >
-            {activeMode === "presets" ? "Form Presets" : "Upload Files"}
-          </Button>
+            <Tooltip
+              title={
+                activeMode === "presets"
+                  ? "Switch to Upload Files"
+                  : "Switch to Form Presets"
+              }
+            >
+              <IconButton
+                onClick={toggleMode}
+                size="small"
+                sx={{
+                  bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                  color: "secondary.main",
+                  height: "100%",
+                  borderRadius: 0,
+                  p: 1,
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
+                  },
+                }}
+              >
+                {activeMode === "presets" ? (
+                  <Database size={16} />
+                ) : (
+                  <UploadIcon size={16} />
+                )}
+              </IconButton>
+            </Tooltip>
+
+            <Button
+              onClick={toggleSidebar}
+              size="small"
+              endIcon={
+                <ChevronDown
+                  size={14}
+                  style={{
+                    transform:
+                      (activeMode === "presets" && isPresetsOpen) ||
+                      (activeMode === "uploads" && isUploadSidebarOpen)
+                        ? "rotate(180deg)"
+                        : "rotate(0deg)",
+                    transition: "transform 0.3s",
+                  }}
+                />
+              }
+              sx={{
+                bgcolor: "secondary.main",
+                color: "secondary.contrastText",
+                px: 2,
+                py: 0.75,
+                fontWeight: 500,
+                fontSize: "0.875rem",
+                textTransform: "none",
+                borderRadius: 0,
+                "&:hover": {
+                  bgcolor: alpha(theme.palette.secondary.main, 0.9),
+                },
+                minWidth: "135px",
+                justifyContent: "space-between",
+                transition: "all 0.2s",
+                height: "38px",
+              }}
+            >
+              {activeMode === "presets" ? "Form Presets" : "Upload Files"}
+            </Button>
+          </Box>
         </Box>
-      </Box>
-    );
-  };
+      );
+    };
 
-  const handleCreditRetry = async (): Promise<void> => {
-    if (!creditError) return;
-    clearCreditError();
-    await handleSubmitWithGrounding("detailed");
-  };
+    return Component;
+  }, [isPresetsOpen, isUploadSidebarOpen, theme]);
 
-  const handlePurchaseCredits = (): void => {
-    router.push("/credits/purchase");
-  };
-
-  const handleDismissCreditError = (): void => {
-    clearCreditError();
-  };
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <ScriptorLayout>
@@ -792,7 +890,7 @@ function AdScriptGeneratorContent() {
               <Typography
                 variant="subtitle1"
                 fontWeight="medium"
-                sx={{ color: "text.primary" }}
+                sx={{ color: "text.primary", fontFamily: brand.fonts.heading }}
               >
                 Format & Call to Action
               </Typography>
@@ -837,7 +935,7 @@ function AdScriptGeneratorContent() {
               <Typography
                 variant="subtitle1"
                 fontWeight="medium"
-                sx={{ color: "text.primary" }}
+                sx={{ color: "text.primary", fontFamily: brand.fonts.heading }}
               >
                 Locale / Region & Language
               </Typography>
@@ -920,41 +1018,15 @@ function AdScriptGeneratorContent() {
         <Dialog
           open={isFileUploadOpen}
           onClose={() => setIsFileUploadOpen(false)}
-          PaperProps={{
-            sx: {
-              backgroundImage: "none !important",
-              bgcolor: "background.paper",
-              borderColor: "primary.main",
-              borderWidth: 2,
-              borderStyle: "solid",
-              borderRadius: `${brand.borderRadius * 1.5}px`,
-              boxShadow: theme.shadows[24],
-            },
-          }}
-          BackdropProps={{
-            sx: {
-              bgcolor: isDarkMode ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.5)",
-            },
-          }}
         >
-          <DialogTitle sx={{ color: "text.primary" }}>
-            Upload Reference Files
-          </DialogTitle>
+          <DialogTitle>Upload Reference Files</DialogTitle>
           <DialogContent>
             <Box sx={{ p: 2, textAlign: "center" }}>
               <Button
                 variant="outlined"
                 component="label"
                 startIcon={<Upload size={16} />}
-                sx={{
-                  mb: 2,
-                  borderColor: "primary.main",
-                  color: "primary.main",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  },
-                }}
+                sx={{ mb: 2 }}
               >
                 Select Files
                 <input
@@ -970,9 +1042,7 @@ function AdScriptGeneratorContent() {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setIsFileUploadOpen(false)} color="primary">
-              Cancel
-            </Button>
+            <Button onClick={() => setIsFileUploadOpen(false)}>Cancel</Button>
           </DialogActions>
         </Dialog>
 
@@ -991,22 +1061,19 @@ function AdScriptGeneratorContent() {
           <GenerateButton
             isLoading={isSubmitting || isGenerating}
             fullWidth={true}
-            onClick={(mode: GenerationMode) => {
+            onClick={(mode) => {
               try {
                 logger.debug("Generate button clicked with mode:", mode);
-                logger.debug("Form values:", form.getValues());
-                logger.debug("Form state:", form.formState);
 
                 if (Object.keys(form.formState.errors).length > 0) {
-                  logger.debug("Errors:", form.formState.errors);
-                  logger.debug("Form is invalid");
+                  logger.debug("Form errors:", form.formState.errors);
                   CustomToast(
                     "warning",
                     "Please fix form errors before generating"
                   );
                 } else {
                   logger.debug("Form is valid, submitting with mode:", mode);
-                  handleSubmitWithGrounding(mode);
+                  void handleSubmitWithGrounding(mode);
                 }
               } catch (error) {
                 logger.error("Error during form submission:", error);
@@ -1016,10 +1083,10 @@ function AdScriptGeneratorContent() {
         </Box>
       </Box>
 
-      {/* Unified Toggle Menu */}
+      {/* Unified Toggle */}
       <UnifiedToggle />
 
-      {/* FormPresetsManager */}
+      {/* Form Presets Manager */}
       <FormPresetsManager
         isOpen={isPresetsOpen}
         isUploadSidebarOpen={isUploadSidebarOpen}
@@ -1030,7 +1097,7 @@ function AdScriptGeneratorContent() {
         onClearForm={handleClearForm}
       />
 
-      {/* UploadSidebar */}
+      {/* Upload Sidebar */}
       <UploadSidebar
         isOpen={isUploadSidebarOpen}
         isPresetsOpen={isPresetsOpen}
@@ -1042,8 +1109,8 @@ function AdScriptGeneratorContent() {
 
       {/* Credit Error Display */}
       <CreditErrorDisplay
-        open={hasCreditError() && !!creditError}
-        onOpenChange={(open: boolean) => {
+        open={!!creditError}
+        onOpenChange={(open) => {
           if (!open) {
             handleDismissCreditError();
           }
@@ -1057,18 +1124,12 @@ function AdScriptGeneratorContent() {
         open={isGenerating}
         sx={{
           zIndex: theme.zIndex.drawer + 1,
-          color: "text.primary",
-          bgcolor: isDarkMode ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0.3)",
+          color: "#fff",
+          backgroundColor: alpha(theme.palette.background.default, 0.5),
           backdropFilter: "blur(2px)",
         }}
       >
-        <Fade
-          in={isGenerating}
-          timeout={{
-            enter: 400,
-            exit: 400,
-          }}
-        >
+        <Fade in={isGenerating} timeout={{ enter: 400, exit: 400 }}>
           <Box>
             <ProgressIndicator currentPhase={generationPhase} />
           </Box>
@@ -1078,7 +1139,10 @@ function AdScriptGeneratorContent() {
   );
 }
 
-// Wrap with SectionVisibilityProvider
+// ============================================================================
+// EXPORT WITH PROVIDER
+// ============================================================================
+
 export default function AdScriptGenerator() {
   return (
     <SectionVisibilityProvider>

@@ -1,64 +1,70 @@
-// Gender Identity dropdown component with multiple selection support
-import React, { useState } from "react";
-import {
-  Box,
-  Typography,
-  Button,
-  Popover,
-  useTheme,
-  alpha,
-} from "@mui/material";
+"use client";
+
+import React, { useState, useCallback, useMemo } from "react";
+import { Box, Typography, Button, Popover } from "@mui/material";
 import { KeyboardArrowDown as ChevronDownIcon } from "@mui/icons-material";
 import { UseFormReturn } from "react-hook-form";
-import { FormValues } from "../types";
+import { useTheme } from "@mui/material/styles";
+import { alpha } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
+import type { FormValues } from "../types";
 import { demographicData } from "../data/demographicData";
 
+// ==========================================
+// TYPE DEFINITIONS
+// ==========================================
 interface GenderIdentityPickerProps {
   form: UseFormReturn<FormValues>;
 }
 
-const GenderIdentityPicker: React.FC<GenderIdentityPickerProps> = ({
+/**
+ * GenderIdentityPicker - Multiple gender identity selection component
+ *
+ * Performance optimizations:
+ * - React 19 compiler auto-optimizes (no manual memo needed)
+ * - useCallback for event handlers
+ * - useMemo for computed values
+ * - Theme-aware styling (no hardcoded colors)
+ * - Proper dependency arrays
+ *
+ * Porting standards:
+ * - 100% type safe (no any types)
+ * - Uses theme palette for all colors (primary instead of secondary)
+ * - Uses brand config for fonts/spacing
+ * - No hardcoded colors, fonts, or spacing
+ * - Follows MUI v7 patterns
+ */
+export default function GenderIdentityPicker({
   form,
-}) => {
+}: GenderIdentityPickerProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
+  const brand = getCurrentBrand();
+
+  // ==========================================
+  // STATE
+  // ==========================================
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const isOpen = Boolean(anchorEl);
+
+  // ==========================================
+  // COMPUTED VALUES (Memoized for performance)
+  // ==========================================
+  const isOpen = useMemo(() => Boolean(anchorEl), [anchorEl]);
 
   const audience = form.watch("audienceDetails") || {};
-  const selectedGenders = audience.demographics.identity || [];
-  const selectedGendersArray = Array.isArray(selectedGenders)
-    ? selectedGenders
-    : selectedGenders
-    ? [selectedGenders]
-    : [];
+  const selectedGenders = audience.demographics?.identity || [];
 
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
+  const selectedGendersArray = useMemo(() => {
+    return Array.isArray(selectedGenders)
+      ? selectedGenders
+      : selectedGenders
+        ? [selectedGenders]
+        : [];
+  }, [selectedGenders]);
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleToggleGender = (genderId: string) => {
-    // Toggle selection
-    if (selectedGendersArray.includes(genderId)) {
-      form.setValue(
-        "audienceDetails.demographics.identity",
-        selectedGendersArray.filter((id) => id !== genderId),
-        { shouldDirty: true }
-      );
-    } else {
-      form.setValue(
-        "audienceDetails.demographics.identity",
-        [...selectedGendersArray, genderId],
-        { shouldDirty: true }
-      );
-    }
-  };
-
-  // Get selected gender labels
-  const getSelectedLabels = () => {
+  const selectedLabels = useMemo(() => {
     if (selectedGendersArray.length === 0) return "Select Gender";
 
     if (selectedGendersArray.length === 1) {
@@ -69,8 +75,44 @@ const GenderIdentityPicker: React.FC<GenderIdentityPickerProps> = ({
     }
 
     return `${selectedGendersArray.length} Identities Selected`;
-  };
+  }, [selectedGendersArray]);
 
+  // ==========================================
+  // EVENT HANDLERS (useCallback for stability)
+  // ==========================================
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      setAnchorEl(event.currentTarget);
+    },
+    []
+  );
+
+  const handleClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
+
+  const handleToggleGender = useCallback(
+    (genderId: string) => {
+      if (selectedGendersArray.includes(genderId)) {
+        form.setValue(
+          "audienceDetails.demographics.identity",
+          selectedGendersArray.filter((id) => id !== genderId),
+          { shouldDirty: true }
+        );
+      } else {
+        form.setValue(
+          "audienceDetails.demographics.identity",
+          [...selectedGendersArray, genderId],
+          { shouldDirty: true }
+        );
+      }
+    },
+    [selectedGendersArray, form]
+  );
+
+  // ==========================================
+  // RENDER
+  // ==========================================
   return (
     <Box sx={{ width: "100%" }}>
       <Typography
@@ -80,6 +122,7 @@ const GenderIdentityPicker: React.FC<GenderIdentityPickerProps> = ({
           mb: 0.5,
           fontWeight: 500,
           color: "text.secondary",
+          fontFamily: brand.fonts.body,
         }}
       >
         Gender Identity (Multiple)
@@ -98,10 +141,16 @@ const GenderIdentityPicker: React.FC<GenderIdentityPickerProps> = ({
           borderColor: "divider",
           color: "text.primary",
           textAlign: "left",
+          fontFamily: brand.fonts.body,
+          "&:hover": {
+            borderColor: "primary.main",
+            bgcolor: "action.hover",
+          },
         }}
       >
-        {getSelectedLabels()}
+        {selectedLabels}
       </Button>
+
       <Popover
         anchorEl={anchorEl}
         open={isOpen}
@@ -117,10 +166,12 @@ const GenderIdentityPicker: React.FC<GenderIdentityPickerProps> = ({
         PaperProps={{
           sx: {
             width: anchorEl?.offsetWidth,
-            backgroundColor: "background.default", // Dark background
+            backgroundColor: "background.default",
             p: 1.5,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            boxShadow: theme.shadows[8],
+            border: 1,
+            borderColor: alpha(theme.palette.divider, 0.3),
+            borderRadius: `${brand.borderRadius}px`,
             mt: 0.5,
           },
         }}
@@ -142,25 +193,25 @@ const GenderIdentityPicker: React.FC<GenderIdentityPickerProps> = ({
                 onClick={() => handleToggleGender(option.id)}
                 sx={{
                   p: 1.2,
-                  borderRadius: 1,
+                  borderRadius: `${brand.borderRadius / 2}px`,
                   textAlign: "center",
                   cursor: "pointer",
                   backgroundColor: isSelected
-                    ? alpha(theme.palette.secondary.main, 0.2)
-                    : "#1e1e1e", // Darker gray for unselected
-                  color: isSelected ? "secondary.main" : "text.primary",
+                    ? alpha(theme.palette.primary.main, 0.2)
+                    : "background.paper",
+                  color: isSelected ? "primary.main" : "text.primary",
                   fontWeight: isSelected ? 500 : 400,
-                  border: `1px solid ${
-                    isSelected
-                      ? alpha(theme.palette.secondary.dark, 0.3)
-                      : "rgba(255,255,255,0.1)"
-                  }`, // Subtle border for unselected
+                  fontFamily: brand.fonts.body,
+                  border: 1,
+                  borderColor: isSelected
+                    ? alpha(theme.palette.primary.dark, 0.3)
+                    : alpha(theme.palette.divider, 0.3),
                   transition: "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: isSelected ? "secondary.main" : "#262626", // Slightly lighter gray on hover
-                    color: isSelected
-                      ? "secondary.contrastText"
-                      : "text.primary",
+                    backgroundColor: isSelected
+                      ? "primary.main"
+                      : "action.hover",
+                    color: isSelected ? "primary.contrastText" : "text.primary",
                   },
                   fontSize: "0.85rem",
                 }}
@@ -173,6 +224,6 @@ const GenderIdentityPicker: React.FC<GenderIdentityPickerProps> = ({
       </Popover>
     </Box>
   );
-};
+}
 
-export default GenderIdentityPicker;
+GenderIdentityPicker.displayName = "GenderIdentityPicker";
