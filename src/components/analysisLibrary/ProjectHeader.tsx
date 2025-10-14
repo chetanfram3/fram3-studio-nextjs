@@ -7,6 +7,7 @@ import { useState, useCallback } from "react";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
 import ScriptPullFrom from "@/components/common/ScriptPull";
+import { AnalysisDialog } from "@/components/scriptAnalysis/AnalysisDialog";
 
 interface ProjectHeaderProps {
   className?: string;
@@ -111,6 +112,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = React.memo(
             </Button>
           </Tooltip>
         </Box>
+        <AnalysisDialog open={analysisDialogOpen} onClose={handleCloseDialog} />
       </Box>
     );
   }

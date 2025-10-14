@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -10,13 +10,14 @@ import {
   Tooltip,
   IconButton,
   alpha,
-  useTheme,
   ToggleButtonGroup,
   ToggleButton,
   FormControlLabel,
   Checkbox,
   Divider,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import LockIcon from "@mui/icons-material/LockOutlined";
 import { ChevronDown } from "lucide-react";
@@ -116,6 +117,12 @@ interface ProcessingModeSelectorProps {
   defaultExpanded?: boolean;
 }
 
+/**
+ * ProcessingModeSelector
+ *
+ * Advanced selector for processing mode, aspect ratio, and AI model tiers.
+ * Fully theme-aware and optimized with React 19 patterns.
+ */
 const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
   onChange,
   initialMode = "normal",
@@ -128,27 +135,28 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
   defaultExpanded = false,
 }) => {
   const theme = useTheme();
+  const brand = getCurrentBrand();
 
-  // ✅ Use useSubscription hook instead of manual token extraction
+  // Use useSubscription hook
   const { subscription, hasFeatureAccess } = useSubscription();
   const userPlanLevel = PLAN_TO_LEVEL[subscription] || PlanLevel.STARTER;
 
-  // Collapsed by default
+  // Expanded state
   const [expanded, setExpanded] = useState(defaultExpanded);
 
-  // Find the initial slider value based on the initialMode prop
-  const getInitialValue = (): number => {
+  // Find initial slider value
+  const getInitialValue = useCallback((): number => {
     const entry = Object.entries(PROCESSING_MODES).find(
       ([_, modeInfo]) => modeInfo.value === initialMode
     );
     return entry ? parseInt(entry[0]) : 2; // Default to "normal" (index 2)
-  };
+  }, [initialMode]);
 
   const [value, setValue] = useState<number>(getInitialValue());
   const [aspectRatio, setAspectRatio] =
     useState<AspectRatio>(initialAspectRatio);
 
-  // State for checkboxes, default to true
+  // Checkbox states
   const [generateImages, setGenerateImages] = useState<boolean>(
     initialGenerateImages
   );
@@ -164,196 +172,207 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
     video: initialModelTiers.video || MODEL_TIERS.ULTRA,
   });
 
-  // Keep track of the selected mode
+  // Selected mode
   const [selectedMode, setSelectedMode] = useState<ProcessingMode>(
     PROCESSING_MODES[value]?.value || "normal"
   );
 
-  // Function to calculate pauseBefore settings
-  const calculatePauseBeforeSettings = (
-    generateImages: boolean,
-    generateAudio: boolean,
-    generateVideo: boolean
-  ): string[] => {
-    const pauseBeforeSteps = new Set<string>();
+  // Calculate pauseBefore settings
+  const calculatePauseBeforeSettings = useCallback(
+    (images: boolean, audio: boolean, video: boolean): string[] => {
+      const pauseBeforeSteps = new Set<string>();
 
-    // If images are disabled, pause before IMAGE processing steps
-    if (!generateImages) {
-      processorSteps.images.forEach((step) => pauseBeforeSteps.add(step));
-      processorSteps.scenes.forEach((step) => pauseBeforeSteps.add(step));
-    }
+      // If images are disabled, pause before IMAGE processing steps
+      if (!images) {
+        processorSteps.images.forEach((step) => pauseBeforeSteps.add(step));
+        processorSteps.scenes.forEach((step) => pauseBeforeSteps.add(step));
+      }
 
-    // If audio is disabled, pause before AUDIO processing steps
-    if (!generateAudio) {
-      processorSteps.audio.forEach((step) => pauseBeforeSteps.add(step));
-    }
+      // If audio is disabled, pause before AUDIO processing steps
+      if (!audio) {
+        processorSteps.audio.forEach((step) => pauseBeforeSteps.add(step));
+      }
 
-    // If video is disabled, pause before VIDEO processing steps
-    if (!generateVideo) {
-      processorSteps.video.forEach((step) => pauseBeforeSteps.add(step));
-    }
+      // If video is disabled, pause before VIDEO processing steps
+      if (!video) {
+        processorSteps.video.forEach((step) => pauseBeforeSteps.add(step));
+      }
 
-    // Create pipeline order for consistent ordering
-    const pipelineOrder = [
-      ...processorSteps.images,
-      ...processorSteps.scenes,
-      ...processorSteps.audio,
-      ...processorSteps.video,
-    ];
+      // Create pipeline order for consistent ordering
+      const pipelineOrder = [
+        ...processorSteps.images,
+        ...processorSteps.scenes,
+        ...processorSteps.audio,
+        ...processorSteps.video,
+      ];
 
-    return pipelineOrder.filter((step) => pauseBeforeSteps.has(step));
-  };
+      return pipelineOrder.filter((step) => pauseBeforeSteps.has(step));
+    },
+    []
+  );
 
-  // Centralized function to trigger onChange with current or provided values
-  const triggerOnChange = (
-    mode?: ProcessingMode,
-    ratio?: AspectRatio,
-    images?: boolean,
-    audio?: boolean,
-    video?: boolean,
-    tiers?: ModelTierConfig
-  ) => {
-    const currentMode = mode !== undefined ? mode : selectedMode;
-    const currentRatio = ratio !== undefined ? ratio : aspectRatio;
-    const currentImages = images !== undefined ? images : generateImages;
-    const currentAudio = audio !== undefined ? audio : generateAudio;
-    const currentVideo = video !== undefined ? video : generateVideo;
-    const currentTiers = tiers !== undefined ? tiers : modelTiers;
+  // Centralized function to trigger onChange
+  const triggerOnChange = useCallback(
+    (
+      mode?: ProcessingMode,
+      ratio?: AspectRatio,
+      images?: boolean,
+      audio?: boolean,
+      video?: boolean,
+      tiers?: ModelTierConfig
+    ) => {
+      const currentMode = mode !== undefined ? mode : selectedMode;
+      const currentRatio = ratio !== undefined ? ratio : aspectRatio;
+      const currentImages = images !== undefined ? images : generateImages;
+      const currentAudio = audio !== undefined ? audio : generateAudio;
+      const currentVideo = video !== undefined ? video : generateVideo;
+      const currentTiers = tiers !== undefined ? tiers : modelTiers;
 
-    const pauseBeforeSettings = calculatePauseBeforeSettings(
-      currentImages,
-      currentAudio,
-      currentVideo
-    );
+      const pauseBeforeSettings = calculatePauseBeforeSettings(
+        currentImages,
+        currentAudio,
+        currentVideo
+      );
 
-    onChange(currentMode, currentRatio, pauseBeforeSettings, currentTiers);
-  };
+      onChange(currentMode, currentRatio, pauseBeforeSettings, currentTiers);
+    },
+    [
+      selectedMode,
+      aspectRatio,
+      generateImages,
+      generateAudio,
+      generateVideo,
+      modelTiers,
+      calculatePauseBeforeSettings,
+      onChange,
+    ]
+  );
 
   // Handle slider change
-  const handleSliderChange = (_: Event, newValue: number | number[]) => {
-    const numericValue = Array.isArray(newValue) ? newValue[0] : newValue;
-    setValue(numericValue);
+  const handleSliderChange = useCallback(
+    (_: Event, newValue: number | number[]) => {
+      const numericValue = Array.isArray(newValue) ? newValue[0] : newValue;
+      setValue(numericValue);
 
-    const modeInfo = PROCESSING_MODES[numericValue];
+      const modeInfo = PROCESSING_MODES[numericValue];
 
-    // Only allow change if user has permission
-    if (modeInfo && userPlanLevel >= modeInfo.minPlan) {
-      const newSelectedMode = modeInfo.value;
-      setSelectedMode(newSelectedMode);
-
-      // Trigger onChange immediately with new mode
-      triggerOnChange(newSelectedMode);
-    }
-  };
+      // Only allow change if user has permission
+      if (modeInfo && userPlanLevel >= modeInfo.minPlan) {
+        const newSelectedMode = modeInfo.value;
+        setSelectedMode(newSelectedMode);
+        triggerOnChange(newSelectedMode);
+      }
+    },
+    [userPlanLevel, triggerOnChange]
+  );
 
   // Handle aspect ratio change
-  const handleAspectRatioChange = (
-    _: React.MouseEvent<HTMLElement>,
-    newAspectRatio: AspectRatio | null
-  ) => {
-    if (newAspectRatio !== null) {
-      setAspectRatio(newAspectRatio);
-
-      // Trigger onChange immediately with new aspect ratio
-      triggerOnChange(undefined, newAspectRatio);
-    }
-  };
+  const handleAspectRatioChange = useCallback(
+    (_: React.MouseEvent<HTMLElement>, newAspectRatio: AspectRatio | null) => {
+      if (newAspectRatio !== null) {
+        setAspectRatio(newAspectRatio);
+        triggerOnChange(undefined, newAspectRatio);
+      }
+    },
+    [triggerOnChange]
+  );
 
   // Handle checkbox changes
-  const handleGenerateImagesChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const newValue = event.target.checked;
-    setGenerateImages(newValue);
+  const handleGenerateImagesChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = event.target.checked;
+      setGenerateImages(newValue);
+      triggerOnChange(undefined, undefined, newValue);
+    },
+    [triggerOnChange]
+  );
 
-    // Trigger onChange immediately with new images setting
-    triggerOnChange(undefined, undefined, newValue);
-  };
+  const handleGenerateAudioChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = event.target.checked;
+      setGenerateAudio(newValue);
+      triggerOnChange(undefined, undefined, undefined, newValue);
+    },
+    [triggerOnChange]
+  );
 
-  const handleGenerateAudioChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const newValue = event.target.checked;
-    setGenerateAudio(newValue);
-
-    // Trigger onChange immediately with new audio setting
-    triggerOnChange(undefined, undefined, undefined, newValue);
-  };
-
-  const handleGenerateVideoChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const newValue = event.target.checked;
-    setGenerateVideo(newValue);
-
-    // Trigger onChange immediately with new video setting
-    triggerOnChange(undefined, undefined, undefined, undefined, newValue);
-  };
+  const handleGenerateVideoChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = event.target.checked;
+      setGenerateVideo(newValue);
+      triggerOnChange(undefined, undefined, undefined, undefined, newValue);
+    },
+    [triggerOnChange]
+  );
 
   // Handle model tier changes
-  const handleImageTierChange = (tier: ModelTier) => {
-    const newModelTiers = { ...modelTiers, image: tier };
-    setModelTiers(newModelTiers);
-
-    // Trigger onChange immediately with new model tiers
-    triggerOnChange(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      newModelTiers
-    );
-  };
-
-  const handleAudioTierChange = (tier: ModelTier) => {
-    const newModelTiers = { ...modelTiers, audio: tier };
-    setModelTiers(newModelTiers);
-
-    // Trigger onChange immediately with new model tiers
-    triggerOnChange(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      newModelTiers
-    );
-  };
-
-  const handleVideoTierChange = (tier: ModelTier) => {
-    const newModelTiers = { ...modelTiers, video: tier };
-    setModelTiers(newModelTiers);
-
-    // Trigger onChange immediately with new model tiers
-    triggerOnChange(
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      newModelTiers
-    );
-  };
-
-  // Get tooltip text based on user's permissions
-  const getTooltipText = (sliderValue: number) => {
-    const modeInfo = PROCESSING_MODES[sliderValue];
-    if (userPlanLevel < modeInfo.minPlan) {
-      const requiredPlan = Object.keys(SubscriptionLevels).find(
-        (key) =>
-          PLAN_TO_LEVEL[
-            SubscriptionLevels[key as keyof typeof SubscriptionLevels]
-          ] === modeInfo.minPlan
+  const handleImageTierChange = useCallback(
+    (tier: ModelTier) => {
+      const newModelTiers = { ...modelTiers, image: tier };
+      setModelTiers(newModelTiers);
+      triggerOnChange(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        newModelTiers
       );
-      return `Requires ${
-        requiredPlan?.toLowerCase() || "premium"
-      } plan or higher`;
-    }
-    return modeInfo.description;
-  };
+    },
+    [modelTiers, triggerOnChange]
+  );
 
-  // Set the right mode when the component mounts
+  const handleAudioTierChange = useCallback(
+    (tier: ModelTier) => {
+      const newModelTiers = { ...modelTiers, audio: tier };
+      setModelTiers(newModelTiers);
+      triggerOnChange(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        newModelTiers
+      );
+    },
+    [modelTiers, triggerOnChange]
+  );
+
+  const handleVideoTierChange = useCallback(
+    (tier: ModelTier) => {
+      const newModelTiers = { ...modelTiers, video: tier };
+      setModelTiers(newModelTiers);
+      triggerOnChange(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        newModelTiers
+      );
+    },
+    [modelTiers, triggerOnChange]
+  );
+
+  // Get tooltip text
+  const getTooltipText = useCallback(
+    (sliderValue: number) => {
+      const modeInfo = PROCESSING_MODES[sliderValue];
+      if (userPlanLevel < modeInfo.minPlan) {
+        const requiredPlan = Object.keys(SubscriptionLevels).find(
+          (key) =>
+            PLAN_TO_LEVEL[
+              SubscriptionLevels[key as keyof typeof SubscriptionLevels]
+            ] === modeInfo.minPlan
+        );
+        return `Requires ${requiredPlan?.toLowerCase() || "premium"} plan or higher`;
+      }
+      return modeInfo.description;
+    },
+    [userPlanLevel]
+  );
+
+  // Set initial mode on mount
   useEffect(() => {
     const newValue = getInitialValue();
     setValue(newValue);
@@ -362,26 +381,28 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
     if (modeInfo && userPlanLevel >= modeInfo.minPlan) {
       setSelectedMode(modeInfo.value);
     }
-  }, [initialMode, userPlanLevel]);
+  }, [initialMode, userPlanLevel, getInitialValue]);
 
-  // Initial trigger on mount - only once after all initial values are set
+  // Initial trigger on mount
   useEffect(() => {
-    // Small delay to ensure all initial state is set
     const timer = setTimeout(() => {
       triggerOnChange();
     }, 0);
 
     return () => clearTimeout(timer);
-  }, []); // Empty dependency array - only run on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Box sx={{ mb: 0 }} className={className}>
       <Box
         sx={{
-          backgroundColor: "background.default",
-          borderRadius: 1,
+          backgroundColor: "background.paper",
+          borderRadius: `${brand.borderRadius}px`,
           border: 1,
           borderColor: "divider",
+          transition: theme.transitions.create(["border-color"], {
+            duration: theme.transitions.duration.short,
+          }),
         }}
       >
         {/* Accordion Header */}
@@ -395,19 +416,44 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
             p: 1.5,
             borderBottom: expanded ? 1 : 0,
             borderBottomColor: "divider",
+            transition: theme.transitions.create(["background-color"], {
+              duration: theme.transitions.duration.short,
+            }),
+            "&:hover": {
+              bgcolor: "action.hover",
+            },
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body2">Processing Mode</Typography>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              flexWrap: "wrap",
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                fontFamily: brand.fonts.body,
+                fontWeight: 600,
+                color: "text.primary",
+              }}
+            >
+              Processing Mode
+            </Typography>
             <Chip
               label={PROCESSING_MODES[value].label}
               size="small"
               sx={{
-                bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                color: "secondary.main",
-                fontSize: "0.8rem",
+                bgcolor: alpha(theme.palette.primary.main, 0.15),
+                color: "primary.main",
+                fontSize: "0.75rem",
                 height: 20,
-                fontWeight: 500,
+                fontWeight: 600,
+                fontFamily: brand.fonts.body,
+                border: 1,
+                borderColor: alpha(theme.palette.primary.main, 0.3),
               }}
             />
             <Typography variant="body2" color="text.secondary">
@@ -417,11 +463,14 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
               label={aspectRatio}
               size="small"
               sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                bgcolor: alpha(theme.palette.primary.main, 0.15),
                 color: "primary.main",
-                fontSize: "0.8rem",
+                fontSize: "0.75rem",
                 height: 20,
-                fontWeight: 500,
+                fontWeight: 600,
+                fontFamily: brand.fonts.body,
+                border: 1,
+                borderColor: alpha(theme.palette.primary.main, 0.3),
               }}
             />
             <Typography variant="body2" color="text.secondary">
@@ -431,11 +480,14 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
               label={`AI: ${modelTiers.image}/${modelTiers.audio}/${modelTiers.video}`}
               size="small"
               sx={{
-                bgcolor: alpha(theme.palette.warning.main, 0.2),
+                bgcolor: alpha(theme.palette.warning.main, 0.15),
                 color: "warning.main",
-                fontSize: "0.8rem",
+                fontSize: "0.75rem",
                 height: 20,
-                fontWeight: 500,
+                fontWeight: 600,
+                fontFamily: brand.fonts.body,
+                border: 1,
+                borderColor: alpha(theme.palette.warning.main, 0.3),
               }}
             />
           </Box>
@@ -443,7 +495,7 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Tooltip title="Select processing mode, aspect ratio, and AI model tiers">
               <InfoOutlinedIcon
-                fontSize="medium"
+                fontSize="small"
                 sx={{
                   color: "text.secondary",
                   cursor: "help",
@@ -453,14 +505,18 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
               />
             </Tooltip>
             <IconButton
-              size="medium"
+              size="small"
               sx={{
-                color: "secondary.main",
+                color: "primary.main",
+                transition: theme.transitions.create(
+                  ["background-color", "color"],
+                  {
+                    duration: theme.transitions.duration.short,
+                  }
+                ),
                 "&:hover": {
-                  backgroundColor: alpha(theme.palette.secondary.main, 0.08),
-                  color: "secondary.dark",
+                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
                 },
-                transition: "all 0.2s ease",
               }}
             >
               <ChevronDown
@@ -479,7 +535,15 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
           <Box sx={{ px: 2, py: 2 }}>
             {/* Processing Mode Section */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  mb: 1,
+                  fontWeight: 600,
+                  fontFamily: brand.fonts.heading,
+                  color: "text.primary",
+                }}
+              >
                 Processing Mode
               </Typography>
 
@@ -492,8 +556,24 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                   px: 1,
                 }}
               >
-                <Typography variant="caption">Quick</Typography>
-                <Typography variant="caption">Detailed</Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontFamily: brand.fonts.body,
+                    color: "text.secondary",
+                  }}
+                >
+                  Quick
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontFamily: brand.fonts.body,
+                    color: "text.secondary",
+                  }}
+                >
+                  Detailed
+                </Typography>
               </Box>
 
               {/* Enhanced Slider */}
@@ -510,7 +590,7 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                   { value: 3, label: "" },
                 ]}
                 sx={{
-                  color: "secondary.main",
+                  color: "primary.main",
                   height: 8,
                   "& .MuiSlider-track": {
                     border: "none",
@@ -518,40 +598,58 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                   },
                   "& .MuiSlider-rail": {
                     height: 8,
-                    opacity: 0.5,
-                    backgroundColor: "#333333",
+                    opacity: 0.3,
+                    backgroundColor:
+                      theme.palette.mode === "light"
+                        ? "rgba(0, 0, 0, 0.15)"
+                        : "rgba(255, 255, 255, 0.15)",
                   },
                   "& .MuiSlider-thumb": {
                     height: 18,
                     width: 18,
-                    border: "2px solid white",
-                    backgroundColor: "secondary.main",
+                    border: 2,
+                    borderColor: "background.paper",
+                    backgroundColor: "primary.main",
+                    transition: theme.transitions.create(["box-shadow"], {
+                      duration: theme.transitions.duration.short,
+                    }),
                     "&:focus, &:hover, &.Mui-active, &.Mui-focusVisible": {
-                      boxShadow: "inherit",
+                      boxShadow: `0 0 0 8px ${alpha(theme.palette.primary.main, 0.16)}`,
                     },
                   },
                   "& .MuiSlider-mark": {
-                    backgroundColor: "secondary.main",
+                    backgroundColor: "primary.main",
                     height: 8,
                     width: 8,
                     borderRadius: "50%",
                     marginTop: 0,
                   },
-                  '&[aria-valuetext="3"]': {
-                    opacity: userPlanLevel < PlanLevel.PREMIUM ? 0.5 : 1,
-                  },
                 }}
               />
 
               {/* Mode Description */}
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "text.secondary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
                 {PROCESSING_MODES[value].description}
               </Typography>
             </Box>
 
             {/* Aspect Ratio Section */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  mb: 1,
+                  fontWeight: 600,
+                  fontFamily: brand.fonts.heading,
+                  color: "text.primary",
+                }}
+              >
                 Aspect Ratio
               </Typography>
 
@@ -568,32 +666,51 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                     py: 1,
                     border: 1,
                     borderColor: "divider",
+                    fontFamily: brand.fonts.body,
+                    transition: theme.transitions.create(
+                      ["background-color", "border-color", "color"],
+                      {
+                        duration: theme.transitions.duration.short,
+                      }
+                    ),
                     "&.Mui-selected": {
-                      bgcolor: alpha(theme.palette.secondary.main, 0.7),
-                      color: "secondary.contrastText",
-                      borderColor: "secondary.main",
+                      bgcolor: "primary.main",
+                      color: "primary.contrastText",
+                      borderColor: "primary.main",
                       "&:hover": {
-                        bgcolor: "secondary.main",
+                        bgcolor: "primary.dark",
                       },
                     },
-                    "&:not(.Mui-selected):hover": {
-                      bgcolor: alpha(theme.palette.action.hover, 0.1),
+                    "&:not(.Mui-selected)": {
+                      color: "text.primary",
+                      "&:hover": {
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        borderColor: "primary.main",
+                      },
                     },
                   },
                 }}
               >
                 <ToggleButton value="16:9" aria-label="16:9 landscape">
                   <Box sx={{ textAlign: "center" }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        fontFamily: brand.fonts.body,
+                      }}
+                    >
                       16:9
                     </Typography>
                     <Typography
                       variant="caption"
-                      color={
-                        aspectRatio === "16:9"
-                          ? "secondary.contrastText"
-                          : "text.secondary"
-                      }
+                      sx={{
+                        color:
+                          aspectRatio === "16:9"
+                            ? "primary.contrastText"
+                            : "text.secondary",
+                        fontFamily: brand.fonts.body,
+                      }}
                     >
                       Landscape
                     </Typography>
@@ -601,16 +718,24 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                 </ToggleButton>
                 <ToggleButton value="9:16" aria-label="9:16 portrait">
                   <Box sx={{ textAlign: "center" }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        fontFamily: brand.fonts.body,
+                      }}
+                    >
                       9:16
                     </Typography>
                     <Typography
                       variant="caption"
-                      color={
-                        aspectRatio === "9:16"
-                          ? "secondary.contrastText"
-                          : "text.secondary"
-                      }
+                      sx={{
+                        color:
+                          aspectRatio === "9:16"
+                            ? "primary.contrastText"
+                            : "text.secondary",
+                        fontFamily: brand.fonts.body,
+                      }}
                     >
                       Portrait
                     </Typography>
@@ -621,8 +746,12 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
               {/* Aspect Ratio Description */}
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ mt: 0.5, display: "block" }}
+                sx={{
+                  mt: 0.5,
+                  display: "block",
+                  color: "text.secondary",
+                  fontFamily: brand.fonts.body,
+                }}
               >
                 {ASPECT_RATIO_OPTIONS[aspectRatio].description}
               </Typography>
@@ -632,7 +761,15 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
 
             {/* Model Tier Selection Section */}
             <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  mb: 2,
+                  fontWeight: 600,
+                  fontFamily: brand.fonts.heading,
+                  color: "text.primary",
+                }}
+              >
                 AI Model Quality Tiers
               </Typography>
 
@@ -641,7 +778,12 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Typography
                     variant="body2"
-                    sx={{ minWidth: 80, fontWeight: 500 }}
+                    sx={{
+                      minWidth: 80,
+                      fontWeight: 500,
+                      fontFamily: brand.fonts.body,
+                      color: "text.primary",
+                    }}
                   >
                     Images:
                   </Typography>
@@ -658,7 +800,12 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Typography
                     variant="body2"
-                    sx={{ minWidth: 80, fontWeight: 500 }}
+                    sx={{
+                      minWidth: 80,
+                      fontWeight: 500,
+                      fontFamily: brand.fonts.body,
+                      color: "text.primary",
+                    }}
                   >
                     Audio:
                   </Typography>
@@ -675,7 +822,12 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Typography
                     variant="body2"
-                    sx={{ minWidth: 80, fontWeight: 500 }}
+                    sx={{
+                      minWidth: 80,
+                      fontWeight: 500,
+                      fontFamily: brand.fonts.body,
+                      color: "text.primary",
+                    }}
                   >
                     Video:
                   </Typography>
@@ -691,8 +843,12 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
 
               <Typography
                 variant="caption"
-                color="text.secondary"
-                sx={{ mt: 1, display: "block" }}
+                sx={{
+                  mt: 1,
+                  display: "block",
+                  color: "text.secondary",
+                  fontFamily: brand.fonts.body,
+                }}
               >
                 Higher tiers provide better quality but use more credits.
                 Disabled options will use minimal resources.
@@ -703,7 +859,15 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
 
             {/* Processing Options Section */}
             <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  mb: 1,
+                  fontWeight: 600,
+                  fontFamily: brand.fonts.heading,
+                  color: "text.primary",
+                }}
+              >
                 Processing Options
               </Typography>
 
@@ -715,17 +879,31 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                       onChange={handleGenerateImagesChange}
                       size="small"
                       sx={{
-                        color: "secondary.main",
+                        color: "primary.main",
                         "&.Mui-checked": {
-                          color: "secondary.main",
+                          color: "primary.main",
                         },
                       }}
                     />
                   }
                   label={
                     <Box>
-                      <Typography variant="body2">Generate Images</Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontFamily: brand.fonts.body,
+                          color: "text.primary",
+                        }}
+                      >
+                        Generate Images
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontFamily: brand.fonts.body,
+                        }}
+                      >
                         {generateImages
                           ? "Will generate images for scenes"
                           : "Will pause before scene processing"}
@@ -741,17 +919,31 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                       onChange={handleGenerateAudioChange}
                       size="small"
                       sx={{
-                        color: "secondary.main",
+                        color: "primary.main",
                         "&.Mui-checked": {
-                          color: "secondary.main",
+                          color: "primary.main",
                         },
                       }}
                     />
                   }
                   label={
                     <Box>
-                      <Typography variant="body2">Generate Audio</Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontFamily: brand.fonts.body,
+                          color: "text.primary",
+                        }}
+                      >
+                        Generate Audio
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontFamily: brand.fonts.body,
+                        }}
+                      >
                         {generateAudio
                           ? "Will generate audio for video"
                           : "Will pause before audio processing"}
@@ -767,17 +959,31 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
                       onChange={handleGenerateVideoChange}
                       size="small"
                       sx={{
-                        color: "secondary.main",
+                        color: "primary.main",
                         "&.Mui-checked": {
-                          color: "secondary.main",
+                          color: "primary.main",
                         },
                       }}
                     />
                   }
                   label={
                     <Box>
-                      <Typography variant="body2">Generate Video</Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontFamily: brand.fonts.body,
+                          color: "text.primary",
+                        }}
+                      >
+                        Generate Video
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontFamily: brand.fonts.body,
+                        }}
+                      >
                         {generateVideo
                           ? "Will generate video content"
                           : "Will pause before video processing"}
@@ -790,9 +996,32 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
 
             {/* Restrictions */}
             {userPlanLevel < PROCESSING_MODES[3].minPlan && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <LockIcon sx={{ fontSize: 16, color: "warning.main" }} />
-                <Typography variant="caption" color="text.secondary">
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  p: 1,
+                  borderRadius: `${brand.borderRadius}px`,
+                  bgcolor: alpha(theme.palette.warning.main, 0.1),
+                  border: 1,
+                  borderColor: alpha(theme.palette.warning.main, 0.3),
+                }}
+              >
+                <LockIcon
+                  sx={{
+                    fontSize: 16,
+                    color: "warning.main",
+                  }}
+                />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "warning.main",
+                    fontFamily: brand.fonts.body,
+                    fontWeight: 500,
+                  }}
+                >
                   Detailed mode requires Premium plan
                 </Typography>
               </Box>
@@ -803,5 +1032,7 @@ const ProcessingModeSelector: React.FC<ProcessingModeSelectorProps> = ({
     </Box>
   );
 };
+
+ProcessingModeSelector.displayName = "ProcessingModeSelector";
 
 export default ProcessingModeSelector;

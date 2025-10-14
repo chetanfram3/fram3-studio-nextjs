@@ -76,7 +76,7 @@ export function useNavigationItems() {
       },
       {
         label: "Script Analysis",
-        path: "/dashboard/script-analysis",
+        path: "/ai-script-analysis",
         Icon: BarChart,
       },
       {
@@ -86,17 +86,17 @@ export function useNavigationItems() {
       },
       {
         label: "Script Generator",
-        path: "/dashboard/ai-script",
+        path: "/ai-script-generator",
         Icon: Sparkles,
       },
       {
         label: "Script Editor",
-        path: "/dashboard/editor",
+        path: "/script-editor",
         Icon: EditIcon,
       },
       {
         label: "Shoot Locations",
-        path: "/dashboard/shoot-locations",
+        path: "/shoot-locations",
         Icon: MapPin,
       },
       {
