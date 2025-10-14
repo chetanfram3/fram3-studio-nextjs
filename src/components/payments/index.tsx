@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from "react";
 import {
   Container,
   Alert,
@@ -21,7 +21,7 @@ import {
   Slide,
   Card,
   CardContent,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Refresh,
   ShoppingCart,
@@ -29,9 +29,9 @@ import {
   CheckCircle,
   ArrowBack,
   ArrowForward,
-} from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+} from "@mui/icons-material";
+import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
   getPaymentConfig,
   createOrder,
@@ -43,22 +43,26 @@ import {
   type VerifyPaymentParams,
   type EnhancedOrderData,
   type TaxDetails,
-} from '@/services/payments';
+} from "@/services/payments";
 
 // Component imports
-import { PopularPackagesGrid } from './PopularPackagesGrid';
-import { CustomPackageSection } from './CustomPackageSection';
-import { PurchaseSummary } from './PurchaseSummary';
-import { SuccessErrorDialogs } from './SuccessErrorDialogs';
-import { MissingProfileDataCollection } from './MissingProfileDataCollection';
-import { calculateCustomPrice } from '@/utils/pricingUtils';
+import { PopularPackagesGrid } from "./PopularPackagesGrid";
+import { CustomPackageSection } from "./CustomPackageSection";
+import { PurchaseSummary } from "./PurchaseSummary";
+import { SuccessErrorDialogs } from "./SuccessErrorDialogs";
+import { MissingProfileDataCollection } from "./MissingProfileDataCollection";
+import { calculateCustomPrice } from "@/utils/pricingUtils";
+import { LoadingAnimation } from "@/components/common/LoadingAnimation";
 
 // Profile imports
-import { ProfileTaxService } from '@/services/profileTaxService';
-import { useProfileQuery, useUpdateProfileMutation } from '@/hooks/useProfileQuery';
-import CustomToast from '@/components/common/CustomToast';
-import { getCurrentBrand } from '@/config/brandConfig';
-import { UserProfile } from '@/types/profile';
+import { ProfileTaxService } from "@/services/profileTaxService";
+import {
+  useProfileQuery,
+  useUpdateProfileMutation,
+} from "@/hooks/useProfileQuery";
+import CustomToast from "@/components/common/CustomToast";
+import { getCurrentBrand } from "@/config/brandConfig";
+import { UserProfile } from "@/types/profile";
 
 // Modern styled components matching Cr3ditSys design
 const ModernCard = styled(Card)(({ theme }) => {
@@ -67,41 +71,41 @@ const ModernCard = styled(Card)(({ theme }) => {
     borderRadius: `${brand.borderRadius}px`,
     border: `1px solid ${theme.palette.divider}`,
     background: theme.palette.background.default,
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-    transition: 'all 0.2s ease',
-    '&:hover': {
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-      transform: 'translateY(-1px)',
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+    transition: "all 0.2s ease",
+    "&:hover": {
+      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      transform: "translateY(-1px)",
     },
   };
 });
 
 const ModernButton = styled(Button, {
-  shouldForwardProp: (prop) => prop !== 'buttonVariant',
+  shouldForwardProp: (prop) => prop !== "buttonVariant",
 })<{
-  buttonVariant?: 'back' | 'next' | 'pay';
-}>(({ theme, buttonVariant = 'next' }) => {
+  buttonVariant?: "back" | "next" | "pay";
+}>(({ theme, buttonVariant = "next" }) => {
   const brand = getCurrentBrand();
-  
+
   const getButtonStyles = () => {
     switch (buttonVariant) {
-      case 'back':
+      case "back":
         return {
-          background: 'transparent',
+          background: "transparent",
           border: `1px solid ${theme.palette.divider}`,
           color: theme.palette.text.primary,
-          '&:hover': {
+          "&:hover": {
             background: theme.palette.primary.main,
             color: theme.palette.primary.contrastText,
             borderColor: theme.palette.primary.main,
           },
         };
-      case 'pay':
+      case "pay":
         return {
           background: theme.palette.primary.main,
           color: theme.palette.primary.contrastText,
-          border: 'none',
-          '&:hover': {
+          border: "none",
+          "&:hover": {
             background: theme.palette.primary.dark,
           },
         };
@@ -109,8 +113,8 @@ const ModernButton = styled(Button, {
         return {
           background: theme.palette.primary.main,
           color: theme.palette.primary.contrastText,
-          border: 'none',
-          '&:hover': {
+          border: "none",
+          "&:hover": {
             background: theme.palette.primary.dark,
           },
         };
@@ -119,45 +123,17 @@ const ModernButton = styled(Button, {
 
   return {
     borderRadius: `${brand.borderRadius}px`,
-    textTransform: 'none',
+    textTransform: "none",
     fontWeight: 600,
     fontFamily: brand.fonts.body,
-    padding: '10px 20px',
+    padding: "10px 20px",
     minWidth: 120,
-    transition: 'all 0.2s ease',
-    '&:disabled': {
+    transition: "all 0.2s ease",
+    "&:disabled": {
       opacity: 0.6,
       background: theme.palette.action.disabledBackground,
     },
     ...getButtonStyles(),
-  };
-});
-
-const LoadingContainer = styled(Box)(({ theme }) => {
-  const brand = getCurrentBrand();
-  return {
-    background: theme.palette.background.default,
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: `${brand.borderRadius}px`,
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-    padding: theme.spacing(6),
-    textAlign: 'center',
-    maxWidth: 400,
-    margin: '0 auto',
-  };
-});
-
-const GradientAvatar = styled(Avatar, {
-  shouldForwardProp: (prop) => prop !== 'gradient',
-})<{ gradient: string }>(({ gradient }) => {
-  const brand = getCurrentBrand();
-  return {
-    background: gradient,
-    borderRadius: `${brand.borderRadius}px`,
-    width: 64,
-    height: 64,
-    margin: '0 auto 16px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
   };
 });
 
@@ -176,18 +152,18 @@ interface RazorpayResponse {
 
 const steps = [
   {
-    label: 'Choose Package',
-    description: 'Select a credit package or customize your amount',
+    label: "Choose Package",
+    description: "Select a credit package or customize your amount",
     icon: ShoppingCart,
   },
   {
-    label: 'Review & Pay',
-    description: 'Review your order and complete payment',
+    label: "Review & Pay",
+    description: "Review your order and complete payment",
     icon: Payment,
   },
   {
-    label: 'Complete',
-    description: 'Payment successful, credits added',
+    label: "Complete",
+    description: "Payment successful, credits added",
     icon: CheckCircle,
   },
 ];
@@ -225,15 +201,17 @@ export default function CreditLoadingPage() {
   const [config, setConfig] = useState<any>(null);
   const [balance, setBalance] = useState<any>(null);
   const [popularPackages, setPopularPackages] = useState<Package[]>([]);
-  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(
+    null
+  );
   const [customCredits, setCustomCredits] = useState<number>(1000);
   const [customAmount, setCustomAmount] = useState<number>(90);
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<
-    'idle' | 'processing' | 'success' | 'error'
-  >('idle');
+    "idle" | "processing" | "success" | "error"
+  >("idle");
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isValidPackage, setIsValidPackage] = useState<boolean>(false);
@@ -243,7 +221,7 @@ export default function CreditLoadingPage() {
 
   // Pre-select package from URL
   useEffect(() => {
-    const packageParam = searchParams?.get('package');
+    const packageParam = searchParams?.get("package");
     if (packageParam && popularPackages.length > 0) {
       const packageExists = popularPackages.find(
         (pkg) => pkg.id === packageParam
@@ -252,7 +230,7 @@ export default function CreditLoadingPage() {
         setSelectedPackageId(packageParam);
         setIsCustomMode(false);
         setActiveStep(1);
-        console.log('✅ Pre-selected package from URL:', packageParam);
+        console.log("✅ Pre-selected package from URL:", packageParam);
       }
     }
   }, [searchParams, popularPackages]);
@@ -295,8 +273,8 @@ export default function CreditLoadingPage() {
 
         setPopularPackages(packages);
       } catch (err: any) {
-        console.error('Load error:', err);
-        setError(err.message || 'Failed to load');
+        console.error("Load error:", err);
+        setError(err.message || "Failed to load");
       } finally {
         setLoading(false);
       }
@@ -317,7 +295,7 @@ export default function CreditLoadingPage() {
   // Handle profile completion
   const handleProfileCompletion = () => {
     setShowProfileCompletion(false);
-    CustomToast.success('Profile updated! Tax calculation is now accurate.');
+    CustomToast.success("Profile updated! Tax calculation is now accurate.");
   };
 
   // Validate package whenever relevant state changes
@@ -340,7 +318,7 @@ export default function CreditLoadingPage() {
       );
       if (!selectedPkg) {
         setIsValidPackage(false);
-        setValidationErrors(['No package selected']);
+        setValidationErrors(["No package selected"]);
         return;
       }
       credits = selectedPkg.credits;
@@ -349,7 +327,7 @@ export default function CreditLoadingPage() {
 
     if (!credits || !baseAmount) {
       setIsValidPackage(false);
-      setValidationErrors(['Invalid credits or base amount']);
+      setValidationErrors(["Invalid credits or base amount"]);
       return;
     }
 
@@ -411,7 +389,7 @@ export default function CreditLoadingPage() {
 
       const result = await verifyPayment(verifyParams);
 
-      setPaymentStatus('success');
+      setPaymentStatus("success");
       setPaymentResult(result.data);
       setActiveStep(2);
 
@@ -419,7 +397,7 @@ export default function CreditLoadingPage() {
       const newBalance = await getCreditBalance();
       setBalance(newBalance.data);
     } catch (err: any) {
-      setPaymentStatus('error');
+      setPaymentStatus("error");
       setError(err.message);
     }
   };
@@ -429,7 +407,7 @@ export default function CreditLoadingPage() {
     try {
       if (!isValidPackage) return;
 
-      setPaymentStatus('processing');
+      setPaymentStatus("processing");
       setError(null);
 
       let credits: number;
@@ -448,8 +426,8 @@ export default function CreditLoadingPage() {
           (pkg) => pkg.id === selectedPackageId
         );
         if (!selectedPkg) {
-          setPaymentStatus('error');
-          setError('No package selected');
+          setPaymentStatus("error");
+          setError("No package selected");
           return;
         }
         credits = selectedPkg.credits;
@@ -474,9 +452,9 @@ export default function CreditLoadingPage() {
           baseAmount: taxCalculation.baseAmount,
           gstAmount: taxCalculation.gstAmount,
           totalAmount: taxCalculation.totalAmount,
-          taxType: taxCalculation.taxType as 'CGST+SGST' | 'IGST',
+          taxType: taxCalculation.taxType as "CGST+SGST" | "IGST",
           isInterState: taxCalculation.isInterState,
-          customerType: taxCalculation.customerType as 'B2B' | 'B2C',
+          customerType: taxCalculation.customerType as "B2B" | "B2C",
           breakdown: {
             cgst: taxCalculation.breakdown.cgst,
             sgst: taxCalculation.breakdown.sgst,
@@ -491,16 +469,16 @@ export default function CreditLoadingPage() {
           baseAmount: amount,
           gstAmount,
           totalAmount: finalAmount,
-          taxType: 'IGST' as const,
+          taxType: "IGST" as const,
           isInterState: true,
-          customerType: 'B2C' as const,
+          customerType: "B2C" as const,
           breakdown: { cgst: 0, sgst: 0, igst: gstAmount },
         };
       }
 
       const packageInfo: PackageInfo = {
         name: packageName,
-        type: isCustomMode ? 'custom' : 'popular',
+        type: isCustomMode ? "custom" : "popular",
         discount: discount,
         originalPrice: amount,
       };
@@ -513,23 +491,23 @@ export default function CreditLoadingPage() {
           ? {
               name:
                 userProfile.displayName ||
-                `${userProfile.extendedInfo?.details?.firstName || ''} ${
-                  userProfile.extendedInfo?.details?.lastName || ''
+                `${userProfile.extendedInfo?.details?.firstName || ""} ${
+                  userProfile.extendedInfo?.details?.lastName || ""
                 }`.trim(),
               email: userProfile.email,
-              phone: userProfile.phoneNumber || '',
-              gstin: userProfile.extendedInfo?.details?.gstin?.number || '',
+              phone: userProfile.phoneNumber || "",
+              gstin: userProfile.extendedInfo?.details?.gstin?.number || "",
               companyName:
-                userProfile.extendedInfo?.details?.gstin?.companyName || '',
+                userProfile.extendedInfo?.details?.gstin?.companyName || "",
               address: {
                 street:
-                  userProfile.extendedInfo?.details?.address?.street || '',
-                city: userProfile.extendedInfo?.details?.address?.city || '',
-                state: userProfile.extendedInfo?.details?.address?.state || '',
+                  userProfile.extendedInfo?.details?.address?.street || "",
+                city: userProfile.extendedInfo?.details?.address?.city || "",
+                state: userProfile.extendedInfo?.details?.address?.state || "",
                 postalCode:
-                  userProfile.extendedInfo?.details?.address?.postalCode || '',
+                  userProfile.extendedInfo?.details?.address?.postalCode || "",
                 country:
-                  userProfile.extendedInfo?.details?.address?.country || 'IN',
+                  userProfile.extendedInfo?.details?.address?.country || "IN",
               },
             }
           : undefined,
@@ -542,14 +520,14 @@ export default function CreditLoadingPage() {
         key: orderResponse.data.key_id,
         amount: orderResponse.data.amount,
         currency: orderResponse.data.currency,
-        name: 'FRAM3 Studio',
+        name: "FRAM3 Studio",
         description: `${formatCredits(credits)} Credits`,
         order_id: orderResponse.data.orderId,
         handler: handlePaymentSuccess,
         prefill: {
-          email: userProfile?.email || 'user@example.com',
-          contact: userProfile?.phoneNumber || '+919999999999',
-          name: userProfile?.displayName || 'Customer',
+          email: userProfile?.email || "user@example.com",
+          contact: userProfile?.phoneNumber || "+919999999999",
+          name: userProfile?.displayName || "Customer",
         },
         theme: {
           color: theme.palette.primary.main,
@@ -558,8 +536,8 @@ export default function CreditLoadingPage() {
           backdropclose: false,
           escape: false,
           ondismiss: () => {
-            setPaymentStatus('error');
-            setError('Payment was cancelled');
+            setPaymentStatus("error");
+            setError("Payment was cancelled");
           },
         },
       };
@@ -567,20 +545,20 @@ export default function CreditLoadingPage() {
       const rzp = new window.Razorpay(razorpayOptions);
       rzp.open();
     } catch (err: any) {
-      setPaymentStatus('error');
+      setPaymentStatus("error");
       setError(err.message);
-      console.error('❌ Payment error:', err);
+      console.error("❌ Payment error:", err);
     }
   };
 
   const handleRetry = () => {
-    setPaymentStatus('idle');
+    setPaymentStatus("idle");
     setError(null);
     setPaymentResult(null);
   };
 
   const handleComplete = () => {
-    router.push('/dashboard/billing');
+    router.push("/dashboard/billing");
   };
 
   // Handle profile updates using TanStack Query mutation
@@ -589,8 +567,8 @@ export default function CreditLoadingPage() {
       await updateProfileMutation.mutateAsync(updates);
       return Promise.resolve();
     } catch (error) {
-      console.error('❌ Failed to update profile:', error);
-      CustomToast.error('Failed to update profile. Please try again.');
+      console.error("❌ Failed to update profile:", error);
+      CustomToast.error("Failed to update profile. Please try again.");
       return Promise.reject(error);
     }
   };
@@ -604,7 +582,7 @@ export default function CreditLoadingPage() {
       );
       return {
         credits: customCredits,
-        name: 'Custom Package',
+        name: "Custom Package",
         price: customAmount,
         discount: pricing.discountPercent,
         savings: pricing.savings,
@@ -641,38 +619,14 @@ export default function CreditLoadingPage() {
 
   // Loading state
   if (loading || profileLoading) {
-    return (
-      <Container maxWidth="xl" sx={{ py: 6 }}>
-        <LoadingContainer>
-          <GradientAvatar
-            gradient={`linear-gradient(135deg, ${theme.palette.info.main} 0%, ${theme.palette.info.dark} 100%)`}
-          >
-            <CircularProgress size={32} sx={{ color: 'white' }} />
-          </GradientAvatar>
-          <Typography
-            variant="h6"
-            fontWeight="bold"
-            sx={{ mb: 1, fontFamily: brand.fonts.heading }}
-          >
-            Loading Payment Options
-          </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ fontFamily: brand.fonts.body }}
-          >
-            Preparing your credit packages...
-          </Typography>
-        </LoadingContainer>
-      </Container>
-    );
+    return <LoadingAnimation message="Loading your payment options..." />;
   }
 
   // Error state
   if (error && !config) {
     return (
       <Container maxWidth="xl" sx={{ py: 6 }}>
-        <ModernCard sx={{ textAlign: 'center', p: 4 }}>
+        <ModernCard sx={{ textAlign: "center", p: 4 }}>
           <Alert
             severity="error"
             sx={{ mb: 3, borderRadius: `${brand.borderRadius}px` }}
@@ -718,9 +672,9 @@ export default function CreditLoadingPage() {
                       <CardContent sx={{ p: 4 }}>
                         <Box
                           sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
                             mb: 3,
                           }}
                         >
@@ -766,9 +720,9 @@ export default function CreditLoadingPage() {
                           <CardContent sx={{ p: 4 }}>
                             <Box
                               sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
                                 mb: 3,
                               }}
                             >
@@ -791,13 +745,13 @@ export default function CreditLoadingPage() {
 
                             <Box
                               sx={{
-                                display: 'flex',
-                                justifyContent: 'flex-start',
-                                alignItems: 'flex-start',
-                                width: '100%',
+                                display: "flex",
+                                justifyContent: "flex-start",
+                                alignItems: "flex-start",
+                                width: "100%",
                               }}
                             >
-                              <Box sx={{ width: '100%', maxWidth: '400px' }}>
+                              <Box sx={{ width: "100%", maxWidth: "400px" }}>
                                 <PopularPackagesGrid
                                   packages={[
                                     { ...selectedPackage, originalIndex },
@@ -814,7 +768,7 @@ export default function CreditLoadingPage() {
                         </ModernCard>
                       ) : (
                         <ModernCard>
-                          <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                          <CardContent sx={{ p: 4, textAlign: "center" }}>
                             <Typography
                               variant="body1"
                               color="text.secondary"
@@ -859,9 +813,9 @@ export default function CreditLoadingPage() {
           component="h1"
           gutterBottom
           sx={{
-            fontWeight: 'bold',
+            fontWeight: "bold",
             fontFamily: brand.fonts.heading,
-            color: 'text.primary',
+            color: "text.primary",
             mb: 1,
           }}
         >
@@ -888,7 +842,7 @@ export default function CreditLoadingPage() {
       )}
 
       {/* Error Display */}
-      {error && config && paymentStatus !== 'processing' && (
+      {error && config && paymentStatus !== "processing" && (
         <Alert
           severity="error"
           sx={{ mb: 4, borderRadius: `${brand.borderRadius}px` }}
@@ -909,15 +863,15 @@ export default function CreditLoadingPage() {
             activeStep={activeStep}
             orientation="horizontal"
             sx={{
-              '& .MuiStepLabel-label.Mui-active': {
+              "& .MuiStepLabel-label.Mui-active": {
                 color: theme.palette.primary.main,
                 fontWeight: 600,
                 fontFamily: brand.fonts.body,
               },
-              '& .MuiStepIcon-root.Mui-active': {
+              "& .MuiStepIcon-root.Mui-active": {
                 color: theme.palette.primary.main,
               },
-              '& .MuiStepIcon-root.Mui-completed': {
+              "& .MuiStepIcon-root.Mui-completed": {
                 color: theme.palette.primary.main,
               },
             }}
@@ -952,7 +906,7 @@ export default function CreditLoadingPage() {
 
       {/* Step Navigation - Only show for step 0 */}
       {activeStep === 0 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
           <ModernButton
             buttonVariant="next"
             onClick={handleNext}
@@ -971,10 +925,10 @@ export default function CreditLoadingPage() {
         onComplete={handleComplete}
         error={error}
         onRetry={handleRetry}
-        onNavigateToBilling={() => router.push('/dashboard/billing')}
+        onNavigateToBilling={() => router.push("/dashboard/billing")}
       />
     </Container>
   );
 }
 
-CreditLoadingPage.displayName = 'CreditLoadingPage';
+CreditLoadingPage.displayName = "CreditLoadingPage";
