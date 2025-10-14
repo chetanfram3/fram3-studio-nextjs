@@ -140,7 +140,7 @@ export default function StoryPage() {
         <React.Suspense
           fallback={<LoadingAnimation message="Loading analysis status..." />}
         >
-          <Status scriptInfo={scriptInfo} refetch={refetch} />,
+          <Status scriptInfo={scriptInfo} refetch={refetch} />
         </React.Suspense>
       ),
     },
