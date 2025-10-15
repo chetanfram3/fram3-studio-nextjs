@@ -6,6 +6,7 @@ import { getCurrentBrand } from "@/config/brandConfig";
 import { useScriptAnalysis } from "@/hooks/scripts/useScriptAnalysis";
 import ModerationChart from "./ModerationChart";
 import CategoryChips from "./CategoryChips";
+import type { ModerationCategory, Category } from "@/types/analysis";
 
 /**
  * ScriptAnalysis - Displays moderation and category analysis for a script
@@ -27,6 +28,30 @@ import CategoryChips from "./CategoryChips";
 interface ScriptAnalysisProps {
   scriptId: string;
   versionId: string;
+}
+
+// Type guard to check if data has moderationCategories
+function hasModerationCategories(
+  data: unknown
+): data is { moderationCategories: ModerationCategory[] } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "moderationCategories" in data &&
+    Array.isArray(
+      (data as { moderationCategories: unknown }).moderationCategories
+    )
+  );
+}
+
+// Type guard to check if data has categories
+function hasCategories(data: unknown): data is { categories: Category[] } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "categories" in data &&
+    Array.isArray((data as { categories: unknown }).categories)
+  );
 }
 
 export default function ScriptAnalysis({
@@ -60,17 +85,14 @@ export default function ScriptAnalysis({
     return <Alert severity="error">Failed to load analysis data</Alert>;
   }
 
-  // Access the data from the AnalysisItem
-  // The hook returns AnalysisItem which has a data property containing the actual analysis data
-  const moderationCategories =
-    moderationData?.data && "moderationCategories" in moderationData.data
-      ? moderationData.data.moderationCategories
-      : undefined;
+  // Access the data directly from the AnalysisItem using type guards
+  const moderationCategories = hasModerationCategories(moderationData)
+    ? moderationData.moderationCategories
+    : [];
 
-  const categories =
-    categoriesData?.data && "categories" in categoriesData.data
-      ? categoriesData.data.categories
-      : undefined;
+  const categories = hasCategories(categoriesData)
+    ? categoriesData.categories
+    : [];
 
   return (
     <>
@@ -97,7 +119,7 @@ export default function ScriptAnalysis({
         >
           Content Moderation Analysis
         </Typography>
-        {moderationCategories?.length && moderationCategories.length > 0 ? (
+        {moderationCategories.length > 0 ? (
           <ModerationChart moderationCategories={moderationCategories} />
         ) : (
           <Typography
@@ -123,7 +145,7 @@ export default function ScriptAnalysis({
           borderColor: "divider",
         }}
       >
-        {categories?.length && categories.length > 0 ? (
+        {categories.length > 0 ? (
           <CategoryChips categories={categories} />
         ) : (
           <Box>
