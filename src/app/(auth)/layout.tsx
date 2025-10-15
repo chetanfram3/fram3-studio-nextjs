@@ -1,26 +1,27 @@
+"use client";
+
 import { ReactNode } from 'react';
 import { Box } from '@mui/material';
-
-export const metadata = {
-  title: 'Authentication',
-  description: 'Sign in or create an account',
-};
+import AuthRedirect from '@/components/auth/AuthRedirect';
 
 /**
  * Auth Layout
- * Wrapper for all authentication pages
+ * Wrapper for all authentication pages (signin, signup, forgot-password, etc.)
+ * Automatically redirects authenticated users to dashboard
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        bgcolor: 'background.default',
-      }}
-    >
-      {children}
-    </Box>
+    <AuthRedirect redirectTo="/dashboard">
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: 'background.default',
+        }}
+      >
+        {children}
+      </Box>
+    </AuthRedirect>
   );
 }

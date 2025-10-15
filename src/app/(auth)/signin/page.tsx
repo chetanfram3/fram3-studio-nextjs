@@ -1,4 +1,3 @@
-import AuthRedirect from "@/components/auth/AuthRedirect";
 import SignInForm from "@/components/auth/SignInForm";
 
 /**
@@ -6,9 +5,5 @@ import SignInForm from "@/components/auth/SignInForm";
  * Public route - redirects to dashboard if already authenticated
  */
 export default function SignInPage() {
-  return (
-    <AuthRedirect redirectTo="/dashboard">
-      <SignInForm />
-    </AuthRedirect>
-  );
+  return <SignInForm />;
 }

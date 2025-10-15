@@ -11,6 +11,7 @@ import { useSubscription } from "@/hooks/auth/useSubscription";
 import { useAuthStore } from "@/store/authStore";
 import SecurityIcon from "@mui/icons-material/Security";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import ContainerWidthControl from "@/components/layout/ContainerWidthControl";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -133,7 +134,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             mt: 2,
           }}
         >
-          {children}
+          <ContainerWidthControl position="bottom-right">
+            {children}
+          </ContainerWidthControl>
         </Box>
 
         {/* Footer Warning */}
