@@ -52,6 +52,22 @@ export interface PrivacyPolicyAcceptance {
     timestamp: string;
 }
 
+
+/**
+ * Privacy Policy Acceptance
+ */
+export interface CopyrightPolicyAcceptance {
+    /** Whether user accepted the privacy policy */
+    accepted: boolean;
+
+    /** Version of privacy policy accepted */
+    version: string;
+
+    /** ISO datetime when privacy policy was accepted */
+    timestamp: string;
+}
+
+
 /**
  * Complete Consent Preferences
  * Stored in Firestore: users/{uid}/consents/current
@@ -68,6 +84,9 @@ export interface ConsentPreferences {
 
     /** Privacy policy acceptance */
     privacyPolicyAccepted?: PrivacyPolicyAcceptance;
+
+    /** Privacy policy acceptance */
+    copyrightPolicyAccepted?: CopyrightPolicyAcceptance;
 
     /** 🆕 NEW: Track if this is user's first login/consent acceptance */
     firstLogin?: boolean;
@@ -86,9 +105,9 @@ export interface ConsentUpdatePayload {
  * Optional: Track history of consent changes for audit trail
  */
 export interface ConsentHistoryEntry {
-    type: 'cookies' | 'terms' | 'privacy';
+    type: 'cookies' | 'terms' | 'privacy' | 'copyright';
     action: 'accepted' | 'rejected' | 'updated';
-    preferences: CookieConsent | TermsAcceptance | PrivacyPolicyAcceptance;
+    preferences: CookieConsent | TermsAcceptance | PrivacyPolicyAcceptance | CopyrightPolicyAcceptance;
     timestamp: string;
     version: string;
 }
