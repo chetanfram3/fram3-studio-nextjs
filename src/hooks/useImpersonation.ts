@@ -1,8 +1,9 @@
+// src/hooks/useImpersonation.ts
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
 import { auth } from '@/lib/firebase';
-import { signInWithCustomToken, onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
+import { signInWithCustomToken, getIdTokenResult } from 'firebase/auth';
 import { startImpersonation, stopImpersonation } from '@/services/auth/impersonationService';
 import { useAuth } from '@/hooks/auth/useAuth';
 import logger from '@/utils/logger';
@@ -11,9 +12,6 @@ import logger from '@/utils/logger';
 // TYPE DEFINITIONS
 // ===========================
 
-/**
- * Target user information returned from impersonation start
- */
 interface TargetUserInfo {
   uid: string;
   email: string;
@@ -21,37 +19,11 @@ interface TargetUserInfo {
   [key: string]: unknown;
 }
 
-/**
- * Return type for the useImpersonation hook
- */
 interface UseImpersonationReturn {
-  /**
-   * Whether currently impersonating another user
-   */
   isImpersonating: boolean;
-
-  /**
-   * UID of the original admin user (before impersonation)
-   */
   originalUser: string | null;
-
-  /**
-   * Current user (either original or impersonated)
-   */
   currentUser: ReturnType<typeof useAuth>['user'];
-
-  /**
-   * Start impersonating a target user
-   * @param targetUserId - UID of the user to impersonate
-   * @returns Promise resolving to target user information
-   * @throws Error if impersonation fails
-   */
   startImpersonatingUser: (targetUserId: string) => Promise<TargetUserInfo>;
-
-  /**
-   * Stop impersonating and return to original admin user
-   * @throws Error if stopping impersonation fails
-   */
   stopImpersonatingUser: () => Promise<void>;
 }
 
@@ -62,105 +34,68 @@ interface UseImpersonationReturn {
 /**
  * Hook for managing user impersonation (admin feature)
  * 
- * Allows admin users to impersonate other users for support purposes.
- * Automatically detects impersonation state from token claims and provides
- * functions to start/stop impersonation.
- * 
- * @returns Object with impersonation state and control functions
- * 
- * @example
- * ```tsx
- * function AdminPanel() {
- *   const { 
- *     isImpersonating, 
- *     originalUser,
- *     startImpersonatingUser, 
- *     stopImpersonatingUser 
- *   } = useImpersonation();
- * 
- *   const handleImpersonate = async (userId: string) => {
- *     try {
- *       const targetUser = await startImpersonatingUser(userId);
- *       console.log('Now impersonating:', targetUser.email);
- *     } catch (error) {
- *       console.error('Failed to impersonate user:', error);
- *     }
- *   };
- * 
- *   return (
- *     <div>
- *       {isImpersonating && (
- *         <Alert>
- *           Impersonating user. Original admin: {originalUser}
- *           <Button onClick={stopImpersonatingUser}>Stop</Button>
- *         </Alert>
- *       )}
- *     </div>
- *   );
- * }
- * ```
+ * ✅ FIXED: No longer creates redundant auth listeners
+ * ✅ Reads from existing auth state via useAuth()
+ * ✅ Only checks token claims when user changes
  */
 export function useImpersonation(): UseImpersonationReturn {
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [originalUser, setOriginalUser] = useState<string | null>(null);
+
+  // ✅ Read from existing auth state (no new listener!)
   const { user } = useAuth();
 
-  // ==========================================
-  // EFFECT: MONITOR AUTH STATE FOR IMPERSONATION
-  // ==========================================
+  // ===========================
+  // EFFECT: CHECK IMPERSONATION STATUS
+  // ===========================
 
   /**
-   * Listen for auth state changes and check token claims
-   * to detect if currently impersonating
+   * Check token claims when user changes
+   * ✅ No onAuthStateChanged - just check when user prop updates
    */
   useEffect(() => {
-    logger.debug('Setting up impersonation state listener');
-
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        try {
-          // Force refresh token to get latest claims
-          const tokenResult = await getIdTokenResult(currentUser, true);
-          const isCurrentlyImpersonating = !!tokenResult.claims.impersonatedBy;
-
-          setIsImpersonating(isCurrentlyImpersonating);
-
-          if (isCurrentlyImpersonating) {
-            const impersonatorId = tokenResult.claims.impersonatedBy as string;
-            setOriginalUser(impersonatorId);
-
-            logger.info('Impersonation detected', {
-              impersonatorId,
-              targetUserId: currentUser.uid,
-              targetEmail: currentUser.email
-            });
-          } else {
-            setOriginalUser(null);
-            logger.debug('No impersonation detected');
-          }
-        } catch (error) {
-          logger.error('Error checking impersonation status:', error);
-          setIsImpersonating(false);
-          setOriginalUser(null);
-        }
-      } else {
+    const checkImpersonationStatus = async () => {
+      if (!user) {
         // User signed out
         logger.debug('User signed out, clearing impersonation state');
         setIsImpersonating(false);
         setOriginalUser(null);
+        return;
       }
-    });
 
-    // Cleanup listener on unmount
-    return () => {
-      logger.debug('Cleaning up impersonation state listener');
-      unsubscribe();
+      try {
+        // Get token claims (no force refresh needed - already fresh from AuthInitializer)
+        const tokenResult = await getIdTokenResult(user, false);
+        const isCurrentlyImpersonating = !!tokenResult.claims.impersonatedBy;
+
+        setIsImpersonating(isCurrentlyImpersonating);
+
+        if (isCurrentlyImpersonating) {
+          const impersonatorId = tokenResult.claims.impersonatedBy as string;
+          setOriginalUser(impersonatorId);
+
+          logger.info('Impersonation detected', {
+            impersonatorId,
+            targetUserId: user.uid,
+            targetEmail: user.email
+          });
+        } else {
+          setOriginalUser(null);
+          logger.debug('No impersonation detected');
+        }
+      } catch (error) {
+        logger.error('Error checking impersonation status:', error);
+        setIsImpersonating(false);
+        setOriginalUser(null);
+      }
     };
-  }, []);
 
-  // ==========================================
+    checkImpersonationStatus();
+  }, [user]); // ✅ Only depends on user from useAuth
+
+  // ===========================
   // IMPERSONATION CONTROL FUNCTIONS
-  // ==========================================
+  // ===========================
 
   /**
    * Start impersonating a target user
@@ -179,6 +114,7 @@ export function useImpersonation(): UseImpersonationReturn {
       logger.debug('Impersonation token received, signing in as target user');
 
       // Sign in with the impersonation token
+      // This will trigger AuthInitializer's listener (the only listener we need)
       await signInWithCustomToken(auth, response.token);
 
       // Update state
@@ -189,18 +125,12 @@ export function useImpersonation(): UseImpersonationReturn {
         targetEmail: response.targetUser.email
       });
 
-      // Return the target user data directly (it already matches TargetUserInfo type)
       return response.targetUser as TargetUserInfo;
     } catch (error) {
       logger.error('Failed to start impersonation', {
         targetUserId,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : String(error)
       });
-
-      // Reset state on error
-      setIsImpersonating(false);
-      setOriginalUser(null);
-
       throw error;
     }
   }, []);
@@ -212,41 +142,35 @@ export function useImpersonation(): UseImpersonationReturn {
     try {
       logger.info('Stopping impersonation', {
         originalUser,
-        currentUserId: auth.currentUser?.uid
+        currentUser: user?.uid
       });
 
-      // Call backend to stop impersonation (returns admin token)
+      // Call backend to stop impersonation
       await stopImpersonation();
 
-      // Reset state
+      // This will trigger AuthInitializer's listener
+      logger.debug('Impersonation stopped, auth state will update automatically');
+
+      // Clear local state
       setIsImpersonating(false);
       setOriginalUser(null);
-
-      logger.info('Successfully stopped impersonation');
     } catch (error) {
       logger.error('Failed to stop impersonation', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : String(error)
       });
-
       throw error;
     }
-  }, [originalUser]);
+  }, [originalUser, user?.uid]);
 
-  // ==========================================
-  // RETURN INTERFACE
-  // ==========================================
+  // ===========================
+  // RETURN
+  // ===========================
 
   return {
     isImpersonating,
     originalUser,
+    currentUser: user,
     startImpersonatingUser,
     stopImpersonatingUser,
-    currentUser: user,
   };
 }
-
-// ===========================
-// EXPORT TYPES
-// ===========================
-
-export type { TargetUserInfo, UseImpersonationReturn };
