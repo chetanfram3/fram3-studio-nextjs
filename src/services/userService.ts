@@ -1,5 +1,6 @@
 import logger from '@/utils/logger';
 import { UserProfile, ApiResponse } from '@/types/auth';
+import { auth } from '@/lib/firebase';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -279,6 +280,48 @@ export async function uploadProfilePicture(
     };
   } catch (error) {
     logger.error('Error uploading profile picture:', error);
+    throw error;
+  }
+}
+
+/**
+ * Mark user as completed onboarding (updates isNewUser claim)
+ */
+export async function completeOnboarding(): Promise<ApiResponse<{ message: string }>> {
+  try {
+    logger.debug('Marking user onboarding as complete');
+
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) {
+      throw new Error('No authentication token');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/user/complete-onboarding`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to complete onboarding');
+    }
+
+    // Force token refresh to get updated claims
+    await auth.currentUser?.getIdToken(true);
+
+    logger.debug('Onboarding marked as complete successfully');
+
+    return {
+      success: true,
+      data: data,
+      message: 'Onboarding completed successfully',
+    };
+  } catch (error) {
+    logger.error('Error completing onboarding:', error);
     throw error;
   }
 }
