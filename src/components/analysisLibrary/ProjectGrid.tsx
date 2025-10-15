@@ -229,7 +229,7 @@ export function ProjectGrid({
   useEffect(() => {
     if (scripts.length === 0 && !isLoading) {
       if (allCount === 0) {
-        router.push("/create-new");
+        router.push("/create-now");
         return;
       }
       if (isFavourite && updateQueryParams) {
