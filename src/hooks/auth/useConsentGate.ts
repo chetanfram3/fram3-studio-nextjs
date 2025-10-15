@@ -199,14 +199,14 @@ export function useConsentGate() {
       });
 
       // Redirect to sign-in page
-      router.push("/auth/signin");
+      router.push("/signin");
 
       logger.debug("User logged out successfully after declining consent");
     } catch (error) {
       logger.error("Error during logout after declining consent:", error);
 
       // Still try to redirect even if logout fails
-      router.push("/auth/signin");
+      router.push("/signin");
     }
   }, [router]);
 
