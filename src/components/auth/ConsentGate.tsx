@@ -155,7 +155,7 @@ export default function ConsentGate({ children }: ConsentGateProps) {
             }}
           >
             {isFirstLogin
-              ? "Welcome! Legal Agreement Required"
+              ? "Welcome! Terms & Conditions Agreement"
               : "Terms Updated - Action Required"}
           </Typography>
         </DialogTitle>

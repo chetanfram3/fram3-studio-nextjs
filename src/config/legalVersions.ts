@@ -23,6 +23,9 @@ export const LEGAL_VERSIONS = {
   
   /** Privacy Policy version */
   PRIVACY: "1.0",
+
+/** Cookie Policy version */
+  COPYRIGHT: "1.0",
   
   /** Cookie Policy version */
   COOKIES: "1.0",
@@ -36,6 +39,7 @@ export const LEGAL_CHANGE_LOGS: Record<string, string[]> = {
   "1.0": [
     "Initial Terms of Service",
     "Initial Privacy Policy",
+    "Initial Copyright Policy",
     "Initial Cookie Policy",
   ],
   // Add new versions here as they are released
