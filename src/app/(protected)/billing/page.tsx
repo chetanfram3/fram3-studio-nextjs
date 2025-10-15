@@ -1,6 +1,5 @@
 "use client";
 
-import { AuthGuard } from "@/components/auth";
 import BillingPage from "@/components/cr3ditSys/index";
 
 /**
@@ -8,13 +7,5 @@ import BillingPage from "@/components/cr3ditSys/index";
  * Protected route - requires authentication
  */
 export default function ProfilePage() {
-  return (
-    <AuthGuard
-      requireAuth={true}
-      redirectTo="/signin"
-      loadingText="Loading billing..."
-    >
-      <BillingPage />
-    </AuthGuard>
-  );
+  return <BillingPage />;
 }

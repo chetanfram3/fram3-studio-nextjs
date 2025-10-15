@@ -1,6 +1,5 @@
 "use client";
 
-import { AuthGuard } from "@/components/auth";
 import PaymentsPage from "@/components/payments/index";
 
 /**
@@ -8,13 +7,5 @@ import PaymentsPage from "@/components/payments/index";
  * Protected route - requires authentication
  */
 export default function ProfilePage() {
-  return (
-    <AuthGuard
-      requireAuth={true}
-      redirectTo="/signin"
-      loadingText="Loading payments..."
-    >
-      <PaymentsPage />
-    </AuthGuard>
-  );
+  return <PaymentsPage />;
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { AuthGuard } from "@/components/auth";
 import { AnalysisPage } from "@/components/scriptAnalysis/AnalysisDialog";
 
 /**
@@ -8,13 +7,5 @@ import { AnalysisPage } from "@/components/scriptAnalysis/AnalysisDialog";
  * Protected route - requires authentication
  */
 export default function ProfilePage() {
-  return (
-    <AuthGuard
-      requireAuth={true}
-      redirectTo="/signin"
-      loadingText="Loading your script library..."
-    >
-      <AnalysisPage />
-    </AuthGuard>
-  );
+  return <AnalysisPage />;
 }

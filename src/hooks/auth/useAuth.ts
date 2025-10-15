@@ -8,90 +8,21 @@ import { checkUserProfile } from '@/services/userService';
 import logger from '@/utils/logger';
 
 /**
- * Custom hook for managing authentication state
- * Listens to Firebase auth changes and updates store
- * Checks backend profile existence
+ * Custom hook for reading authentication state
+ * 
+ * IMPORTANT: This hook NO LONGER creates Firebase listeners!
+ * The AuthInitializer component in the root layout handles that.
+ * This hook simply reads from the Zustand store.
  */
 export function useAuth() {
-  const {
-    user,
-    loading,
-    error,
-    profileLoaded,
-    setUser,
-    setLoading,
-    setProfileLoaded,
-    setError
-  } = useAuthStore();
-
+  const { user, loading, error, profileLoaded } = useAuthStore();
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    logger.debug('Setting up auth state listener');
-
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (firebaseUser: User | null) => {
-        try {
-          logger.debug('Auth state changed:', firebaseUser?.email || 'null');
-
-          setUser(firebaseUser);
-
-          if (firebaseUser) {
-            // User is signed in
-            logger.debug('User authenticated, checking profile...');
-
-            try {
-              // Get fresh token
-              const idToken = await firebaseUser.getIdToken(true);
-
-              // Check if profile exists in backend
-              const profileExists = await checkUserProfile(idToken);
-
-              if (profileExists) {
-                logger.debug('Profile loaded successfully');
-                setProfileLoaded(true);
-                setError(null);
-              } else {
-                logger.warn('Profile not found in backend');
-                setProfileLoaded(false);
-                setError('Profile not found. Please complete registration.');
-              }
-            } catch (profileError) {
-              logger.error('Error checking profile:', profileError);
-              setError('Failed to load user profile');
-              setProfileLoaded(false);
-            }
-          } else {
-            // User is signed out
-            logger.debug('User signed out');
-            setProfileLoaded(false);
-            setError(null);
-          }
-
-          setLoading(false);
-          setInitialized(true);
-        } catch (error) {
-          logger.error('Error in auth state change handler:', error);
-          setError(error instanceof Error ? error.message : 'Authentication error');
-          setLoading(false);
-          setInitialized(true);
-        }
-      },
-      (error) => {
-        logger.error('Auth state observer error:', error);
-        setError(error.message);
-        setLoading(false);
-        setInitialized(true);
-      }
-    );
-
-    // Cleanup subscription on unmount
-    return () => {
-      logger.debug('Cleaning up auth state listener');
-      unsubscribe();
-    };
-  }, [setUser, setLoading, setProfileLoaded, setError]);
+    // Mark as initialized after first render
+    // This ensures components wait for at least one render cycle
+    setInitialized(true);
+  }, []);
 
   return {
     user,
@@ -106,15 +37,15 @@ export function useAuth() {
  * Hook to check if user is authenticated
  */
 export function useIsAuthenticated(): boolean {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   return !!user;
 }
 
 /**
  * Hook to get current user or null
  */
-export function useCurrentUser(): User | null {
-  const { user } = useAuth();
+export function useCurrentUser() {
+  const { user } = useAuthStore();
   return user;
 }
 
@@ -122,8 +53,13 @@ export function useCurrentUser(): User | null {
  * Hook to require authentication (redirect if not authenticated)
  */
 export function useRequireAuth(redirectUrl = '/signin') {
-  const { user, loading, initialized } = useAuth();
+  const { user, loading } = useAuthStore();
+  const [initialized, setInitialized] = useState(false);
   const [shouldRedirect, setShouldRedirect] = useState(false);
+
+  useEffect(() => {
+    setInitialized(true);
+  }, []);
 
   useEffect(() => {
     if (initialized && !loading && !user) {

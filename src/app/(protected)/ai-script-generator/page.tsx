@@ -1,6 +1,5 @@
 "use client";
 
-import { AuthGuard } from "@/components/auth";
 import ScriptGeneratorPage from "@/components/aiScriptGen/AdScriptGenerator";
 
 /**
@@ -8,13 +7,5 @@ import ScriptGeneratorPage from "@/components/aiScriptGen/AdScriptGenerator";
  * Protected route - requires authentication
  */
 export default function ProfilePage() {
-  return (
-    <AuthGuard
-      requireAuth={true}
-      redirectTo="/signin"
-      loadingText="Loading Fram3 AI script generator..."
-    >
-      <ScriptGeneratorPage />
-    </AuthGuard>
-  );
+  return <ScriptGeneratorPage />;
 }
