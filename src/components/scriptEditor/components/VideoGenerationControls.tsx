@@ -1,19 +1,15 @@
+// src/modules/scripts/VideoGenerationControls.tsx
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import {
-  Box,
-  Button,
-  Paper,
-  useTheme,
-  alpha,
-  useMediaQuery,
-} from "@mui/material";
+import { Box, Button, Paper, alpha, useMediaQuery } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { VideoCameraFrontOutlined as VideoIcon } from "@mui/icons-material";
+import { getCurrentBrand } from "@/config/brandConfig";
 import ProcessingModeSelector, {
   ProcessingMode,
   AspectRatio,
-  ModelTierConfig, 
+  ModelTierConfig,
 } from "@/components/common/ProcessingModeSelector";
 
 interface VideoGenerationControlsProps {
@@ -31,7 +27,31 @@ interface VideoGenerationControlsProps {
   isSaving: boolean;
 }
 
-const VideoGenerationControls: React.FC<VideoGenerationControlsProps> = ({
+/**
+ * VideoGenerationControls - Controls for video generation with processing options
+ *
+ * Performance optimizations (React 19):
+ * - No manual React.memo (compiler handles optimization)
+ * - useEffect properly configured with dependencies
+ * - MutationObserver cleaned up properly
+ * - Auto-optimized by React 19 compiler
+ *
+ * Theme integration:
+ * - Uses theme.palette for all colors (no hardcoded colors)
+ * - Uses brand configuration for fonts and border radius
+ * - Respects light/dark mode automatically
+ * - Uses primary color for main button (not secondary)
+ * - All styling theme-aware
+ *
+ * Porting changes:
+ * - Replaced all secondary color usage with primary
+ * - Removed hardcoded alpha values
+ * - Added brand fonts for button text
+ * - Used brand border radius
+ * - Made Paper component theme-aware
+ * - Proper button styling with primary color
+ */
+export function VideoGenerationControls({
   processingMode,
   aspectRatio,
   pauseBeforeSettings,
@@ -39,12 +59,19 @@ const VideoGenerationControls: React.FC<VideoGenerationControlsProps> = ({
   onProcessingOptionsChange,
   onGenerateVideo,
   isSaving,
-}) => {
+}: VideoGenerationControlsProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
+  const brand = getCurrentBrand();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.down("md"));
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // ==========================================
+  // EFFECTS
+  // ==========================================
   // Auto-scroll when content expands
   useEffect(() => {
     if (!containerRef.current) return;
@@ -100,10 +127,10 @@ const VideoGenerationControls: React.FC<VideoGenerationControlsProps> = ({
       <Paper
         elevation={3}
         sx={{
-          borderRadius: 1,
-          background: theme.palette.background.default,
-          border: 1,
-          borderColor: theme.palette.secondary.light,
+          borderRadius: `${brand.borderRadius}px`,
+          background: "background.default",
+          border: 2,
+          borderColor: "primary.main",
           overflow: "hidden",
         }}
       >
@@ -147,27 +174,32 @@ const VideoGenerationControls: React.FC<VideoGenerationControlsProps> = ({
           >
             <Button
               variant="contained"
+              color="primary"
               onClick={onGenerateVideo}
               disabled={isSaving}
               startIcon={<VideoIcon />}
               fullWidth={isMobile || isTablet}
               sx={{
-                backgroundColor: theme.palette.secondary.main,
-                color: theme.palette.secondary.contrastText,
                 py: { xs: 1.5, sm: 1.25 },
                 px: { xs: 2, sm: 3 },
                 fontSize: { xs: "0.875rem", sm: "1rem" },
                 fontWeight: 600,
+                fontFamily: brand.fonts.heading,
                 whiteSpace: "nowrap",
                 boxShadow: 2,
                 "&:hover": {
-                  backgroundColor: theme.palette.secondary.dark,
                   boxShadow: 4,
                 },
                 "&:disabled": {
-                  backgroundColor: alpha(theme.palette.secondary.main, 0.5),
+                  bgcolor: "action.disabledBackground",
+                  color: "action.disabled",
                 },
-                transition: "all 0.2s ease-in-out",
+                transition: theme.transitions.create(
+                  ["background-color", "box-shadow", "transform"],
+                  {
+                    duration: theme.transitions.duration.short,
+                  }
+                ),
               }}
             >
               Generate Video
@@ -177,6 +209,6 @@ const VideoGenerationControls: React.FC<VideoGenerationControlsProps> = ({
       </Paper>
     </Box>
   );
-};
+}
 
 export default VideoGenerationControls;

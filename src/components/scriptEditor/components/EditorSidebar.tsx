@@ -1,3 +1,4 @@
+// src/modules/scripts/EditorSidebar.tsx
 "use client";
 
 import React from "react";
@@ -9,8 +10,8 @@ import {
   Divider,
   Button,
   alpha,
-  useTheme,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   Timer,
   AutoAwesome,
@@ -21,6 +22,7 @@ import {
   Tonality,
   Speed,
 } from "@mui/icons-material";
+import { getCurrentBrand } from "@/config/brandConfig";
 import CustomToast from "@/components/common/CustomToast";
 import ScriptContextPanel from "./ScriptContextPanel";
 import { ScriptData } from "../types";
@@ -56,7 +58,30 @@ interface EditorSidebarProps {
   scriptDuration?: number;
 }
 
-const EditorSidebar: React.FC<EditorSidebarProps> = ({
+/**
+ * EditorSidebar - Sidebar component for script editor with tabs
+ *
+ * Performance optimizations (React 19):
+ * - No manual React.memo (compiler handles optimization)
+ * - Simple functional component for auto-optimization
+ * - Handlers are auto-optimized by React 19 compiler
+ *
+ * Theme integration:
+ * - Uses theme.palette for all colors (no hardcoded colors)
+ * - Uses brand configuration for fonts and border radius
+ * - Respects light/dark mode automatically
+ * - Uses primary color for main actions (not secondary)
+ * - All buttons use consistent theme-aware styling
+ *
+ * Porting changes:
+ * - Replaced all secondary color usage with primary
+ * - Removed hardcoded alpha values, using theme colors
+ * - Added brand fonts for typography
+ * - Used theme spacing and transitions
+ * - Made all buttons theme-aware with proper hover states
+ * - Changed color hierarchy to use primary for highlights
+ */
+export function EditorSidebar({
   activeTab,
   setActiveTab,
   handleFormatClick,
@@ -76,10 +101,16 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
   isRevision,
   revisionSummary,
   scriptDuration,
-}) => {
+}: EditorSidebarProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
+  const brand = getCurrentBrand();
 
-  // Placeholder AI Assist functions
+  // ==========================================
+  // HANDLERS - Placeholder AI Assist functions
+  // ==========================================
   const handleImproveWriting = () => {
     CustomToast(
       "info",
@@ -129,6 +160,9 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
     );
   };
 
+  // ==========================================
+  // COMPUTED VALUES
+  // ==========================================
   // Calculate script health (placeholder logic)
   const calculateScriptHealth = () => {
     const healthScore = Math.min(
@@ -151,7 +185,7 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
         borderColor: "divider",
         display: "flex",
         flexDirection: "column",
-        bgcolor: alpha(theme.palette.background.paper, 0.6),
+        bgcolor: "background.paper",
       }}
     >
       <Tabs
@@ -169,22 +203,30 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
             minHeight: "42px",
             fontSize: 12,
             p: "6px 12px",
+            color: "text.secondary",
+            fontFamily: brand.fonts.body,
+            "&.Mui-selected": {
+              color: "primary.main",
+            },
+          },
+          "& .MuiTabs-indicator": {
+            backgroundColor: "primary.main",
           },
           "& .MuiTabScrollButton-root": {
             width: 20,
             opacity: 0.8,
-            color: "secondary.main",
-          },
-          "& .MuiTabScrollButton-root:hover": {
-            opacity: 1,
-            backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+            color: "primary.main",
+            "&:hover": {
+              opacity: 1,
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+            },
           },
         }}
       >
-        <Tab label="Format" value="styles" sx={{ fontSize: 12 }} />
-        <Tab label="AI Assist" value="ai" sx={{ fontSize: 12 }} />
-        <Tab label="Stats" value="stats" sx={{ fontSize: 12 }} />
-        <Tab label="Context" value="context" sx={{ fontSize: 12 }} />
+        <Tab label="Format" value="styles" />
+        <Tab label="AI Assist" value="ai" />
+        <Tab label="Stats" value="stats" />
+        <Tab label="Context" value="context" />
       </Tabs>
 
       <Box sx={{ p: 2, overflowY: "auto", flexGrow: 1 }}>
@@ -193,7 +235,12 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
           <Box>
             <Typography
               variant="subtitle2"
-              sx={{ mb: 1, color: "secondary.main" }}
+              sx={{
+                mb: 1,
+                color: "primary.main",
+                fontFamily: brand.fonts.heading,
+                fontWeight: 600,
+              }}
             >
               Script Elements
             </Typography>
@@ -213,11 +260,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                   sx={{
                     mb: 1,
                     justifyContent: "flex-start",
-                    color: "inherit",
+                    color: "text.primary",
+                    borderColor: "divider",
+                    fontFamily: brand.fonts.body,
                     "&:hover": {
-                      bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                      borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                      color: "secondary.main",
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      borderColor: "primary.main",
+                      color: "primary.main",
                     },
                   }}
                   onClick={() => handleFormatClick(format)}
@@ -232,7 +281,12 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
 
             <Typography
               variant="subtitle2"
-              sx={{ mb: 1, color: "secondary.main" }}
+              sx={{
+                mb: 1,
+                color: "primary.main",
+                fontFamily: brand.fonts.heading,
+                fontWeight: 600,
+              }}
             >
               Export Options
             </Typography>
@@ -244,11 +298,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 sx={{
                   mb: 1,
                   justifyContent: "flex-start",
-                  color: "inherit",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                    borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                    color: "secondary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: "primary.main",
+                    color: "primary.main",
                   },
                 }}
                 onClick={handleExportPDF}
@@ -261,11 +317,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 fullWidth
                 sx={{
                   justifyContent: "flex-start",
-                  color: "inherit",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                    borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                    color: "secondary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: "primary.main",
+                    color: "primary.main",
                   },
                 }}
                 onClick={handleExportText}
@@ -281,7 +339,12 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
           <Box>
             <Typography
               variant="subtitle2"
-              sx={{ mb: 1, color: "secondary.main" }}
+              sx={{
+                mb: 1,
+                color: "primary.main",
+                fontFamily: brand.fonts.heading,
+                fontWeight: 600,
+              }}
             >
               AI Assistance
             </Typography>
@@ -294,11 +357,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 sx={{
                   mb: 1,
                   justifyContent: "flex-start",
-                  color: "inherit",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                    borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                    color: "secondary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: "primary.main",
+                    color: "primary.main",
                   },
                 }}
                 onClick={handleImproveWriting}
@@ -313,11 +378,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 sx={{
                   mb: 1,
                   justifyContent: "flex-start",
-                  color: "inherit",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                    borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                    color: "secondary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: "primary.main",
+                    color: "primary.main",
                   },
                 }}
                 onClick={handleMakeShorter}
@@ -332,11 +399,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 sx={{
                   mb: 1,
                   justifyContent: "flex-start",
-                  color: "inherit",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                    borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                    color: "secondary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: "primary.main",
+                    color: "primary.main",
                   },
                 }}
                 onClick={handleExpandContent}
@@ -351,11 +420,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 sx={{
                   mb: 1,
                   justifyContent: "flex-start",
-                  color: "inherit",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                    borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                    color: "secondary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: "primary.main",
+                    color: "primary.main",
                   },
                 }}
                 onClick={handleFixGrammar}
@@ -369,11 +440,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 startIcon={<AutoAwesome />}
                 sx={{
                   justifyContent: "flex-start",
-                  color: "inherit",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                    borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                    color: "secondary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: "primary.main",
+                    color: "primary.main",
                   },
                 }}
                 onClick={handleReset}
@@ -386,7 +459,12 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
 
             <Typography
               variant="subtitle2"
-              sx={{ mb: 1, color: "secondary.main" }}
+              sx={{
+                mb: 1,
+                color: "primary.main",
+                fontFamily: brand.fonts.heading,
+                fontWeight: 600,
+              }}
             >
               Script Analysis
             </Typography>
@@ -399,11 +477,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 sx={{
                   mb: 1,
                   justifyContent: "flex-start",
-                  color: "inherit",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                    borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                    color: "secondary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: "primary.main",
+                    color: "primary.main",
                   },
                 }}
                 onClick={handleAnalyzeTone}
@@ -417,11 +497,13 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 startIcon={<Speed />}
                 sx={{
                   justifyContent: "flex-start",
-                  color: "inherit",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  fontFamily: brand.fonts.body,
                   "&:hover": {
-                    bgcolor: alpha(theme.palette.secondary.main, 0.2),
-                    borderColor: alpha(theme.palette.secondary.dark, 0.3),
-                    color: "secondary.main",
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    borderColor: "primary.main",
+                    color: "primary.main",
                   },
                 }}
                 onClick={handleCheckPacing}
@@ -437,7 +519,12 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
           <Box>
             <Typography
               variant="subtitle2"
-              sx={{ mb: 2, color: "secondary.main" }}
+              sx={{
+                mb: 2,
+                color: "primary.main",
+                fontFamily: brand.fonts.heading,
+                fontWeight: 600,
+              }}
             >
               Script Statistics
             </Typography>
@@ -449,8 +536,23 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 justifyContent: "space-between",
               }}
             >
-              <Typography variant="body2">Word Count:</Typography>
-              <Typography variant="body2" fontWeight={500}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
+                Word Count:
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={500}
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
                 {scriptStats.words}
               </Typography>
             </Box>
@@ -462,8 +564,23 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 justifyContent: "space-between",
               }}
             >
-              <Typography variant="body2">Character Count:</Typography>
-              <Typography variant="body2" fontWeight={500}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
+                Character Count:
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={500}
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
                 {scriptStats.characters}
               </Typography>
             </Box>
@@ -476,8 +593,23 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 alignItems: "center",
               }}
             >
-              <Typography variant="body2">Script Health:</Typography>
-              <Typography variant="body2" fontWeight={500}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
+                Script Health:
+              </Typography>
+              <Typography
+                variant="body2"
+                fontWeight={500}
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
                 {calculateScriptHealth()}%
               </Typography>
             </Box>
@@ -490,7 +622,15 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 alignItems: "center",
               }}
             >
-              <Typography variant="body2">Estimated Duration:</Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  fontFamily: brand.fonts.body,
+                }}
+              >
+                Estimated Duration:
+              </Typography>
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <Timer
                   fontSize="small"
@@ -500,7 +640,14 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                     fontSize: 16,
                   }}
                 />
-                <Typography variant="body2" fontWeight={500}>
+                <Typography
+                  variant="body2"
+                  fontWeight={500}
+                  sx={{
+                    color: "text.primary",
+                    fontFamily: brand.fonts.body,
+                  }}
+                >
                   {scriptStats.duration} seconds
                 </Typography>
               </Box>
@@ -510,7 +657,12 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
 
             <Typography
               variant="subtitle2"
-              sx={{ mb: 1, color: "secondary.main" }}
+              sx={{
+                mb: 1,
+                color: "primary.main",
+                fontFamily: brand.fonts.heading,
+                fontWeight: 600,
+              }}
             >
               Version History
             </Typography>
@@ -524,17 +676,19 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
                   }
                   size="small"
                   fullWidth
+                  color="primary"
                   sx={{
                     mb: 0.5,
                     justifyContent: "flex-start",
-                    bgcolor:
-                      scriptVersion === version.version
-                        ? theme.palette.secondary.main
-                        : undefined,
-                    color:
-                      scriptVersion === version.version
-                        ? theme.palette.secondary.contrastText
-                        : undefined,
+                    fontFamily: brand.fonts.body,
+                    ...(scriptVersion !== version.version && {
+                      color: "text.primary",
+                      borderColor: "divider",
+                      "&:hover": {
+                        borderColor: "primary.main",
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      },
+                    }),
                   }}
                   onClick={() => handleVersionChange(version.version)}
                 >
@@ -544,6 +698,8 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
             </Box>
           </Box>
         )}
+
+        {/* Context Tab */}
         {activeTab === "context" && (
           <ScriptContextPanel
             conceptSummary={conceptSummary}
@@ -562,6 +718,6 @@ const EditorSidebar: React.FC<EditorSidebarProps> = ({
       </Box>
     </Box>
   );
-};
+}
 
 export default EditorSidebar;

@@ -1,15 +1,9 @@
+// src/modules/scripts/EditorToolbar.tsx
 "use client";
 
 import React from "react";
-import {
-  Box,
-  Button,
-  Divider,
-  alpha,
-  useTheme,
-  SxProps,
-  Theme,
-} from "@mui/material";
+import { Box, Button, Divider, alpha, SxProps, Theme } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   FormatBold,
   FormatItalic,
@@ -25,6 +19,7 @@ import {
   TableChart,
   Add,
 } from "@mui/icons-material";
+import { getCurrentBrand } from "@/config/brandConfig";
 import { Editor } from "@tiptap/react";
 
 interface EditorToolbarProps {
@@ -32,11 +27,44 @@ interface EditorToolbarProps {
   sx?: SxProps<Theme>;
 }
 
-const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
+/**
+ * EditorToolbar - Toolbar for TipTap editor with formatting controls
+ *
+ * Performance optimizations (React 19):
+ * - No manual React.memo (compiler handles optimization)
+ * - Simple functional component for auto-optimization
+ * - Handler function auto-optimized by React 19 compiler
+ *
+ * Theme integration:
+ * - Uses theme.palette for all colors (no hardcoded colors)
+ * - Uses brand configuration for fonts
+ * - Respects light/dark mode automatically
+ * - Uses primary color for active states (not secondary)
+ * - All buttons use consistent theme-aware styling
+ *
+ * Porting changes:
+ * - Replaced all secondary color usage with primary
+ * - Changed active button styling to use primary color
+ * - Removed hardcoded alpha values
+ * - Used theme colors for backgrounds
+ * - Made all buttons theme-aware
+ * - Added proper hover states
+ */
+export function EditorToolbar({ editor, sx }: EditorToolbarProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
+  const brand = getCurrentBrand();
 
+  // ==========================================
+  // EARLY RETURN
+  // ==========================================
   if (!editor) return null;
 
+  // ==========================================
+  // HANDLERS
+  // ==========================================
   const handleFormatClick = (command: string, value?: string | number) => {
     if (!editor) return;
     switch (command) {
@@ -102,6 +130,33 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
     }
   };
 
+  // ==========================================
+  // HELPER FUNCTION FOR BUTTON STYLES
+  // ==========================================
+  const getButtonStyles = (isActive: boolean) => ({
+    minWidth: 0,
+    px: 1,
+    fontFamily: brand.fonts.body,
+    ...(isActive
+      ? {
+          bgcolor: "primary.main",
+          color: "primary.contrastText",
+          borderColor: "primary.main",
+          "&:hover": {
+            bgcolor: "primary.dark",
+            borderColor: "primary.dark",
+          },
+        }
+      : {
+          color: "text.primary",
+          borderColor: "divider",
+          "&:hover": {
+            borderColor: "primary.main",
+            bgcolor: alpha(theme.palette.primary.main, 0.08),
+          },
+        }),
+  });
+
   return (
     <Box
       sx={{
@@ -110,27 +165,19 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         display: "flex",
         gap: 1,
         p: 1,
-        bgcolor: (theme) => alpha(theme.palette.background.default, 0.3),
-        width: "100%", // Ensure toolbar takes full available width
-        overflowX: "auto", // Allow horizontal scrolling if content overflows
-        flexShrink: 0, // Prevent shrinking
-        ...sx, // Apply custom styles
+        bgcolor: "background.paper",
+        width: "100%",
+        overflowX: "auto",
+        flexShrink: 0,
+        ...sx,
       }}
     >
+      {/* Text Formatting */}
       <Button
         variant={editor.isActive("bold") ? "contained" : "outlined"}
         size="small"
         onClick={() => handleFormatClick("toggleBold")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive("bold")
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive("bold")
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive("bold"))}
       >
         <FormatBold />
       </Button>
@@ -138,16 +185,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         variant={editor.isActive("italic") ? "contained" : "outlined"}
         size="small"
         onClick={() => handleFormatClick("toggleItalic")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive("italic")
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive("italic")
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive("italic"))}
       >
         <FormatItalic />
       </Button>
@@ -155,16 +193,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         variant={editor.isActive("underline") ? "contained" : "outlined"}
         size="small"
         onClick={() => handleFormatClick("toggleUnderline")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive("underline")
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive("underline")
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive("underline"))}
       >
         <FormatUnderlined />
       </Button>
@@ -172,36 +201,19 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         variant={editor.isActive("strike") ? "contained" : "outlined"}
         size="small"
         onClick={() => handleFormatClick("toggleStrike")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive("strike")
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive("strike")
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive("strike"))}
       >
         <StrikethroughS />
       </Button>
 
       <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
 
+      {/* Lists */}
       <Button
         variant={editor.isActive("bulletList") ? "contained" : "outlined"}
         size="small"
         onClick={() => handleFormatClick("toggleBulletList")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive("bulletList")
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive("bulletList")
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive("bulletList"))}
       >
         <FormatListBulleted />
       </Button>
@@ -209,38 +221,21 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         variant={editor.isActive("orderedList") ? "contained" : "outlined"}
         size="small"
         onClick={() => handleFormatClick("toggleOrderedList")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive("orderedList")
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive("orderedList")
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive("orderedList"))}
       >
         <FormatListNumbered />
       </Button>
 
       <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
 
+      {/* Text Alignment */}
       <Button
         variant={
           editor.isActive({ textAlign: "left" }) ? "contained" : "outlined"
         }
         size="small"
         onClick={() => handleFormatClick("setTextAlign", "left")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive({ textAlign: "left" })
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive({ textAlign: "left" })
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive({ textAlign: "left" }))}
       >
         <FormatAlignLeft />
       </Button>
@@ -250,16 +245,7 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         }
         size="small"
         onClick={() => handleFormatClick("setTextAlign", "center")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive({ textAlign: "center" })
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive({ textAlign: "center" })
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive({ textAlign: "center" }))}
       >
         <FormatAlignCenter />
       </Button>
@@ -269,36 +255,19 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         }
         size="small"
         onClick={() => handleFormatClick("setTextAlign", "right")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive({ textAlign: "right" })
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive({ textAlign: "right" })
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive({ textAlign: "right" }))}
       >
         <FormatAlignRight />
       </Button>
 
       <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
 
+      {/* Table Controls */}
       <Button
         variant={editor.isActive("table") ? "contained" : "outlined"}
         size="small"
         onClick={() => handleFormatClick("create-table")}
-        sx={{
-          minWidth: 0,
-          px: 1,
-          backgroundColor: editor.isActive("table")
-            ? alpha(theme.palette.secondary.main, 0.8)
-            : undefined,
-          borderColor: editor.isActive("table")
-            ? theme.palette.secondary.main
-            : undefined,
-        }}
+        sx={getButtonStyles(editor.isActive("table"))}
       >
         <TableChart />
       </Button>
@@ -306,8 +275,22 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         variant="outlined"
         size="small"
         onClick={() => handleFormatClick("add-row")}
-        sx={{ minWidth: 0, px: 1 }}
         disabled={!editor.isActive("table")}
+        sx={{
+          minWidth: 0,
+          px: 1,
+          fontFamily: brand.fonts.body,
+          color: "text.primary",
+          borderColor: "divider",
+          "&:hover:not(:disabled)": {
+            borderColor: "primary.main",
+            bgcolor: alpha(theme.palette.primary.main, 0.08),
+          },
+          "&:disabled": {
+            color: "action.disabled",
+            borderColor: "action.disabledBackground",
+          },
+        }}
       >
         <Add /> Row
       </Button>
@@ -315,19 +298,44 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         variant="outlined"
         size="small"
         onClick={() => handleFormatClick("add-column")}
-        sx={{ minWidth: 0, px: 1 }}
         disabled={!editor.isActive("table")}
+        sx={{
+          minWidth: 0,
+          px: 1,
+          fontFamily: brand.fonts.body,
+          color: "text.primary",
+          borderColor: "divider",
+          "&:hover:not(:disabled)": {
+            borderColor: "primary.main",
+            bgcolor: alpha(theme.palette.primary.main, 0.08),
+          },
+          "&:disabled": {
+            color: "action.disabled",
+            borderColor: "action.disabledBackground",
+          },
+        }}
       >
         <Add /> Column
       </Button>
 
       <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
 
+      {/* Undo/Redo */}
       <Button
         variant="outlined"
         size="small"
         onClick={() => handleFormatClick("undo")}
-        sx={{ minWidth: 0, px: 1 }}
+        sx={{
+          minWidth: 0,
+          px: 1,
+          fontFamily: brand.fonts.body,
+          color: "text.primary",
+          borderColor: "divider",
+          "&:hover": {
+            borderColor: "primary.main",
+            bgcolor: alpha(theme.palette.primary.main, 0.08),
+          },
+        }}
       >
         <Undo fontSize="small" />
       </Button>
@@ -335,12 +343,22 @@ const EditorToolbar: React.FC<EditorToolbarProps> = ({ editor, sx }) => {
         variant="outlined"
         size="small"
         onClick={() => handleFormatClick("redo")}
-        sx={{ minWidth: 0, px: 1 }}
+        sx={{
+          minWidth: 0,
+          px: 1,
+          fontFamily: brand.fonts.body,
+          color: "text.primary",
+          borderColor: "divider",
+          "&:hover": {
+            borderColor: "primary.main",
+            bgcolor: alpha(theme.palette.primary.main, 0.08),
+          },
+        }}
       >
         <Redo fontSize="small" />
       </Button>
     </Box>
   );
-};
+}
 
 export default EditorToolbar;

@@ -141,8 +141,8 @@ export default function EditorHeader({
           label={scriptType}
           size="small"
           sx={{
-            bgcolor: "primary.main",
-            color: isDarkMode ? "background.paper" : "background.default",
+            bgcolor: alpha(theme.palette.primary.dark, 0.6),
+            color: "primary.contrastText",
             fontWeight: 500,
             fontFamily: brand.fonts.body,
             borderRadius: `${brand.borderRadius * 0.5}px`,

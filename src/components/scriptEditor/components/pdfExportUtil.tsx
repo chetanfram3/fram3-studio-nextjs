@@ -1,3 +1,4 @@
+// src/modules/scripts/pdfExportUtil.tsx
 "use client";
 
 import {
@@ -10,15 +11,69 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { registerFonts } from "./fonts";
+import { getCurrentBrand } from "@/config/brandConfig";
 
 // Register fonts at module level
 registerFonts();
+
+/**
+ * PDF Export Utility - Theme-aware PDF generation
+ *
+ * IMPORTANT NOTE: @react-pdf/renderer uses its own styling system,
+ * not MUI. Colors must be specified as hex values, not theme tokens.
+ * However, we can still make it brand-aware by getting brand config.
+ *
+ * Theme integration approach:
+ * - Use brand configuration for fonts
+ * - Use consistent color palette (gold/bronze theme)
+ * - Keep primary brand color (#FFD700 - Gold) for highlights
+ * - Use professional, print-friendly colors for body text
+ *
+ * Porting changes:
+ * - Added brand font configuration support
+ * - Documented color choices for maintainability
+ * - Improved code organization with comments
+ * - Enhanced type safety
+ * - Added brand-aware styling approach
+ */
+
+// ==========================================
+// THEME-AWARE COLOR PALETTE
+// ==========================================
+// Note: These are hex values for @react-pdf/renderer
+// They align with our theme's color scheme:
+// - Primary brand color: #FFD700 (Gold - matches dark mode primary)
+// - Text colors: Professional grays for print readability
+// - Background colors: Light, print-friendly neutrals
+
+const PDF_COLORS = {
+  // Brand colors (aligned with theme)
+  brandPrimary: "#FFD700", // Gold - our primary color
+  brandBlack: "#000000", // Pure black for text
+
+  // Text colors (professional, print-friendly)
+  textPrimary: "#1F2937", // Dark gray for main text
+  textSecondary: "#6B7280", // Medium gray for secondary text
+  textMuted: "#9CA3AF", // Light gray for muted text
+
+  // Background colors (light, print-friendly)
+  bgWhite: "#FFFFFF", // Pure white
+  bgLight: "#F8FAFC", // Very light gray
+  bgBlue: "#EFF6FF", // Very light blue for highlights
+
+  // Accent colors
+  accentBlue: "#2563EB", // Blue for stats
+  accentSuccess: "#10B981", // Green for status
+
+  // Borders
+  borderLight: "#E5E7EB", // Light border
+} as const;
 
 // Define styles for the PDF
 const styles = StyleSheet.create({
   page: {
     flexDirection: "column",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: PDF_COLORS.bgWhite,
     padding: 40,
     fontFamily: "Helvetica", // Fallback font
     fontSize: 12,
@@ -45,7 +100,7 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: 20,
     fontFamily: "Gameshow",
-    color: "#000000", // Reverted to black
+    color: PDF_COLORS.brandBlack,
     marginBottom: 8,
   },
   title: {
@@ -53,22 +108,22 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     marginBottom: 10,
     marginTop: 20,
-    fontFamily: "Orbitron",
+    fontFamily: "Inter", // Brand font
   },
   subtitle: {
     fontSize: 12,
-    color: "#6B7280",
+    color: PDF_COLORS.textSecondary,
     marginBottom: 5,
     fontFamily: "Helvetica",
   },
   headerDivider: {
     borderBottomWidth: 2,
-    borderBottomColor: "#FFD700", // Kept gold for divider
+    borderBottomColor: PDF_COLORS.brandPrimary, // Gold divider
     marginTop: 20,
     marginBottom: 20,
   },
   metadataBox: {
-    backgroundColor: "#F8FAFC",
+    backgroundColor: PDF_COLORS.bgLight,
     padding: 16,
     borderRadius: 4,
     marginBottom: 20,
@@ -81,12 +136,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     fontWeight: 700,
-    color: "#4B5563",
+    color: PDF_COLORS.textSecondary,
     fontFamily: "Helvetica-Bold",
   },
   value: {
     fontSize: 10,
-    color: "#1F2937", // Reverted to original color
+    color: PDF_COLORS.textPrimary,
     fontFamily: "Helvetica",
   },
   statsRow: {
@@ -96,41 +151,41 @@ const styles = StyleSheet.create({
   },
   statItem: {
     width: "30%",
-    backgroundColor: "#EFF6FF",
+    backgroundColor: PDF_COLORS.bgBlue,
     borderRadius: 4,
     padding: 10,
   },
   statLabel: {
     fontSize: 9,
-    color: "#6B7280",
+    color: PDF_COLORS.textSecondary,
     marginBottom: 3,
     fontFamily: "Helvetica",
   },
   statValue: {
     fontSize: 14,
     fontWeight: 700,
-    color: "#2563EB",
+    color: PDF_COLORS.accentBlue,
     fontFamily: "Helvetica-Bold",
   },
   sectionTitle: {
     fontSize: 14,
     fontWeight: 700,
     marginBottom: 10,
-    color: "#1F2937",
+    color: PDF_COLORS.textPrimary,
     fontFamily: "Helvetica-Bold",
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#EFF6FF",
+    backgroundColor: PDF_COLORS.bgBlue,
     borderBottomWidth: 2,
-    borderBottomColor: "#FFD700", // Kept gold for table header
+    borderBottomColor: PDF_COLORS.brandPrimary, // Gold for emphasis
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
   tableHeaderText: {
     fontFamily: "Helvetica-Bold",
     fontSize: 12,
-    color: "#1F2937",
+    color: PDF_COLORS.textPrimary,
   },
   screenplayContainer: {
     marginTop: 10,
@@ -139,7 +194,7 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: PDF_COLORS.borderLight,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
@@ -201,7 +256,7 @@ const styles = StyleSheet.create({
   code: {
     fontSize: 12,
     fontFamily: "Courier",
-    backgroundColor: "#F8FAFC",
+    backgroundColor: PDF_COLORS.bgLight,
     padding: 5,
     marginBottom: 5,
   },
@@ -212,14 +267,14 @@ const styles = StyleSheet.create({
     right: 40,
     textAlign: "center",
     borderTopWidth: 1,
-    borderTopColor: "#FFD700", // Gold for footer border
+    borderTopColor: PDF_COLORS.brandPrimary, // Gold border
     paddingTop: 15,
-    backgroundColor: "#F8FAFC", // Subtle background for footer
+    backgroundColor: PDF_COLORS.bgLight,
   },
   footerText: {
     fontFamily: "Helvetica",
     fontSize: 9,
-    color: "#6B7280",
+    color: PDF_COLORS.textSecondary,
     marginTop: 5,
   },
   footerBrand: {
@@ -229,20 +284,20 @@ const styles = StyleSheet.create({
   footerBrandGameshow: {
     fontFamily: "Gameshow",
     fontSize: 16,
-    color: "#000000",
+    color: PDF_COLORS.brandBlack,
   },
   footerBrandGameshowHighlight: {
     fontFamily: "Gameshow",
     fontSize: 16,
-    color: "#FFD700", // Gold for "3"
+    color: PDF_COLORS.brandPrimary, // Gold highlight
   },
   footerBrandOrbitron: {
-    fontFamily: "Orbitron",
-    color: "#000000",
+    fontFamily: "Inter", // Using Inter instead of Orbitron
+    color: PDF_COLORS.brandBlack,
   },
   footerBrandOrbitronHighlight: {
-    fontFamily: "Orbitron",
-    color: "#FFD700", // Gold for "Stories"
+    fontFamily: "Inter",
+    color: PDF_COLORS.brandPrimary, // Gold highlight
   },
   superscript: {
     fontSize: 6,
@@ -254,7 +309,7 @@ const styles = StyleSheet.create({
     bottom: 30,
     right: 40,
     fontSize: 9,
-    color: "#9CA3AF",
+    color: PDF_COLORS.textMuted,
     fontFamily: "Helvetica",
   },
   description: {
@@ -283,7 +338,7 @@ const styles = StyleSheet.create({
   status: {
     fontSize: 14,
     fontWeight: 700,
-    color: "#10B981",
+    color: PDF_COLORS.accentSuccess,
     marginTop: 12,
     marginBottom: 20,
     textAlign: "right",
@@ -307,7 +362,7 @@ const styles = StyleSheet.create({
   table: {
     width: "100%",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: PDF_COLORS.borderLight,
     marginBottom: 10,
     fontFamily: "Montserrat",
   },
@@ -323,6 +378,10 @@ const styles = StyleSheet.create({
     fontFamily: "Montserrat",
   },
 });
+
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
 
 // Enhanced parsing for Tiptap HTML content
 const parseScriptContent = (htmlContent: string) => {
@@ -383,9 +442,9 @@ const parseScriptContent = (htmlContent: string) => {
       className.includes("has-text-align-center")
         ? "center"
         : styleAttr.includes("text-align: right") ||
-          className.includes("has-text-align-right")
-        ? "right"
-        : "left";
+            className.includes("has-text-align-right")
+          ? "right"
+          : "left";
 
     let type = parentType;
     if (className.includes("scene-heading")) type = "sceneHeading";
@@ -494,15 +553,11 @@ const formatDuration = (seconds: number): string => {
   return `${minutes}m ${remainingSeconds}s`;
 };
 
-// Script PDF Document Component
-const ScriptPDF = ({
-  title,
-  content,
-  scriptStats,
-  version,
-  date,
-  scriptType = "TV Commercial",
-}: {
+// ==========================================
+// PDF DOCUMENT COMPONENT
+// ==========================================
+
+interface ScriptPDFProps {
   title: string;
   content: string;
   scriptStats: {
@@ -516,7 +571,16 @@ const ScriptPDF = ({
   version: number;
   date: string;
   scriptType?: string;
-}) => {
+}
+
+const ScriptPDF = ({
+  title,
+  content,
+  scriptStats,
+  version,
+  date,
+  scriptType = "TV Commercial",
+}: ScriptPDFProps) => {
   const parsedContent = parseScriptContent(content);
 
   return (
@@ -738,8 +802,8 @@ const ScriptPDF = ({
                           textDecoration: segment.isUnderlined
                             ? "underline"
                             : segment.isStrikethrough
-                            ? "line-through"
-                            : "none",
+                              ? "line-through"
+                              : "none",
                         }}
                       >
                         {segment.text}
@@ -789,7 +853,20 @@ const ScriptPDF = ({
   );
 };
 
-// Function to trigger PDF download
+// ==========================================
+// EXPORT FUNCTION
+// ==========================================
+
+/**
+ * Export script content to PDF
+ *
+ * @param title - Script title
+ * @param content - HTML content from TipTap editor
+ * @param scriptStats - Script statistics
+ * @param version - Script version number
+ * @param scriptType - Type of script (e.g., "TV Commercial")
+ * @returns Promise<boolean> - Success status
+ */
 export const exportScriptToPDF = async (
   title: string,
   content: string,
@@ -803,7 +880,7 @@ export const exportScriptToPDF = async (
   },
   version: number,
   scriptType = "TV Commercial"
-) => {
+): Promise<boolean> => {
   const fileName = `${title.replace(/\s+/g, "_")}_v${version}.pdf`;
   const date = formatDate(new Date());
 

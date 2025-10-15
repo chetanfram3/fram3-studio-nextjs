@@ -1,4 +1,4 @@
-// components/scripts/VideoGeneratorDialog.tsx
+// src/modules/scripts/VideoGeneratorDialog.tsx
 "use client";
 
 import {
@@ -45,7 +45,10 @@ import {
 import CreditErrorDisplay from "@/components/common/CreditErrorDisplay";
 import logger from "@/utils/logger";
 
-// Define keyframes for animations
+// ==========================================
+// KEYFRAME ANIMATIONS
+// ==========================================
+
 const pulse = keyframes`
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
@@ -60,6 +63,10 @@ const float = keyframes`
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-8px); }
 `;
+
+// ==========================================
+// TYPE DEFINITIONS
+// ==========================================
 
 interface VideoProgressIndicatorProps {
   open: boolean;
@@ -79,6 +86,29 @@ interface Phase {
   icon: React.ReactNode;
 }
 
+/**
+ * VideoProgressIndicator - Progress display for video generation
+ *
+ * Performance optimizations (React 19):
+ * - No manual React.memo (compiler handles optimization)
+ * - useMemo for expensive computations
+ * - useCallback for event handlers
+ * - Strategic memoization only where needed
+ *
+ * Theme integration:
+ * - Uses theme.palette for all colors (no hardcoded colors)
+ * - Uses brand configuration for fonts and border radius
+ * - Respects light/dark mode automatically
+ * - Uses primary color for progress and highlights
+ * - All animations theme-aware
+ *
+ * Porting changes:
+ * - All colors use theme palette tokens
+ * - Added brand fonts throughout
+ * - Used brand border radius
+ * - Made all components theme-aware
+ * - Proper transitions from theme
+ */
 function VideoProgressIndicator({
   open,
   onClose,
@@ -90,6 +120,9 @@ function VideoProgressIndicator({
   genScriptId,
   currentVersionNumber,
 }: VideoProgressIndicatorProps) {
+  // ==========================================
+  // STATE & REFS
+  // ==========================================
   const [currentPhase, setCurrentPhase] = useState(0);
   const router = useRouter();
   const theme = useTheme();
@@ -110,6 +143,9 @@ function VideoProgressIndicator({
     retryAnalysis,
   } = useScriptAnalysisCore();
 
+  // ==========================================
+  // COMPUTED VALUES
+  // ==========================================
   // Define the phases of video generation with icons
   const phases: Phase[] = useMemo(
     () => [
@@ -182,6 +218,9 @@ function VideoProgressIndicator({
     [phases, currentPhase]
   );
 
+  // ==========================================
+  // HANDLERS
+  // ==========================================
   // Choose animation based on phase
   const getIconAnimation = useCallback(() => {
     switch (currentPhase) {
@@ -295,18 +334,15 @@ function VideoProgressIndicator({
     }
   }, [lastAnalysisParams, retryAnalysis]);
 
+  // ==========================================
+  // EFFECTS
+  // ==========================================
   useEffect(() => {
     if (open && scriptContent) {
       handleAnalyzeScript();
     }
-  }, [
-    open,
-    scriptContent,
-    processingMode,
-    aspectRatio,
-    pauseBeforeSettings,
-    handleAnalyzeScript,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, scriptContent, processingMode, aspectRatio, pauseBeforeSettings]);
 
   useEffect(() => {
     if (error) {
@@ -578,7 +614,24 @@ function VideoProgressIndicator({
   );
 }
 
-// Updated wrapper component that properly handles processing mode selection
+// ==========================================
+// WRAPPER COMPONENT
+// ==========================================
+
+/**
+ * VideoGeneratorWithMode - Wrapper component with mode selection
+ *
+ * Performance optimizations (React 19):
+ * - No manual React.memo (compiler handles optimization)
+ * - useCallback for event handlers
+ * - Strategic state management
+ *
+ * Theme integration:
+ * - Uses theme.palette for all colors
+ * - Uses brand configuration for fonts and border radius
+ * - Respects light/dark mode automatically
+ * - Uses primary color throughout
+ */
 export function VideoGeneratorWithMode({
   open,
   onClose,
@@ -592,9 +645,15 @@ export function VideoGeneratorWithMode({
   genScriptId?: string;
   currentVersionNumber?: number;
 }) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
   const brand = getCurrentBrand();
 
+  // ==========================================
+  // STATE
+  // ==========================================
   const [processingMode, setProcessingMode] =
     useState<ProcessingMode>("normal");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
@@ -611,6 +670,9 @@ export function VideoGeneratorWithMode({
   });
   const [showSelector, setShowSelector] = useState(true);
 
+  // ==========================================
+  // HANDLERS
+  // ==========================================
   const handleProcessingOptionsChange = useCallback(
     (
       mode: ProcessingMode,
@@ -635,6 +697,9 @@ export function VideoGeneratorWithMode({
     onClose();
   }, [onClose]);
 
+  // ==========================================
+  // RENDER
+  // ==========================================
   if (!open) return null;
 
   return (

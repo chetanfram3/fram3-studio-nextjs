@@ -1,3 +1,4 @@
+// src/modules/scripts/ScriptContextPanel.tsx
 "use client";
 
 import React from "react";
@@ -6,7 +7,6 @@ import {
   Typography,
   Chip,
   Paper,
-  useTheme,
   alpha,
   List,
   ListItem,
@@ -17,6 +17,7 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   Movie,
   MusicNote,
@@ -30,8 +31,12 @@ import {
   DesignServices,
   Help,
 } from "@mui/icons-material";
+import { getCurrentBrand } from "@/config/brandConfig";
 
-// Import types from the updated ScriptData interface
+// ==========================================
+// TYPE DEFINITIONS
+// ==========================================
+
 interface ScriptContextPanelProps {
   conceptSummary?: {
     coreIdea?: string;
@@ -73,13 +78,35 @@ interface ScriptContextPanelProps {
     selectedNarrativeStructure?: string | null;
   };
   scriptDuration?: number;
-  actualDuration?: number; // From EditorStats
+  actualDuration?: number;
   mode?: string;
   isRevision?: boolean;
   revisionSummary?: string | null;
 }
 
-const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
+/**
+ * ScriptContextPanel - Display script metadata and context information
+ *
+ * Performance optimizations (React 19):
+ * - No manual React.memo (compiler handles optimization)
+ * - Simple functional component for auto-optimization
+ * - Helper functions auto-optimized by compiler
+ *
+ * Theme integration:
+ * - Uses theme.palette for all colors (no hardcoded colors)
+ * - Uses brand configuration for fonts
+ * - Respects light/dark mode automatically
+ * - Uses primary color for main elements (not secondary)
+ * - Semantic colors (success/warning/error/info) used appropriately
+ *
+ * Porting changes:
+ * - Changed secondary color usage to primary
+ * - Removed hardcoded alpha values, using theme colors
+ * - Added brand fonts for all typography
+ * - Made all chips and icons theme-aware
+ * - Proper color usage following theme guide
+ */
+export function ScriptContextPanel({
   conceptSummary,
   suggestedVisualElements,
   suggestedAudioCues,
@@ -91,9 +118,16 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
   mode,
   isRevision,
   revisionSummary,
-}) => {
+}: ScriptContextPanelProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
   const theme = useTheme();
+  const brand = getCurrentBrand();
 
+  // ==========================================
+  // COMPUTED VALUES
+  // ==========================================
   // Check if duration is within target range
   const targetDuration =
     synthesizedInputs?.scriptConstraints?.durationSec || scriptDuration;
@@ -112,6 +146,9 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
     return "error";
   };
 
+  // ==========================================
+  // HELPER FUNCTIONS
+  // ==========================================
   // Render helper for requirement status
   const renderRequirementStatus = (isMet: boolean | null | undefined) => {
     if (isMet === null || isMet === undefined) return null;
@@ -135,15 +172,24 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
         }}
       >
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 500, mb: 0.5 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 500,
+              mb: 0.5,
+              color: "text.primary",
+              fontFamily: brand.fonts.heading,
+            }}
+          >
             Script Context
           </Typography>
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
             <Chip
               label={mode || "TV Commercial"}
               size="small"
-              color="secondary"
+              color="primary"
               icon={<Movie fontSize="small" />}
+              sx={{ fontFamily: brand.fonts.body }}
             />
             {isRevision && (
               <Chip
@@ -151,6 +197,7 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                 size="small"
                 color="info"
                 icon={<Notes fontSize="small" />}
+                sx={{ fontFamily: brand.fonts.body }}
               />
             )}
           </Box>
@@ -164,17 +211,31 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
           sx={{
             p: 2,
             mb: 3,
-            bgcolor: alpha(theme.palette.info.light, 0.15),
+            bgcolor: alpha(theme.palette.info.main, 0.1),
             borderLeft: `3px solid ${theme.palette.info.main}`,
+            borderRadius: `${brand.borderRadius}px`,
           }}
         >
           <Typography
             variant="subtitle2"
-            sx={{ mb: 0.5, color: theme.palette.info.main }}
+            sx={{
+              mb: 0.5,
+              color: "info.main",
+              fontFamily: brand.fonts.heading,
+              fontWeight: 600,
+            }}
           >
             Revision Notes
           </Typography>
-          <Typography variant="body2">{revisionSummary}</Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.primary",
+              fontFamily: brand.fonts.body,
+            }}
+          >
+            {revisionSummary}
+          </Typography>
         </Paper>
       )}
 
@@ -185,14 +246,27 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
         sx={{
           mb: 2,
           "&:before": { display: "none" },
-          borderRadius: 1,
-          bgcolor: (theme) => alpha(theme.palette.background.paper, 0.6),
+          borderRadius: `${brand.borderRadius}px`,
+          bgcolor: "background.paper",
+          border: 1,
+          borderColor: "divider",
         }}
       >
-        <AccordionSummary expandIcon={<ExpandMore />}>
+        <AccordionSummary
+          expandIcon={<ExpandMore sx={{ color: "primary.main" }} />}
+        >
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Timer sx={{ mr: 1, color: "text.secondary" }} />
-            <Typography variant="subtitle2">Duration Analysis</Typography>
+            <Timer sx={{ mr: 1, color: "primary.main" }} />
+            <Typography
+              variant="subtitle2"
+              sx={{
+                color: "text.primary",
+                fontFamily: brand.fonts.heading,
+                fontWeight: 600,
+              }}
+            >
+              Duration Analysis
+            </Typography>
           </Box>
         </AccordionSummary>
         <AccordionDetails>
@@ -205,12 +279,23 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                   alignItems: "center",
                 }}
               >
-                <Typography variant="body2">Target Duration:</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    fontFamily: brand.fonts.body,
+                  }}
+                >
+                  Target Duration:
+                </Typography>
                 <Chip
                   label={`${targetDuration} seconds`}
                   size="small"
-                  color="default"
                   variant="outlined"
+                  sx={{
+                    fontFamily: brand.fonts.body,
+                    borderColor: "divider",
+                  }}
                 />
               </Box>
             )}
@@ -223,7 +308,15 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                   alignItems: "center",
                 }}
               >
-                <Typography variant="body2">Current Estimate:</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    fontFamily: brand.fonts.body,
+                  }}
+                >
+                  Current Estimate:
+                </Typography>
                 <Chip
                   label={`${actualDuration} seconds`}
                   size="small"
@@ -231,10 +324,11 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     durationStatus() === "good"
                       ? "success"
                       : durationStatus() === "warning"
-                      ? "warning"
-                      : "error"
+                        ? "warning"
+                        : "error"
                   }
                   variant={durationStatus() === "good" ? "filled" : "outlined"}
+                  sx={{ fontFamily: brand.fonts.body }}
                 />
               </Box>
             )}
@@ -247,17 +341,26 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                   alignItems: "center",
                 }}
               >
-                <Typography variant="body2">Difference:</Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                    fontFamily: brand.fonts.body,
+                  }}
+                >
+                  Difference:
+                </Typography>
                 <Typography
                   variant="body2"
                   sx={{
                     fontWeight: 500,
+                    fontFamily: brand.fonts.body,
                     color:
                       durationStatus() === "good"
-                        ? theme.palette.success.main
+                        ? "success.main"
                         : durationStatus() === "warning"
-                        ? theme.palette.warning.main
-                        : theme.palette.error.main,
+                          ? "warning.main"
+                          : "error.main",
                   }}
                 >
                   {durationDifference > 0 ? "+" : ""}
@@ -277,14 +380,27 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
           sx={{
             mb: 2,
             "&:before": { display: "none" },
-            borderRadius: 1,
-            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.6),
+            borderRadius: `${brand.borderRadius}px`,
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
           }}
         >
-          <AccordionSummary expandIcon={<ExpandMore />}>
+          <AccordionSummary
+            expandIcon={<ExpandMore sx={{ color: "primary.main" }} />}
+          >
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Lightbulb sx={{ mr: 1, color: "text.secondary" }} />
-              <Typography variant="subtitle2">Concept Summary</Typography>
+              <Lightbulb sx={{ mr: 1, color: "primary.main" }} />
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.heading,
+                  fontWeight: 600,
+                }}
+              >
+                Concept Summary
+              </Typography>
             </Box>
           </AccordionSummary>
           <AccordionDetails>
@@ -297,8 +413,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
-                    secondaryTypographyProps={{ variant: "body2" }}
+                    secondaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -311,8 +432,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
-                    secondaryTypographyProps={{ variant: "body2" }}
+                    secondaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -325,8 +451,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
-                    secondaryTypographyProps={{ variant: "body2" }}
+                    secondaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -341,8 +472,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
-                    secondaryTypographyProps={{ variant: "body2" }}
+                    secondaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -355,8 +491,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
-                    secondaryTypographyProps={{ variant: "body2" }}
+                    secondaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -369,8 +510,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
-                    secondaryTypographyProps={{ variant: "body2" }}
+                    secondaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -383,8 +529,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
-                    secondaryTypographyProps={{ variant: "body2" }}
+                    secondaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -401,14 +552,27 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
           sx={{
             mb: 2,
             "&:before": { display: "none" },
-            borderRadius: 1,
-            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.6),
+            borderRadius: `${brand.borderRadius}px`,
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
           }}
         >
-          <AccordionSummary expandIcon={<ExpandMore />}>
+          <AccordionSummary
+            expandIcon={<ExpandMore sx={{ color: "primary.main" }} />}
+          >
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <CheckCircle sx={{ mr: 1, color: "text.secondary" }} />
-              <Typography variant="subtitle2">Requirements</Typography>
+              <CheckCircle sx={{ mr: 1, color: "primary.main" }} />
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.heading,
+                  fontWeight: 600,
+                }}
+              >
+                Requirements
+              </Typography>
             </Box>
           </AccordionSummary>
           <AccordionDetails>
@@ -423,7 +587,11 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                 >
                   <ListItemText
                     primary="Brand Name Mentioned"
-                    primaryTypographyProps={{ variant: "body2" }}
+                    primaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -437,7 +605,11 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                 >
                   <ListItemText
                     primary="Call to Action Included"
-                    primaryTypographyProps={{ variant: "body2" }}
+                    primaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -451,7 +623,11 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                 >
                   <ListItemText
                     primary="Legal/Mandatories Included"
-                    primaryTypographyProps={{ variant: "body2" }}
+                    primaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -459,10 +635,23 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
               {/* Must-Haves Details */}
               {synthesizedInputs.scriptConstraints.mustHaves && (
                 <ListItem disableGutters sx={{ display: "block", mt: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      fontFamily: brand.fonts.body,
+                    }}
+                  >
                     Must-Haves:
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mt: 0.5,
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
+                  >
                     {synthesizedInputs.scriptConstraints.mustHaves}
                   </Typography>
                 </ListItem>
@@ -471,10 +660,23 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
               {/* Mandatories Details */}
               {synthesizedInputs.scriptConstraints.mandatories && (
                 <ListItem disableGutters sx={{ display: "block", mt: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: "text.secondary",
+                      fontFamily: brand.fonts.body,
+                    }}
+                  >
                     Legal/Mandatories:
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mt: 0.5,
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
+                  >
                     {synthesizedInputs.scriptConstraints.mandatories}
                   </Typography>
                 </ListItem>
@@ -492,14 +694,27 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
           sx={{
             mb: 2,
             "&:before": { display: "none" },
-            borderRadius: 1,
-            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.6),
+            borderRadius: `${brand.borderRadius}px`,
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
           }}
         >
-          <AccordionSummary expandIcon={<ExpandMore />}>
+          <AccordionSummary
+            expandIcon={<ExpandMore sx={{ color: "primary.main" }} />}
+          >
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <DesignServices sx={{ mr: 1, color: "text.secondary" }} />
-              <Typography variant="subtitle2">Creative Suggestions</Typography>
+              <DesignServices sx={{ mr: 1, color: "primary.main" }} />
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.heading,
+                  fontWeight: 600,
+                }}
+              >
+                Creative Suggestions
+              </Typography>
             </Box>
           </AccordionSummary>
           <AccordionDetails>
@@ -508,8 +723,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
               <Box sx={{ mb: 2 }}>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "flex", alignItems: "center", mb: 1 }}
+                  sx={{
+                    color: "text.secondary",
+                    display: "flex",
+                    alignItems: "center",
+                    mb: 1,
+                    fontFamily: brand.fonts.body,
+                  }}
                 >
                   <Movie fontSize="small" sx={{ mr: 0.5 }} /> Visual Elements
                 </Typography>
@@ -520,8 +740,12 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                       label={element}
                       size="small"
                       variant="outlined"
-                      color="default"
-                      sx={{ m: 0.5 }}
+                      sx={{
+                        m: 0.5,
+                        fontFamily: brand.fonts.body,
+                        borderColor: "divider",
+                        color: "text.primary",
+                      }}
                     />
                   ))}
                 </Box>
@@ -533,8 +757,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
               <Box>
                 <Typography
                   variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "flex", alignItems: "center", mb: 1 }}
+                  sx={{
+                    color: "text.secondary",
+                    display: "flex",
+                    alignItems: "center",
+                    mb: 1,
+                    fontFamily: brand.fonts.body,
+                  }}
                 >
                   <MusicNote fontSize="small" sx={{ mr: 0.5 }} /> Audio Cues
                 </Typography>
@@ -545,8 +774,12 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                       label={cue}
                       size="small"
                       variant="outlined"
-                      color="default"
-                      sx={{ m: 0.5 }}
+                      sx={{
+                        m: 0.5,
+                        fontFamily: brand.fonts.body,
+                        borderColor: "divider",
+                        color: "text.primary",
+                      }}
                     />
                   ))}
                 </Box>
@@ -564,14 +797,27 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
           sx={{
             mb: 2,
             "&:before": { display: "none" },
-            borderRadius: 1,
-            bgcolor: (theme) => alpha(theme.palette.background.paper, 0.6),
+            borderRadius: `${brand.borderRadius}px`,
+            bgcolor: "background.paper",
+            border: 1,
+            borderColor: "divider",
           }}
         >
-          <AccordionSummary expandIcon={<ExpandMore />}>
+          <AccordionSummary
+            expandIcon={<ExpandMore sx={{ color: "primary.main" }} />}
+          >
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Campaign sx={{ mr: 1, color: "text.secondary" }} />
-              <Typography variant="subtitle2">Call to Action</Typography>
+              <Campaign sx={{ mr: 1, color: "primary.main" }} />
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  color: "text.primary",
+                  fontFamily: brand.fonts.heading,
+                  fontWeight: 600,
+                }}
+              >
+                Call to Action
+              </Typography>
             </Box>
           </AccordionSummary>
           <AccordionDetails>
@@ -584,10 +830,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
                     secondaryTypographyProps={{
                       variant: "body2",
                       fontWeight: 500,
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
                     }}
                   />
                 </ListItem>
@@ -601,8 +850,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
-                    secondaryTypographyProps={{ variant: "body2" }}
+                    secondaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -615,8 +869,13 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
                     primaryTypographyProps={{
                       variant: "caption",
                       color: "text.secondary",
+                      fontFamily: brand.fonts.body,
                     }}
-                    secondaryTypographyProps={{ variant: "body2" }}
+                    secondaryTypographyProps={{
+                      variant: "body2",
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                    }}
                   />
                 </ListItem>
               )}
@@ -628,20 +887,32 @@ const ScriptContextPanel: React.FC<ScriptContextPanelProps> = ({
       {/* Help/Info Panel */}
       <Box sx={{ mt: 3, textAlign: "center" }}>
         <Tooltip title="This panel shows context and metadata from the script generation process to help guide your editing">
-          <IconButton size="small" color="info">
+          <IconButton
+            size="small"
+            color="info"
+            sx={{
+              "&:hover": {
+                bgcolor: alpha(theme.palette.info.main, 0.08),
+              },
+            }}
+          >
             <Help fontSize="small" />
           </IconButton>
         </Tooltip>
         <Typography
           variant="caption"
-          color="text.secondary"
-          sx={{ display: "block", mt: 0.5 }}
+          sx={{
+            display: "block",
+            mt: 0.5,
+            color: "text.secondary",
+            fontFamily: brand.fonts.body,
+          }}
         >
           Use this context to guide your edits
         </Typography>
       </Box>
     </Box>
   );
-};
+}
 
 export default ScriptContextPanel;

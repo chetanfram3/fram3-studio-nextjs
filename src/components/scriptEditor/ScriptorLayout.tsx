@@ -1,39 +1,52 @@
 // src/modules/scripts/ScriptorLayout.tsx
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Box, Container, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { getCurrentBrand } from "@/config/brandConfig";
 
 interface ScriptorLayoutProps {
   children: React.ReactNode;
 }
 
-const ScriptorLayout: React.FC<ScriptorLayoutProps> = ({ children }) => {
-  // Load Orbitron font using React's useEffect
-  useEffect(() => {
-    // Create link element for Google Fonts
-    const link = document.createElement("link");
-    link.href =
-      "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap";
-    link.rel = "stylesheet";
-
-    // Append to the document head
-    document.head.appendChild(link);
-
-    // Clean up function to remove the link when component unmounts
-    return () => {
-      document.head.removeChild(link);
-    };
-  }, []);
+/**
+ * ScriptorLayout - Layout wrapper for Scriptor module
+ *
+ * Performance optimizations (React 19):
+ * - No manual React.memo (compiler handles optimization)
+ * - No unnecessary useEffect for font loading (use Next.js font loading instead)
+ * - Simple functional component for auto-optimization
+ *
+ * Theme integration:
+ * - Uses theme.palette for all colors
+ * - Uses brand configuration for fonts (not hardcoded 'Orbitron')
+ * - Respects light/dark mode automatically
+ * - No hardcoded colors or spacing
+ *
+ * Porting changes:
+ * - Removed useEffect for Google Fonts (should use Next.js font optimization)
+ * - Replaced hardcoded 'Orbitron' with brand.fonts.heading
+ * - Replaced color="primary.main" with theme palette
+ * - Replaced color="secondary.main" with theme palette
+ * - Used responsive spacing from theme
+ * - Made component auto-optimized by React 19 compiler
+ */
+export function ScriptorLayout({ children }: ScriptorLayoutProps) {
+  // ==========================================
+  // THEME & BRANDING
+  // ==========================================
+  const theme = useTheme();
+  const brand = getCurrentBrand();
 
   return (
     <Box
       sx={{
         bgcolor: "background.default",
-        color: "primary.main",
+        color: "text.primary",
         minHeight: "100vh",
-        pt: 4,
-        pb: 8,
+        pt: { xs: 3, md: 4 },
+        pb: { xs: 6, md: 8 },
       }}
     >
       <Container maxWidth="xl">
@@ -43,7 +56,7 @@ const ScriptorLayout: React.FC<ScriptorLayoutProps> = ({ children }) => {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            mb: 6,
+            mb: { xs: 4, md: 6 },
             position: "relative",
           }}
         >
@@ -51,14 +64,20 @@ const ScriptorLayout: React.FC<ScriptorLayoutProps> = ({ children }) => {
             variant="h1"
             component="h1"
             sx={{
-              fontFamily: "'Orbitron', Inter",
+              fontFamily: brand.fonts.heading,
               fontWeight: 700,
               letterSpacing: 2,
               textAlign: "center",
+              color: "text.primary",
             }}
           >
             SCRPT
-            <Box component="span" sx={{ color: "secondary.main" }}>
+            <Box
+              component="span"
+              sx={{
+                color: theme.palette.primary.main,
+              }}
+            >
               E0
             </Box>
             R
@@ -69,11 +88,13 @@ const ScriptorLayout: React.FC<ScriptorLayoutProps> = ({ children }) => {
             sx={{
               position: "absolute",
               right: 0,
-              fontSize: "0.9REM",
+              fontSize: "0.9rem",
               top: "50%",
               transform: "translateY(-50%)",
+              color: "text.secondary",
               opacity: 0.7,
               fontStyle: "italic",
+              fontFamily: brand.fonts.body,
             }}
           >
             Story as a Service
@@ -93,6 +114,6 @@ const ScriptorLayout: React.FC<ScriptorLayoutProps> = ({ children }) => {
       </Container>
     </Box>
   );
-};
+}
 
 export default ScriptorLayout;
