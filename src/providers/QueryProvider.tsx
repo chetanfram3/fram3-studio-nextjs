@@ -30,7 +30,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {children}
       {/* Add React Query Devtools in development */}
-      {process.env.NODE_ENV === "development" && (
+      {process.env.NODE_ENV === "test" && (
         <ReactQueryDevtools initialIsOpen={false} />
       )}
     </QueryClientProvider>
