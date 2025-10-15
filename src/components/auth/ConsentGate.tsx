@@ -35,20 +35,20 @@ interface ConsentGateProps {
 
 /**
  * Consent Gate Component
- * 
+ *
  * Blocks application access until user accepts legal agreements.
  * Works across all sign-in methods (email, Google, Facebook, etc.)
- * 
+ *
  * Features:
  * - Blocking modal (cannot close via backdrop/escape)
  * - Different UI for first login vs consent update
  * - Accept button saves consent to Firestore
  * - Decline button logs user out
  * - Automatic version checking
- * 
+ *
  * Usage:
  * Wrap your app or protected routes:
- * 
+ *
  * @example
  * <ConsentGate>
  *   <YourAppContent />
@@ -100,9 +100,7 @@ export default function ConsentGate({ children }: ConsentGateProps) {
   return (
     <>
       {/* Render children behind modal (blocked) */}
-      <Box sx={{ filter: "blur(4px)", pointerEvents: "none" }}>
-        {children}
-      </Box>
+      <Box sx={{ filter: "blur(4px)", pointerEvents: "none" }}>{children}</Box>
 
       {/* Blocking Consent Modal */}
       <Dialog
@@ -226,6 +224,18 @@ export default function ConsentGate({ children }: ConsentGateProps) {
                       <ListItemText
                         primary={
                           <Typography variant="body2" color="text.primary">
+                            Copyright (v{LEGAL_VERSIONS.COOKIES})
+                          </Typography>
+                        }
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <CheckCircleIcon color="primary" fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={
+                          <Typography variant="body2" color="text.primary">
                             Cookie Policy (v{LEGAL_VERSIONS.COOKIES})
                           </Typography>
                         }
@@ -250,8 +260,8 @@ export default function ConsentGate({ children }: ConsentGateProps) {
                 >
                   <Typography variant="body2" color="text.primary">
                     We&apos;ve updated our legal documents to version{" "}
-                    {LEGAL_VERSIONS.TERMS}. Please review and accept to
-                    continue using our services.
+                    {LEGAL_VERSIONS.TERMS}. Please review and accept to continue
+                    using our services.
                   </Typography>
                 </Alert>
 
@@ -303,6 +313,21 @@ export default function ConsentGate({ children }: ConsentGateProps) {
                   }}
                 >
                   Privacy Policy
+                </Button>
+                <Button
+                  href="/legal/copyright"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="small"
+                  sx={{
+                    color: "primary.main",
+                    textTransform: "none",
+                    "&:hover": {
+                      bgcolor: "action.hover",
+                    },
+                  }}
+                >
+                  Copyright© Policy
                 </Button>
                 <Button
                   href="/legal/cookies"
