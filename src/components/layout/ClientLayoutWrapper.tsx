@@ -2,6 +2,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { useAuthStore } from "@/store/authStore";
 import { Footer } from "@/components/footer";
 import CookieConsentBanner from "@/components/legal/CookieConsentBanner";
 
@@ -14,10 +15,15 @@ interface ClientLayoutWrapperProps {
  * This separates client components from the server-side root layout
  */
 export function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
+  const { user } = useAuthStore();
+  
+  // Only show footer if user is NOT logged in
+  const showFooter = !user;
+
   return (
     <>
       {children}
-      <Footer />
+      {showFooter && <Footer />}
       <CookieConsentBanner />
     </>
   );
