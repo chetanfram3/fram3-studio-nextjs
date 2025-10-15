@@ -1,213 +1,464 @@
-// src/services/consentService.ts
+// src/services/firestore/consentService.ts
 
-import { auth } from '@/lib/firebase';
-import { API_BASE_URL } from '@/config/constants';
-import logger from '@/utils/logger';
-import type { ConsentPreferences, ConsentUpdatePayload } from '@/types/consent';
+import {
+  doc,
+  setDoc,
+  getDoc,
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+  limit,
+  getDocs,
+  Timestamp,
+} from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import type { ConsentPreferences } from "@/types/consent";
+import { LEGAL_VERSIONS, isVersionOutdated } from "@/config/legalVersions";
+import logger from "@/utils/logger";
 
 /**
- * Update user consent preferences in backend
- * Generic API that handles all consent types (cookies, terms, privacy)
+ * Firestore Consent Service
  * 
- * @param preferences - Consent preferences to update
- * @returns Promise that resolves when update is complete
- * @throws Error if update fails or user is not authenticated
+ * Manages user consent preferences directly in Firestore.
+ * Follows the same pattern as fcmService for consistency.
+ * 
+ * Collection Structure:
+ * users/{uid}/consents/current - Current consent document
+ * users/{uid}/consents/current/history/{timestamp} - Audit trail
+ * 
+ * Features:
+ * - Direct Firebase writes (no backend API needed)
+ * - Automatic audit trail
+ * - Version tracking
+ * - First login tracking
+ * - IP address and user agent logging
  */
-export async function updateConsentPreferences(
-    preferences: ConsentPreferences
-): Promise<void> {
-    const token = await auth.currentUser?.getIdToken();
 
-    if (!token) {
-        throw new Error('No authentication token available');
+// =============================================================================
+// TYPES
+// =============================================================================
+
+interface FirestoreConsentData extends ConsentPreferences {
+  lastUpdated: ReturnType<typeof serverTimestamp>;
+  userId: string;
+  userAgent: string;
+  ipAddress?: string;
+}
+
+interface ConsentHistoryEntry {
+  consent: ConsentPreferences;
+  timestamp: ReturnType<typeof serverTimestamp>;
+  userAgent: string;
+  ipAddress?: string;
+  action: "created" | "updated";
+}
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Get user agent string
+ */
+function getUserAgent(): string {
+  return typeof navigator !== "undefined" ? navigator.userAgent : "Unknown";
+}
+
+/**
+ * Get user IP address (client-side approximation)
+ * Note: This is limited on client-side, consider backend logging for accurate IP
+ */
+async function getIpAddress(): Promise<string | undefined> {
+  try {
+    // This is a simple client-side approach
+    // For production, consider using a backend endpoint
+    const response = await fetch("https://api.ipify.org?format=json");
+    const data = await response.json();
+    return data.ip;
+  } catch (error) {
+    logger.warn("Could not fetch IP address:", error);
+    return undefined;
+  }
+}
+
+// =============================================================================
+// CORE CONSENT FUNCTIONS
+// =============================================================================
+
+/**
+ * Save consent preferences to Firestore
+ * 
+ * @param consent - Consent preferences to save
+ * @param isFirstLogin - Whether this is user's first time accepting consent
+ * @returns Promise that resolves when save is complete
+ * @throws Error if user is not authenticated or save fails
+ * 
+ * @example
+ * await saveConsentToFirestore({
+ *   termsAccepted: { accepted: true, version: "1.0", timestamp: "..." },
+ *   firstLogin: true
+ * });
+ */
+export async function saveConsentToFirestore(
+  consent: ConsentPreferences,
+  isFirstLogin: boolean = false
+): Promise<void> {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("No authenticated user");
     }
 
-    logger.debug('Updating consent preferences', preferences);
+    logger.debug("Saving consent to Firestore for user:", user.uid, { isFirstLogin });
 
-    const payload: ConsentUpdatePayload = {
-        consentPreferences: preferences
+    // Get IP address (optional, for audit trail)
+    const ipAddress = await getIpAddress();
+
+    // Reference to current consent document
+    const consentRef = doc(db, "users", user.uid, "consents", "current");
+
+    // Prepare consent data with firstLogin flag
+    const consentData: FirestoreConsentData = {
+      ...consent,
+      firstLogin: isFirstLogin,  // 🆕 Track first login
+      lastUpdated: serverTimestamp(),
+      userId: user.uid,
+      userAgent: getUserAgent(),
+      ipAddress,
     };
 
-    const response = await fetch(`${API_BASE_URL}/user/consent`, {
-        method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    });
+    // Save to Firestore (merge to preserve other fields)
+    await setDoc(consentRef, consentData, { merge: true });
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({
-            message: 'Failed to update consent preferences'
-        }));
-        logger.error('Failed to update consent preferences:', error);
-        throw new Error(error.message || 'Failed to update consent preferences');
-    }
+    // Add to history for audit trail
+    await addToConsentHistory(user.uid, consent, isFirstLogin ? "created" : "updated");
 
-    const data = await response.json();
-    logger.debug('Consent preferences updated successfully', data);
+    logger.debug("Consent saved successfully to Firestore");
+  } catch (error) {
+    logger.error("Error saving consent to Firestore:", error);
+    throw error;
+  }
 }
 
 /**
- * Get user consent preferences from backend
- * Fetches the full user profile and extracts consent preferences
+ * Get consent preferences from Firestore
  * 
  * @returns Promise with consent preferences or null if not found
+ * @throws Error if user is not authenticated
+ * 
+ * @example
+ * const consent = await getConsentFromFirestore();
+ * if (consent?.termsAccepted?.accepted) {
+ *   // User has accepted terms
+ * }
  */
-export async function getConsentPreferences(): Promise<ConsentPreferences | null> {
-    const token = await auth.currentUser?.getIdToken();
-
-    if (!token) {
-        logger.debug('No authentication token, cannot fetch consent preferences');
-        return null;
+export async function getConsentFromFirestore(): Promise<ConsentPreferences | null> {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("No authenticated user");
     }
 
-    try {
-        logger.debug('Fetching consent preferences from profile');
+    logger.debug("Fetching consent from Firestore for user:", user.uid);
 
-        const response = await fetch(`${API_BASE_URL}/user/profile`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
+    const consentRef = doc(db, "users", user.uid, "consents", "current");
+    const consentSnap = await getDoc(consentRef);
 
-        if (!response.ok) {
-            logger.warn('Failed to fetch profile for consent preferences');
-            return null;
-        }
-
-        const data = await response.json();
-        const consentPrefs = data.data?.extendedInfo?.details?.consentPreferences;
-
-        if (consentPrefs) {
-            logger.debug('Consent preferences retrieved from profile');
-            return consentPrefs;
-        }
-
-        logger.debug('No consent preferences found in profile');
-        return null;
-    } catch (error) {
-        logger.error('Error fetching consent preferences:', error);
-        return null;
+    if (!consentSnap.exists()) {
+      logger.debug("No consent data found in Firestore");
+      return null;
     }
+
+    const data = consentSnap.data();
+
+    // Extract only the consent preferences (remove metadata)
+    const consent: ConsentPreferences = {
+      termsAccepted: data.termsAccepted,
+      privacyPolicyAccepted: data.privacyPolicyAccepted,
+      cookieConsent: data.cookieConsent,
+      firstLogin: data.firstLogin,  // 🆕 Include firstLogin
+    };
+
+    logger.debug("Consent fetched successfully from Firestore");
+    return consent;
+  } catch (error) {
+    logger.error("Error fetching consent from Firestore:", error);
+    throw error;
+  }
 }
 
 /**
- * Delete user consent preferences
- * Removes all consent preferences from user profile
+ * Check if user needs to update consent (version mismatch)
+ * 
+ * @returns Promise with boolean indicating if update is needed
+ * @throws Error if user is not authenticated
+ * 
+ * @example
+ * const needsUpdate = await needsConsentUpdate();
+ * if (needsUpdate) {
+ *   // Show consent update modal
+ * }
+ */
+export async function needsConsentUpdate(): Promise<boolean> {
+  try {
+    const consent = await getConsentFromFirestore();
+
+    // No consent = needs acceptance (first login)
+    if (!consent) {
+      logger.debug("No consent found - user needs to accept (first login)");
+      return true;
+    }
+
+    // Check if terms version is outdated
+    const termsOutdated =
+      !consent.termsAccepted ||
+      isVersionOutdated(
+        consent.termsAccepted.version,
+        LEGAL_VERSIONS.TERMS
+      );
+
+    // Check if privacy policy version is outdated
+    const privacyOutdated =
+      !consent.privacyPolicyAccepted ||
+      isVersionOutdated(
+        consent.privacyPolicyAccepted.version,
+        LEGAL_VERSIONS.PRIVACY
+      );
+
+    const needsUpdate = termsOutdated || privacyOutdated;
+
+    if (needsUpdate) {
+      logger.debug(
+        "Consent is outdated:",
+        { termsOutdated, privacyOutdated }
+      );
+    }
+
+    return needsUpdate;
+  } catch (error) {
+    logger.error("Error checking consent version:", error);
+    // Default to requiring consent if error occurs (safer approach)
+    return true;
+  }
+}
+
+/**
+ * Delete consent preferences from Firestore
+ * Used when user withdraws consent or deletes account
  * 
  * @returns Promise that resolves when deletion is complete
- * @throws Error if deletion fails or user is not authenticated
+ * @throws Error if user is not authenticated
  */
-export async function deleteConsentPreferences(): Promise<void> {
-    const token = await auth.currentUser?.getIdToken();
-
-    if (!token) {
-        throw new Error('No authentication token available');
+export async function deleteConsentFromFirestore(): Promise<void> {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("No authenticated user");
     }
 
-    logger.debug('Deleting consent preferences');
+    logger.debug("Deleting consent from Firestore for user:", user.uid);
 
-    const response = await fetch(`${API_BASE_URL}/user/consent`, {
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
-    });
+    const consentRef = doc(db, "users", user.uid, "consents", "current");
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({
-            message: 'Failed to delete consent preferences'
-        }));
-        logger.error('Failed to delete consent preferences:', error);
-        throw new Error(error.message || 'Failed to delete consent preferences');
-    }
+    // Mark as deleted with timestamp (soft delete for audit purposes)
+    await setDoc(
+      consentRef,
+      {
+        deleted: true,
+        deletedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
 
-    logger.debug('Consent preferences deleted successfully');
+    // Add deletion to history
+    await addToConsentHistory(user.uid, {}, "updated");
+
+    logger.debug("Consent deleted successfully from Firestore");
+  } catch (error) {
+    logger.error("Error deleting consent from Firestore:", error);
+    throw error;
+  }
 }
 
+// =============================================================================
+// CONVENIENCE FUNCTIONS
+// =============================================================================
+
 /**
- * Batch update multiple consent types at once
- * Useful when user accepts terms, privacy, and cookies together
+ * Accept terms and privacy policy (used during sign-in)
  * 
- * @param preferences - Multiple consent preferences to update
- * @returns Promise that resolves when all updates are complete
+ * @param isFirstLogin - Whether this is user's first time accepting consent
+ * @returns Promise that resolves when acceptance is saved
+ * 
+ * @example
+ * // First time user
+ * await acceptTermsAndPrivacy(true);
+ * 
+ * // Updating consent
+ * await acceptTermsAndPrivacy(false);
  */
-export async function batchUpdateConsent(
-    preferences: ConsentPreferences
+export async function acceptTermsAndPrivacy(
+  isFirstLogin: boolean = true
 ): Promise<void> {
-    return updateConsentPreferences(preferences);
+  const consent: ConsentPreferences = {
+    termsAccepted: {
+      accepted: true,
+      version: LEGAL_VERSIONS.TERMS,
+      timestamp: new Date().toISOString(),
+    },
+    privacyPolicyAccepted: {
+      accepted: true,
+      version: LEGAL_VERSIONS.PRIVACY,
+      timestamp: new Date().toISOString(),
+    },
+    firstLogin: isFirstLogin,  // 🆕 Track first login
+  };
+
+  await saveConsentToFirestore(consent, isFirstLogin);
 }
 
 /**
- * Export user consent data (GDPR compliance)
- * Returns all consent-related data for the user
+ * Update cookie consent preferences only
  * 
- * @returns Promise with consent data export
- */
-export async function exportConsentData(): Promise<ConsentPreferences | null> {
-    return getConsentPreferences();
-}
-
-// =============================================================================
-// HELPER FUNCTIONS FOR SPECIFIC CONSENT TYPES
-// =============================================================================
-
-/**
- * Update only cookie consent
+ * @param cookieConsent - Cookie consent preferences
+ * @returns Promise that resolves when update is complete
+ * 
+ * @example
+ * await updateCookieConsent({
+ *   necessary: true,
+ *   analytics: true,
+ *   marketing: false,
+ *   preferences: true,
+ *   timestamp: new Date().toISOString(),
+ *   version: "1.0"
+ * });
  */
 export async function updateCookieConsent(
-    cookieConsent: ConsentPreferences['cookieConsent']
+  cookieConsent: ConsentPreferences["cookieConsent"]
 ): Promise<void> {
-    if (!cookieConsent) {
-        throw new Error('Cookie consent is required');
-    }
+  if (!cookieConsent) {
+    throw new Error("Cookie consent is required");
+  }
 
-    return updateConsentPreferences({ cookieConsent });
-}
+  const consent: ConsentPreferences = {
+    cookieConsent,
+    firstLogin: false,  // Cookie updates are never first login
+  };
 
-/**
- * Update only terms acceptance
- */
-export async function updateTermsAcceptance(
-    termsAccepted: ConsentPreferences['termsAccepted']
-): Promise<void> {
-    if (!termsAccepted) {
-        throw new Error('Terms acceptance is required');
-    }
-
-    return updateConsentPreferences({ termsAccepted });
-}
-
-/**
- * Update only privacy policy acceptance
- */
-export async function updatePrivacyAcceptance(
-    privacyPolicyAccepted: ConsentPreferences['privacyPolicyAccepted']
-): Promise<void> {
-    if (!privacyPolicyAccepted) {
-        throw new Error('Privacy policy acceptance is required');
-    }
-
-    return updateConsentPreferences({ privacyPolicyAccepted });
+  await saveConsentToFirestore(consent, false);
 }
 
 // =============================================================================
-// EXPORT DEFAULT
+// AUDIT TRAIL / HISTORY
 // =============================================================================
 
-const consentService = {
-    updateConsentPreferences,
-    getConsentPreferences,
-    deleteConsentPreferences,
-    batchUpdateConsent,
-    exportConsentData,
-    updateCookieConsent,
-    updateTermsAcceptance,
-    updatePrivacyAcceptance
+/**
+ * Add consent change to history (audit trail)
+ * Internal function - automatically called by save operations
+ * 
+ * @param userId - User ID
+ * @param consent - Consent preferences
+ * @param action - Action type (created/updated)
+ */
+async function addToConsentHistory(
+  userId: string,
+  consent: ConsentPreferences,
+  action: "created" | "updated"
+): Promise<void> {
+  try {
+    const historyRef = collection(
+      db,
+      "users",
+      userId,
+      "consents",
+      "current",
+      "history"
+    );
+
+    const ipAddress = await getIpAddress();
+
+    const historyEntry: ConsentHistoryEntry = {
+      consent,
+      timestamp: serverTimestamp(),
+      userAgent: getUserAgent(),
+      ipAddress,
+      action,
+    };
+
+    await addDoc(historyRef, historyEntry);
+
+    logger.debug("Consent history entry added");
+  } catch (error) {
+    // Non-critical error - log but don't throw
+    logger.warn("Failed to save consent history:", error);
+  }
+}
+
+/**
+ * Get consent history for user (for audit/compliance purposes)
+ * 
+ * @param limitCount - Maximum number of history entries to retrieve
+ * @returns Promise with array of consent history entries
+ * @throws Error if user is not authenticated
+ * 
+ * @example
+ * const history = await getConsentHistory(10);
+ * history.forEach(entry => {
+ *   console.log(entry.action, entry.timestamp);
+ * });
+ */
+export async function getConsentHistory(
+  limitCount: number = 10
+): Promise<ConsentHistoryEntry[]> {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("No authenticated user");
+    }
+
+    logger.debug(
+      `Fetching consent history for user: ${user.uid} (limit: ${limitCount})`
+    );
+
+    const historyRef = collection(
+      db,
+      "users",
+      user.uid,
+      "consents",
+      "current",
+      "history"
+    );
+
+    const q = query(historyRef, orderBy("timestamp", "desc"), limit(limitCount));
+    const querySnapshot = await getDocs(q);
+
+    const history: ConsentHistoryEntry[] = [];
+    querySnapshot.forEach((doc) => {
+      history.push(doc.data() as ConsentHistoryEntry);
+    });
+
+    logger.debug(`Retrieved ${history.length} consent history entries`);
+    return history;
+  } catch (error) {
+    logger.error("Error fetching consent history:", error);
+    throw error;
+  }
+}
+
+// =============================================================================
+// EXPORT DEFAULT SERVICE OBJECT
+// =============================================================================
+
+const firestoreConsentService = {
+  saveConsentToFirestore,
+  getConsentFromFirestore,
+  needsConsentUpdate,
+  deleteConsentFromFirestore,
+  acceptTermsAndPrivacy,
+  updateCookieConsent,
+  getConsentHistory,
 };
 
-export default consentService;
+export default firestoreConsentService;

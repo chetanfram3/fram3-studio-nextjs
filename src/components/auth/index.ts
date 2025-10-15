@@ -14,3 +14,4 @@ export { PasswordStrengthBar, validatePassword } from './PasswordStrength';
 export { default as SignInForm } from './SignInForm';
 export { default as RegisterForm } from './RegisterForm';
 export { default as ForgotPasswordForm } from './ForgotPasswordForm';
+export { default as ConsentGate } from "./ConsentGate";

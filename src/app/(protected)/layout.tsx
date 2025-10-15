@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import { Header } from "@/components/header/Header";
-import { AuthGuard } from "@/components/auth";
+import { AuthGuard, ConsentGate } from "@/components/auth";
 import { SidebarProvider, Sidebar } from "@/components/sidebar";
 import { Box } from "@mui/material";
 import { initializeFCM } from "@/services/fcmService";
@@ -76,51 +76,54 @@ export default function ProtectedLayout({
       redirectTo="/signin"
       loadingText="Checking authentication..."
     >
-      <SidebarProvider>
-        <Box
-          sx={{
-            display: "flex",
-            minHeight: "100vh",
-            bgcolor: "background.default",
-          }}
-        >
-          {/* Sidebar Component */}
-          <Sidebar />
-
-          {/* Main Content Area */}
+      {/* 🆕 NEW: Wrap with ConsentGate to enforce legal agreement */}
+      <ConsentGate>
+        <SidebarProvider>
           <Box
-            component="main"
             sx={{
-              flexGrow: 1,
               display: "flex",
-              flexDirection: "column",
               minHeight: "100vh",
-              width: "100%",
-              overflow: "hidden",
-              pl: 10,
-              pr: 10,
+              bgcolor: "background.default",
             }}
           >
-            <ImpersonationBanner />
-            {/* Header */}
-            <Header />
+            {/* Sidebar Component */}
+            <Sidebar />
 
-            {/* Page Content */}
+            {/* Main Content Area */}
             <Box
+              component="main"
               sx={{
                 flexGrow: 1,
-                p: { xs: 2, sm: 3, md: 4 },
-                mt: 8, // Account for fixed header height
-                overflow: "auto",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: "100vh",
+                width: "100%",
+                overflow: "hidden",
+                pl: 10,
+                pr: 10,
               }}
             >
-              <ContainerWidthControl position="bottom-right">
-                {children}
-              </ContainerWidthControl>
+              <ImpersonationBanner />
+              {/* Header */}
+              <Header />
+
+              {/* Page Content */}
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  p: { xs: 2, sm: 3, md: 4 },
+                  mt: 8, // Account for fixed header height
+                  overflow: "auto",
+                }}
+              >
+                <ContainerWidthControl position="bottom-right">
+                  {children}
+                </ContainerWidthControl>
+              </Box>
             </Box>
           </Box>
-        </Box>
-      </SidebarProvider>
+        </SidebarProvider>
+      </ConsentGate>
     </AuthGuard>
   );
 }

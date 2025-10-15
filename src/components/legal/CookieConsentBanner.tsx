@@ -19,7 +19,8 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import CookieIcon from "@mui/icons-material/Cookie";
 import { getCurrentBrand } from "@/config/brandConfig";
-import { updateConsentPreferences } from "@/services/consentService";
+// 🔧 CHANGED: Import from Firestore service instead
+import { updateCookieConsent } from "@/services/firestore/consentService";
 import {
   hasValidConsent,
   saveConsentToLocalStorage,
@@ -103,14 +104,11 @@ export default function CookieConsentBanner({
       // Step 2: Initialize tracking services
       initializeTrackingServices(consent);
 
-      // Step 3: If user is logged in, save to backend
+      // Step 3: If user is logged in, save to Firestore
       if (userProfile?.uid) {
-        const consentPreferences: ConsentPreferences = {
-          cookieConsent: consent,
-        };
-
-        await updateConsentPreferences(consentPreferences);
-        logger.debug("Consent saved to backend");
+        // 🔧 CHANGED: Use Firestore service
+        await updateCookieConsent(consent);
+        logger.debug("Consent saved to Firestore");
       } else {
         logger.debug("User not logged in, consent saved to localStorage only");
       }
@@ -216,10 +214,11 @@ export default function CookieConsentBanner({
                 <Typography variant="body2" color="text.secondary">
                   We use cookies to enhance your browsing experience, serve
                   personalized content, and analyze our traffic. By clicking
-                  {"Accept All"}, you consent to our use of cookies.{" "}
+                  "Accept All", you consent to our use of cookies.{" "}
                   <Link
-                    href="/legal/privacy"
-                    target="_blank"
+                    component="button"
+                    variant="body2"
+                    onClick={() => setShowDetails(true)}
                     sx={{ textDecoration: "underline" }}
                   >
                     Learn more
@@ -233,30 +232,27 @@ export default function CookieConsentBanner({
                 display: "flex",
                 gap: 1,
                 flexDirection: { xs: "column", sm: "row" },
-                flexShrink: 0,
               }}
             >
               <Button
                 variant="outlined"
                 onClick={() => setShowDetails(true)}
                 disabled={isLoading}
-                sx={{ borderRadius: `${brand.borderRadius}px` }}
+                sx={{
+                  borderRadius: `${brand.borderRadius}px`,
+                  minWidth: { sm: 120 },
+                }}
               >
                 Customize
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={handleRejectAll}
-                disabled={isLoading}
-                sx={{ borderRadius: `${brand.borderRadius}px` }}
-              >
-                Reject All
               </Button>
               <Button
                 variant="contained"
                 onClick={handleAcceptAll}
                 disabled={isLoading}
-                sx={{ borderRadius: `${brand.borderRadius}px` }}
+                sx={{
+                  borderRadius: `${brand.borderRadius}px`,
+                  minWidth: { sm: 120 },
+                }}
               >
                 Accept All
               </Button>
@@ -268,43 +264,33 @@ export default function CookieConsentBanner({
       {/* Detailed Settings Dialog */}
       <Dialog
         open={showDetails}
-        onClose={() => !isLoading && setShowDetails(false)}
-        maxWidth="md"
+        onClose={() => setShowDetails(false)}
+        maxWidth="sm"
         fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: `${brand.borderRadius * 1.5}px`,
-            backgroundImage: "none !important",
-          },
-        }}
       >
         <DialogTitle
           sx={{
             display: "flex",
-            alignItems: "center",
             justifyContent: "space-between",
-            fontFamily: brand.fonts.heading,
-            fontWeight: 600,
+            alignItems: "center",
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <CookieIcon />
-            <span>Cookie Preferences</span>
-          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Cookie Preferences
+          </Typography>
           <IconButton
             onClick={() => setShowDetails(false)}
-            disabled={isLoading}
             size="small"
+            disabled={isLoading}
           >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
 
-        <DialogContent dividers>
-          <Alert severity="info" sx={{ mb: 3 }}>
-            We use cookies and similar technologies to help personalize content,
-            tailor and measure ads, and provide a better experience. By clicking
-            accept, you agree to this use of cookies and data.
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            We use cookies to improve your experience. By clicking accept, you
+            agree to this use of cookies and data.
           </Alert>
 
           <Typography variant="body2" color="text.secondary" paragraph>

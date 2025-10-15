@@ -54,7 +54,7 @@ export interface PrivacyPolicyAcceptance {
 
 /**
  * Complete Consent Preferences
- * Stored in user profile's extendedInfo.details.consentPreferences
+ * Stored in Firestore: users/{uid}/consents/current
  * 
  * This is a generic structure that can hold multiple types of consent
  * (cookies, terms, privacy policy, etc.)
@@ -68,6 +68,9 @@ export interface ConsentPreferences {
 
     /** Privacy policy acceptance */
     privacyPolicyAccepted?: PrivacyPolicyAcceptance;
+
+    /** 🆕 NEW: Track if this is user's first login/consent acceptance */
+    firstLogin?: boolean;
 }
 
 /**
@@ -118,6 +121,27 @@ export interface CookieCategory {
     description: string;
     required: boolean;
     examples?: string[];
+}
+
+/**
+ * 🆕 NEW: Consent Gate State
+ * Used by useConsentGate hook and ConsentGate component
+ */
+export interface ConsentGateState {
+    /** Should the consent modal be shown? */
+    showModal: boolean;
+
+    /** Is this the user's first time accepting consent? */
+    isFirstLogin: boolean;
+
+    /** Does the consent need to be updated (version mismatch)? */
+    needsUpdate: boolean;
+
+    /** Is the consent check in progress? */
+    loading: boolean;
+
+    /** Error message if consent check failed */
+    error: string | null;
 }
 
 /**
