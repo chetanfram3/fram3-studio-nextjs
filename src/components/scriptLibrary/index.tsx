@@ -464,7 +464,6 @@ const GeneratedScriptsPage: React.FC = () => {
   return (
     <Box
       sx={{
-        bgcolor: "background.default",
         minHeight: "100vh",
         pb: 4,
       }}

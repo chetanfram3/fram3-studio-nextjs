@@ -42,7 +42,6 @@ export function ScriptorLayout({ children }: ScriptorLayoutProps) {
   return (
     <Box
       sx={{
-        bgcolor: "background.default",
         color: "text.primary",
         minHeight: "100vh",
         pt: { xs: 3, md: 4 },

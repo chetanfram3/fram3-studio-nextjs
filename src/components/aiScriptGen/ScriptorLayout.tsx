@@ -89,7 +89,6 @@ export default function ScriptorLayout({
   return (
     <Box
       sx={{
-        bgcolor: "background.default",
         color: "text.primary",
         minHeight: "100vh",
         pt: 4,

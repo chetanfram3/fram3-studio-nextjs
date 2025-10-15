@@ -260,7 +260,6 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
         maxWidth: "xl",
         mx: "auto",
         p: 4,
-        bgcolor: "background.default",
       }}
     >
       <AnalysisDialogHeader />
