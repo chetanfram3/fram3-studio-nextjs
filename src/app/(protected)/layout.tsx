@@ -10,6 +10,7 @@ import { initializeFCM } from "@/services/fcmService";
 import { useNotificationStore } from "@/store/notificationStore";
 import logger from "@/utils/logger";
 import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
+import ContainerWidthControl from "@/components/layout/ContainerWidthControl";
 
 export default function ProtectedLayout({
   children,
@@ -113,7 +114,9 @@ export default function ProtectedLayout({
                 overflow: "auto",
               }}
             >
-              {children}
+              <ContainerWidthControl position="bottom-right">
+                {children}
+              </ContainerWidthControl>
             </Box>
           </Box>
         </Box>
