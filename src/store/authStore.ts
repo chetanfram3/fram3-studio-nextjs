@@ -7,6 +7,7 @@ interface TokenClaims {
   access_level: string;
   subscription: string;
   is_enabled: boolean;
+  isNewUser: boolean;
 }
 
 interface AuthState {

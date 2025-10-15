@@ -6,6 +6,7 @@ interface TokenClaims {
   access_level: string;
   subscription: string;
   is_enabled: boolean;
+  isNewUser: boolean;
 }
 
 const extractTokenClaims = (user: User | null): TokenClaims | null => {
@@ -27,6 +28,7 @@ const extractTokenClaims = (user: User | null): TokenClaims | null => {
       access_level: decodedPayload.access_level,
       subscription: decodedPayload.subscription,
       is_enabled: decodedPayload.is_enabled,
+      isNewUser: decodedPayload.isNewUser ?? true,
     };
   } catch (error) {
     console.error('Error extracting token claims:', error);
