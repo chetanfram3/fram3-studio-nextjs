@@ -1,71 +1,73 @@
 "use client";
 
 import * as React from "react";
-import * as SliderPrimitive from "@radix-ui/react-slider";
+import {
+  Slider as MuiSlider,
+  SliderProps as MuiSliderProps,
+} from "@mui/material";
 import { styled } from "@mui/material/styles";
 
-const SliderRoot = styled(SliderPrimitive.Root)({
-  position: "relative",
-  display: "flex",
-  width: "100%",
-  touchAction: "none",
-  userSelect: "none",
-  alignItems: "center",
-});
+// ✅ CORRECT: Based on FormatCtaSection.tsx working implementation
+const StyledSlider = styled(MuiSlider)(({ theme }) => ({
+  color: theme.palette.primary.main,
+  height: 8,
 
-// ✅ FIXED: Use theme colors properly - adapts to light/dark mode automatically
-const SliderTrack = styled(SliderPrimitive.Track)(({ theme }) => ({
-  position: "relative",
-  height: "6px",
-  width: "100%",
-  flexGrow: 1,
-  overflow: "hidden",
-  borderRadius: "3px",
-  // Use divider color which adapts to theme mode
-  backgroundColor: theme.palette.divider,
-}));
-
-// ✅ FIXED: Use primary color (Gold in dark, Bronze in light)
-const SliderRange = styled(SliderPrimitive.Range)(({ theme }) => ({
-  position: "absolute",
-  height: "100%",
-  backgroundColor: theme.palette.primary.main,
-}));
-
-// ✅ FIXED: Use primary color for thumb
-const SliderThumb = styled(SliderPrimitive.Thumb)(({ theme }) => ({
-  display: "block",
-  height: "16px",
-  width: "16px",
-  borderRadius: "50%",
-  border: `2px solid ${theme.palette.primary.main}`,
-  backgroundColor: theme.palette.secondary.main,
-  transition: "all 0.2s ease",
-  "&:focus-visible": {
-    outline: "none",
-    boxShadow: `0 0 0 3px ${theme.palette.primary.light}`,
+  "& .MuiSlider-track": {
+    border: "none",
+    height: 8,
   },
-  "&:disabled": {
-    pointerEvents: "none",
+
+  "& .MuiSlider-rail": {
+    height: 8,
     opacity: 0.5,
+    backgroundColor: theme.palette.divider,
   },
-  "&:hover:not(:disabled)": {
+
+  "& .MuiSlider-thumb": {
+    height: 18,
+    width: 18,
+    // ✅ CRITICAL: Always white border per guide
+    border: "2px solid #FFFFFF",
+    // ✅ CRITICAL: Use primary.main (not secondary)
     backgroundColor: theme.palette.primary.main,
-    transform: "scale(1.1)",
+
+    "&:focus, &:hover, &.Mui-active, &.Mui-focusVisible": {
+      // ✅ Use inherit per guide (no custom shadows)
+      boxShadow: "inherit",
+    },
+  },
+
+  "& .MuiSlider-mark": {
+    backgroundColor: theme.palette.primary.main,
+    height: 8,
+    width: 8,
+    borderRadius: "50%",
+    marginTop: 0,
   },
 }));
 
-const Slider = React.forwardRef<
-  React.ElementRef<typeof SliderPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <SliderRoot ref={ref} {...props}>
-    <SliderTrack>
-      <SliderRange />
-    </SliderTrack>
-    <SliderThumb />
-  </SliderRoot>
-));
-Slider.displayName = SliderPrimitive.Root.displayName;
+// ✅ Custom props interface to match Radix API
+interface SliderProps extends Omit<MuiSliderProps, "onChange" | "value"> {
+  value?: number[];
+  onValueChange?: (value: number[]) => void;
+}
 
-export { Slider };
+// ✅ PERFORMANCE: React 19 - No manual memo needed
+export function Slider({ value, onValueChange, ...props }: SliderProps) {
+  const handleChange = React.useCallback(
+    (_event: Event, newValue: number | number[]) => {
+      if (onValueChange) {
+        const valueArray = Array.isArray(newValue) ? newValue : [newValue];
+        onValueChange(valueArray);
+      }
+    },
+    [onValueChange]
+  );
+
+  // Convert value array to single value for MUI
+  const muiValue = value && value.length > 0 ? value[0] : undefined;
+
+  return <StyledSlider {...props} value={muiValue} onChange={handleChange} />;
+}
+
+export default Slider;
