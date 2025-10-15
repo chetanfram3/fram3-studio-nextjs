@@ -50,7 +50,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Admin Context Banner */}
         <Box
           sx={{
-            position: "sticky",
             top: 64, // Height of header
             zIndex: 1100,
             bgcolor: "background.paper",
