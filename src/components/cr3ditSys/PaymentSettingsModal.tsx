@@ -440,6 +440,7 @@ export function PaymentSettingsModal({
           borderRadius: `${brand.borderRadius}px`,
           bgcolor: "background.default",
           border: `2px solid ${theme.palette.primary.main}`,
+          backgroundImage: 'none'
         },
       }}
     >
