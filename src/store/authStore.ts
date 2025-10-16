@@ -65,9 +65,8 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        // Only persist user and claims, not loading/error states
+        // DON'T persist claims - they're extracted from JWT on every login
         user: state.user,
-        claims: state.claims,
       }),
     }
   )

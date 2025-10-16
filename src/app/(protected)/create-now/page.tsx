@@ -32,6 +32,7 @@ import {
 } from "@mui/icons-material";
 import logger from "@/utils/logger";
 import { completeOnboarding } from "@/services/userService";
+import { auth } from "@/lib/firebase";
 
 // Pulsating animation keyframes
 const pulse = keyframes`
@@ -491,7 +492,7 @@ export default function DescribeIdeaPage() {
   const searchParams = useSearchParams();
   const theme = useTheme();
   const brand = getCurrentBrand();
-  const { user, updateClaims } = useAuthStore();
+  const { user } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<ContentType>("IMAGE");
   const [customPrompt, setCustomPrompt] = useState("");
@@ -501,6 +502,13 @@ export default function DescribeIdeaPage() {
   const [showCreditDialog, setShowCreditDialog] = useState(isFirstTime);
   const [showSidebarHint, setShowSidebarHint] = useState(false);
   const onboardingCompletedRef = useRef(false);
+
+  useEffect(() => {
+    if (!user) {
+      onboardingCompletedRef.current = false;
+      logger.debug("User logged out, reset onboarding ref");
+    }
+  }, [user]);
 
   useEffect(() => {
     if (isFirstTime) {
@@ -524,6 +532,12 @@ export default function DescribeIdeaPage() {
       return;
     }
 
+    if (!user) {
+      logger.debug("User not authenticated, skipping onboarding");
+      setShowCreditDialog(false);
+      return;
+    }
+
     logger.debug("Credit loading completed");
 
     // Mark as processing IMMEDIATELY to prevent duplicate calls
@@ -542,18 +556,17 @@ export default function DescribeIdeaPage() {
         // Wait for sidebar hint to appear, then complete onboarding
         setTimeout(async () => {
           try {
-            // 1. Update Zustand immediately (optimistic update)
-            updateClaims({ isNewUser: false });
-            logger.debug("Updated isNewUser in Zustand store");
+            if (!auth.currentUser) {
+              logger.debug("User logged out before onboarding API call");
+              onboardingCompletedRef.current = false;
+              return;
+            }
 
-            // 2. Update backend
+            // 1. Update backend
             await completeOnboarding();
             logger.debug("Backend updated successfully");
           } catch (error) {
             logger.error("Failed to complete onboarding:", error);
-
-            // Rollback optimistic update on error
-            updateClaims({ isNewUser: true });
             onboardingCompletedRef.current = false;
           }
         }, 600); // Call after sidebar hint is shown (500ms + small buffer)
