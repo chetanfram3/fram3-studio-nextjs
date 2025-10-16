@@ -6,7 +6,7 @@ import {
   DashboardOutlined as LayoutDashboard,
   DescriptionOutlined as ScrollText,
   BarChartOutlined as BarChart,
-  LocationOnOutlined as MapPin,
+  PaletteOutlined as Palette,
   InfoOutlined as Info,
   AutoAwesomeOutlined as Sparkles,
   EditOutlined as EditIcon,
@@ -70,9 +70,9 @@ export function useNavigationItems() {
         Icon: LayoutDashboard,
       },
       {
-        label: "My Scripts",
-        path: "/dashboard/my-scripts",
-        Icon: ScrollText,
+        label: "Create Now!",
+        path: "/create-now",
+        Icon: Palette,
       },
       {
         label: "Script Analysis",
@@ -93,11 +93,6 @@ export function useNavigationItems() {
         label: "Script Editor",
         path: "/ai-script-editor",
         Icon: EditIcon,
-      },
-      {
-        label: "Shoot Locations",
-        path: "/shoot-locations",
-        Icon: MapPin,
       },
       {
         label: `v ${appVersion}`,
