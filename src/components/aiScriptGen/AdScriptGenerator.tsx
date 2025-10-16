@@ -293,7 +293,6 @@ function AdScriptGeneratorContent() {
     null
   );
   const [isLoadingPreset, setIsLoadingPreset] = useState(false);
-  const [presetLoadError, setPresetLoadError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const presetLoadedRef = useRef(false);
 
@@ -385,18 +384,15 @@ function AdScriptGeneratorContent() {
       const type = searchParams.get("type");
       const key = searchParams.get("key");
 
-      // ENHANCED GUARDS
-      // 1. Skip if no params
+      // Guards
       if (!type || !key) {
         return;
       }
 
-      // 2. Skip if already loading
       if (isLoadingPreset) {
         return;
       }
 
-      // 3. Skip if already loaded (prevents re-runs)
       if (presetLoadedRef.current) {
         logger.debug("Preset already loaded, skipping", { type, key });
         return;
@@ -404,9 +400,6 @@ function AdScriptGeneratorContent() {
 
       logger.debug("Loading preset from URL params:", { type, key });
       setIsLoadingPreset(true);
-      setPresetLoadError(null);
-
-      // Mark as loading to prevent concurrent loads
       presetLoadedRef.current = true;
 
       try {
@@ -427,41 +420,75 @@ function AdScriptGeneratorContent() {
           form.reset(mergedPreset);
           saveFormToLocalStorage(mergedPreset);
 
+          // ✅ SUCCESS TOAST
           CustomToast(
             "success",
-            `Loaded ${type} preset: ${key.replace(/-/g, " ")}`
+            `Loaded ${type} preset: "${key.replace(/-/g, " ")}"`,
+            {
+              duration: 3000,
+            }
           );
 
           logger.debug("Preset loaded successfully:", { type, key });
         } else {
-          // Reset the ref so user can retry if needed
+          // Reset ref to allow retry
           presetLoadedRef.current = false;
 
-          const errorMsg = `Could not load preset for ${type}/${key}`;
-          setPresetLoadError(errorMsg);
-          logger.warn(errorMsg);
+          // ⚠️ WARNING TOAST - Preset not found
+          logger.warn(`Preset not found: ${type}/${key}`);
 
-          CustomToast("warning", "Preset not found. Using default values.");
+          CustomToast(
+            "warning",
+            `Preset "${key.replace(/-/g, " ")}" not found. Using default form.`,
+            {
+              duration: 4000,
+            }
+          );
+
+          // Load defaults as fallback
+          form.reset(defaultFormValues);
+          saveFormToLocalStorage(defaultFormValues);
         }
       } catch (error) {
-        // Reset the ref on error so user can retry
+        // Reset ref to allow retry
         presetLoadedRef.current = false;
 
         const errorMsg =
           error instanceof Error ? error.message : "Unknown error";
         logger.error("Failed to load preset:", { type, key, error: errorMsg });
-        setPresetLoadError(errorMsg);
 
-        CustomToast("error", "Failed to load preset. Using default values.");
+        // ❌ ERROR TOAST - Network/parsing errors
+        if (errorMsg.includes("fetch")) {
+          CustomToast(
+            "error",
+            "Network error loading preset. Please check your connection.",
+            {
+              duration: 5000,
+            }
+          );
+        } else if (errorMsg.includes("JSON")) {
+          CustomToast(
+            "error",
+            "Invalid preset format. Please contact support.",
+            {
+              duration: 5000,
+            }
+          );
+        } else {
+          CustomToast("error", `Failed to load preset: ${errorMsg}`, {
+            duration: 5000,
+          });
+        }
+
+        // Load defaults as fallback
+        form.reset(defaultFormValues);
+        saveFormToLocalStorage(defaultFormValues);
       } finally {
         setIsLoadingPreset(false);
       }
     };
 
     void loadPresetFromUrl();
-
-    // IMPORTANT: Only depend on searchParams
-    // Don't include form, isLoadingPreset, etc. to prevent re-runs
   }, [searchParams]);
 
   useEffect(() => {
