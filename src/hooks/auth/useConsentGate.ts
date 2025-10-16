@@ -1,7 +1,6 @@
 // src/hooks/auth/useConsentGate.ts
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import {
     getConsentFromFirestore,
@@ -41,7 +40,6 @@ import logger from "@/utils/logger";
  */
 export function useConsentGate() {
     const { user } = useAuthStore();
-    const router = useRouter();
 
     const [state, setState] = useState<ConsentGateState>({
         showModal: false,
@@ -199,16 +197,12 @@ export function useConsentGate() {
             });
 
             // Redirect to sign-in page
-            router.push("/signin");
 
             logger.debug("User logged out successfully after declining consent");
         } catch (error) {
             logger.error("Error during logout after declining consent:", error);
-
-            // Still try to redirect even if logout fails
-            router.push("/signin");
         }
-    }, [router]);
+    }, []);
 
     /**
      * Check consent status when user changes

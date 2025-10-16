@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Box,
   Typography,
@@ -70,7 +70,6 @@ function a11yProps(index: number) {
 export default function SignInForm() {
   const theme = useTheme();
   const brand = getCurrentBrand();
-  const router = useRouter();
   const mfa = useMFA();
 
   const [activeTab, setActiveTab] = useState(0);
@@ -93,12 +92,7 @@ export default function SignInForm() {
     logger.debug("Attempting email sign in");
 
     try {
-      const user = await signInWithEmail(email, password);
-
-      if (user) {
-        logger.debug("Sign in successful");
-        router.push("/dashboard");
-      }
+      await signInWithEmail(email, password);
     } catch (err: unknown) {
       // Type assertion for Firebase error
       const firebaseError = err as { code?: string; message?: string };
@@ -124,16 +118,7 @@ export default function SignInForm() {
   };
 
   const handleMFAVerify = async () => {
-    const user = await mfa.handleMFAVerification();
-
-    if (user) {
-      logger.debug("MFA verification successful");
-      router.push("/dashboard");
-    }
-  };
-  const handleSocialSuccess = () => {
-    logger.debug("Social sign in successful");
-    router.push("/dashboard");
+    await mfa.handleMFAVerification();
   };
 
   const handleSocialError = (error: string) => {
@@ -267,7 +252,6 @@ export default function SignInForm() {
               </Divider>
 
               <SocialAuthButtons
-                onSuccess={handleSocialSuccess}
                 onError={handleSocialError}
                 onMFARequired={handleSocialMFA}
                 onLoadingChange={handleSocialLoadingChange}
@@ -347,7 +331,8 @@ export default function SignInForm() {
             {/* Forgot Password Link */}
             <Box sx={{ mt: 2, textAlign: "center" }}>
               <Button
-                onClick={() => router.push("/forgot-password")}
+                component={Link}
+                href="/forgot-password"
                 variant="text"
                 disabled={isLoading || socialLoading}
                 sx={{
@@ -373,7 +358,8 @@ export default function SignInForm() {
               {"Don't have an account?"}
             </Typography>
             <Button
-              onClick={() => router.push("/register")}
+              component={Link}
+              href="/register"
               variant="text"
               startIcon={<PersonAddIcon />}
               disabled={isLoading || socialLoading}
