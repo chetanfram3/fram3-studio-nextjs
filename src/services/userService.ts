@@ -1,6 +1,8 @@
 import logger from '@/utils/logger';
 import { UserProfile, ApiResponse } from '@/types/auth';
 import { auth } from '@/lib/firebase';
+import { useAuthStore } from '@/store/authStore';
+import { getIdToken } from 'firebase/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -285,7 +287,34 @@ export async function uploadProfilePicture(
 }
 
 /**
+ * Extract claims from token
+ */
+const extractTokenClaims = async () => {
+  try {
+    if (!auth.currentUser) return null;
+
+    const token = await getIdToken(auth.currentUser, false);
+    if (!token) return null;
+
+    const payload = token.split('.')[1];
+    const decodedPayload = JSON.parse(atob(payload));
+
+    return {
+      access_level: decodedPayload.access_level,
+      subscription: decodedPayload.subscription,
+      is_enabled: decodedPayload.is_enabled,
+      isNewUser: decodedPayload.isNewUser ?? true,
+    };
+  } catch (error) {
+    logger.error('Error extracting token claims:', error);
+    return null;
+  }
+};
+
+
+/**
  * Mark user as completed onboarding (updates isNewUser claim)
+ * ✅ Manually updates claims after token refresh
  */
 export async function completeOnboarding(): Promise<ApiResponse<{ message: string }>> {
   try {
@@ -310,8 +339,22 @@ export async function completeOnboarding(): Promise<ApiResponse<{ message: strin
       throw new Error(data.error || 'Failed to complete onboarding');
     }
 
-    // Force token refresh to get updated claims
+    logger.debug('Backend onboarding update successful');
+
+    // Force token refresh to get updated claims from backend
     await auth.currentUser?.getIdToken(true);
+    logger.debug('Token refreshed with new claims');
+
+    // 🔥 KEY FIX: Immediately extract and update claims in the store
+    // Since onIdTokenChanged doesn't fire on manual refresh, we do it manually
+    const newClaims = await extractTokenClaims();
+    if (newClaims) {
+      const { setClaims } = useAuthStore.getState();
+      setClaims(newClaims);
+      logger.debug('Claims manually updated after onboarding completion', {
+        isNewUser: newClaims.isNewUser
+      });
+    }
 
     logger.debug('Onboarding marked as complete successfully');
 
