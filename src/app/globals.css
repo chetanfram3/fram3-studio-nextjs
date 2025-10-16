@@ -67,8 +67,8 @@
   --brand-accent: #ffa500; /* Same as secondary for consistency */
 
   /* Background Colors - Light Gray Theme */
-  --brand-background: #f8f9fa; /* Page background - soft light gray */
-  --brand-surface: #ffffff; /* Cards and elevated surfaces - pure white */
+  --brand-background: #e8dece; /* Page background - soft light gray */
+  --brand-surface: #f5efe5; /* Cards and elevated surfaces - pure white */
 
   /* Text Colors */
   --brand-text: #1a1a1a; /* Primary text - deep charcoal */
