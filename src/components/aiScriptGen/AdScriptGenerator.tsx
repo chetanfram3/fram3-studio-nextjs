@@ -72,6 +72,13 @@ import {
 } from "./utils/presetUtils";
 import CreditErrorDisplay from "@/components/common/CreditErrorDisplay";
 import type { CreditErrorResponse, CreditError } from "@/types";
+import { useSearchParams } from "next/navigation";
+import {
+  loadCreativePreset,
+  mergePresetWithDefaults,
+} from "./utils/presetLoader";
+import type { ContentType } from "@/config/creativeConstants";
+import { CircularProgress } from "@mui/material";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -285,6 +292,9 @@ function AdScriptGeneratorContent() {
   const [creditError, setCreditError] = useState<CreditErrorWithMessage | null>(
     null
   );
+  const [isLoadingPreset, setIsLoadingPreset] = useState(false);
+  const [presetLoadError, setPresetLoadError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -366,6 +376,69 @@ function AdScriptGeneratorContent() {
 
     return () => subscription.unsubscribe();
   }, [form]);
+
+  // Load preset from URL parameters
+  useEffect(() => {
+    const loadPresetFromUrl = async (): Promise<void> => {
+      // Get type and key from URL params
+      const type = searchParams.get("type");
+      const key = searchParams.get("key");
+
+      // Skip if no params or already loading
+      if (!type || !key || isLoadingPreset) {
+        return;
+      }
+
+      logger.debug("Loading preset from URL params:", { type, key });
+      setIsLoadingPreset(true);
+      setPresetLoadError(null);
+
+      try {
+        // Load the preset
+        const preset = await loadCreativePreset(
+          type.toUpperCase() as ContentType,
+          key
+        );
+
+        if (preset) {
+          // Merge with defaults to ensure all fields exist
+          const mergedPreset = mergePresetWithDefaults(
+            preset,
+            defaultFormValues
+          );
+
+          // Load into form
+          form.reset(mergedPreset);
+          saveFormToLocalStorage(mergedPreset);
+
+          CustomToast(
+            "success",
+            `Loaded ${type} preset: ${key.replace(/-/g, " ")}`
+          );
+
+          logger.debug("Preset loaded successfully:", { type, key });
+        } else {
+          // Preset not found or invalid
+          const errorMsg = `Could not load preset for ${type}/${key}`;
+          setPresetLoadError(errorMsg);
+          logger.warn(errorMsg);
+
+          CustomToast("warning", "Preset not found. Using default values.");
+        }
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        logger.error("Failed to load preset:", { type, key, error: errorMsg });
+        setPresetLoadError(errorMsg);
+
+        CustomToast("error", "Failed to load preset. Using default values.");
+      } finally {
+        setIsLoadingPreset(false);
+      }
+    };
+
+    void loadPresetFromUrl();
+  }, [searchParams, form, isLoadingPreset]);
 
   // ============================================================================
   // CALLBACKS
@@ -863,6 +936,50 @@ function AdScriptGeneratorContent() {
 
   return (
     <ScriptorLayout>
+      {isLoadingPreset && (
+        <Box
+          sx={{
+            position: "fixed",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: theme.zIndex.modal + 1,
+            bgcolor: "background.paper",
+            borderRadius: `${brand.borderRadius * 2}px`,
+            border: 2,
+            borderColor: "primary.main",
+            p: 4,
+            boxShadow: theme.shadows[24],
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+            minWidth: 300,
+          }}
+        >
+          <CircularProgress color="primary" size={48} />
+          <Typography
+            variant="h6"
+            sx={{
+              color: "text.primary",
+              fontFamily: brand.fonts.heading,
+              fontWeight: 600,
+            }}
+          >
+            Loading Preset...
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+              fontFamily: brand.fonts.body,
+              textAlign: "center",
+            }}
+          >
+            Setting up your form with pre-configured values
+          </Typography>
+        </Box>
+      )}
       <Box component="form" onSubmit={form.handleSubmit(onSubmit)}>
         {/* Basic Information */}
         <Box sx={{ mb: 4 }}>
