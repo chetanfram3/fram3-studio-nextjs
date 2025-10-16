@@ -16,6 +16,7 @@ import {
   LogoutOutlined as LogoutIcon,
   PaymentOutlined as PaymentIcon,
   PaymentsOutlined as SubscriptionIcon,
+  PolicyOutlined as PolicyIcon,
 } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@mui/material/styles";
@@ -141,6 +142,16 @@ export function ProfileMenu({
             <SubscriptionIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText primary="Load Credits" />
+        </ListItemButton>
+
+        <ListItemButton
+          onClick={() => handleMenuItemClick("/legal")}
+          sx={menuItemStyles}
+        >
+          <ListItemIcon>
+            <PolicyIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Policy (T&C)" />
         </ListItemButton>
 
         <Box sx={{ px: 2, py: 1 }}>
