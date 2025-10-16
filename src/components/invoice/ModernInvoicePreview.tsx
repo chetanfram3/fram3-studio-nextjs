@@ -594,7 +594,7 @@ export function ModernInvoicePreview({
             sx={{
               ...containerSize,
               aspectRatio: "210/297",
-              bgcolor: "background.paper",
+              bgcolor: isPrintMode ? "#FFFFFF" : "background.paper",
               borderRadius: `${brand.borderRadius * 0.25}px`,
               overflow: "hidden",
               boxShadow: theme.shadows[24],
@@ -611,8 +611,8 @@ export function ModernInvoicePreview({
                 alignItems: "center",
                 justifyContent: "space-between",
                 borderBottom: 1,
-                borderColor: "divider",
-                bgcolor: "background.paper",
+                borderColor: isPrintMode ? "#E5E7EB" : "divider",
+                bgcolor: isPrintMode ? "#FFFFFF" : "background.paper",
               }}
             >
               {/* QR Code */}
@@ -632,7 +632,7 @@ export function ModernInvoicePreview({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    bgcolor: "background.paper",
+                    bgcolor: isPrintMode ? "#FFFFFF" : "background.paper",
                   }}
                 >
                   <img
@@ -665,7 +665,7 @@ export function ModernInvoicePreview({
                     variant="h5"
                     sx={{
                       fontWeight: "bold",
-                      color: "text.primary",
+                      color: isPrintMode ? "#000000" : "text.primary",
                       fontFamily: brand.fonts.heading,
                     }}
                   >
@@ -674,7 +674,7 @@ export function ModernInvoicePreview({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "text.secondary",
+                      color: isPrintMode ? "#6B7280" : "text.secondary",
                       fontFamily: brand.fonts.body,
                     }}
                   >
@@ -691,10 +691,8 @@ export function ModernInvoicePreview({
                 className={styles.invoiceSidebar}
                 sx={{
                   width: "32%",
-                  bgcolor: isPrintMode
-                    ? alpha(theme.palette.background.default, 0.5)
-                    : "background.default",
-                  color: "text.primary",
+                  bgcolor: isPrintMode ? "#F5F5F5" : "background.default",
+                  color: isPrintMode ? "#000000" : "text.primary",
                   p: 3,
                   display: "flex",
                   flexDirection: "column",
@@ -707,7 +705,7 @@ export function ModernInvoicePreview({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.secondary",
+                        color: isPrintMode ? "#6B7280" : "text.secondary",
                         fontWeight: 500,
                         mb: 0.5,
                         display: "block",
@@ -719,7 +717,7 @@ export function ModernInvoicePreview({
                       variant="body2"
                       sx={{
                         fontWeight: 500,
-                        color: "text.primary",
+                        color: isPrintMode ? "#000000" : "text.primary",
                       }}
                     >
                       {formatDate(invoice.createdAt)}
@@ -730,7 +728,7 @@ export function ModernInvoicePreview({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.secondary",
+                        color: isPrintMode ? "#6B7280" : "text.secondary",
                         fontWeight: 500,
                         mb: 0.5,
                         display: "block",
@@ -742,7 +740,7 @@ export function ModernInvoicePreview({
                       variant="body2"
                       sx={{
                         fontWeight: 500,
-                        color: "text.primary",
+                        color: isPrintMode ? "#000000" : "text.primary",
                       }}
                     >
                       {formatDate(invoice.dueDate)}
@@ -754,7 +752,7 @@ export function ModernInvoicePreview({
                       <Typography
                         variant="caption"
                         sx={{
-                          color: "text.secondary",
+                          color: isPrintMode ? "#6B7280" : "text.secondary",
                           fontWeight: 500,
                           mb: 0.5,
                           display: "block",
@@ -779,14 +777,14 @@ export function ModernInvoicePreview({
                 <Box
                   sx={{
                     borderTop: 1,
-                    borderColor: "divider",
+                    borderColor: isPrintMode ? "#E5E7EB" : "divider",
                     pt: 2,
                   }}
                 >
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "text.secondary",
+                      color: isPrintMode ? "#6B7280" : "text.secondary",
                       fontWeight: 500,
                       mb: 1.5,
                       display: "block",
@@ -799,7 +797,7 @@ export function ModernInvoicePreview({
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: "text.primary",
+                        color: isPrintMode ? "#000000" : "text.primary",
                         mb: 0.5,
                       }}
                     >
@@ -808,7 +806,7 @@ export function ModernInvoicePreview({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.secondary",
+                        color: isPrintMode ? "#6B7280" : "text.secondary",
                         display: "block",
                         mb: 0.5,
                       }}
@@ -818,7 +816,7 @@ export function ModernInvoicePreview({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.secondary",
+                        color: isPrintMode ? "#6B7280" : "text.secondary",
                         display: "block",
                         mb: 1,
                       }}
@@ -830,7 +828,7 @@ export function ModernInvoicePreview({
                       <Typography
                         variant="caption"
                         sx={{
-                          color: "text.secondary",
+                          color: isPrintMode ? "#6B7280" : "text.secondary",
                           display: "block",
                           mb: 1,
                           fontWeight: 500,
@@ -850,7 +848,7 @@ export function ModernInvoicePreview({
                       <Typography
                         variant="caption"
                         sx={{
-                          color: "text.secondary",
+                          color: isPrintMode ? "#6B7280" : "text.secondary",
                           display: "block",
                           lineHeight: 1.4,
                         }}
@@ -875,14 +873,14 @@ export function ModernInvoicePreview({
                 <Box
                   sx={{
                     borderTop: 1,
-                    borderColor: "divider",
+                    borderColor: isPrintMode ? "#E5E7EB" : "divider",
                     pt: 2,
                   }}
                 >
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "text.secondary",
+                      color: isPrintMode ? "#6B7280" : "text.secondary",
                       fontWeight: 500,
                       mb: 1.5,
                       display: "block",
@@ -901,12 +899,14 @@ export function ModernInvoicePreview({
                     >
                       <CreditCard
                         size={12}
-                        color={theme.palette.primary.main}
+                        color={
+                          isPrintMode ? "#000000" : theme.palette.primary.main
+                        }
                       />
                       <Typography
                         variant="caption"
                         sx={{
-                          color: "text.primary",
+                          color: isPrintMode ? "#000000" : "text.primary",
                           fontWeight: 500,
                         }}
                       >
@@ -922,7 +922,9 @@ export function ModernInvoicePreview({
                             <Typography
                               variant="caption"
                               sx={{
-                                color: "text.secondary",
+                                color: isPrintMode
+                                  ? "#6B7280"
+                                  : "text.secondary",
                                 display: "block",
                                 fontSize: "0.7rem",
                               }}
@@ -945,7 +947,9 @@ export function ModernInvoicePreview({
                             <Typography
                               variant="caption"
                               sx={{
-                                color: "text.secondary",
+                                color: isPrintMode
+                                  ? "#6B7280"
+                                  : "text.secondary",
                                 display: "block",
                                 fontSize: "0.7rem",
                               }}
@@ -956,7 +960,9 @@ export function ModernInvoicePreview({
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: "text.secondary",
+                                  color: isPrintMode
+                                    ? "#6B7280"
+                                    : "text.secondary",
                                   display: "block",
                                   fontSize: "0.7rem",
                                 }}
@@ -972,7 +978,9 @@ export function ModernInvoicePreview({
                             <Typography
                               variant="caption"
                               sx={{
-                                color: "text.secondary",
+                                color: isPrintMode
+                                  ? "#6B7280"
+                                  : "text.secondary",
                                 display: "block",
                                 fontSize: "0.7rem",
                               }}
@@ -983,7 +991,9 @@ export function ModernInvoicePreview({
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: "text.secondary",
+                                  color: isPrintMode
+                                    ? "#6B7280"
+                                    : "text.secondary",
                                   display: "block",
                                   fontSize: "0.7rem",
                                 }}
@@ -1000,7 +1010,9 @@ export function ModernInvoicePreview({
                             <Typography
                               variant="caption"
                               sx={{
-                                color: "text.secondary",
+                                color: isPrintMode
+                                  ? "#6B7280"
+                                  : "text.secondary",
                                 display: "block",
                                 fontSize: "0.7rem",
                               }}
@@ -1011,7 +1023,9 @@ export function ModernInvoicePreview({
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: "text.secondary",
+                                  color: isPrintMode
+                                    ? "#6B7280"
+                                    : "text.secondary",
                                   display: "block",
                                   fontSize: "0.7rem",
                                 }}
@@ -1028,7 +1042,9 @@ export function ModernInvoicePreview({
                             <Typography
                               variant="caption"
                               sx={{
-                                color: "text.secondary",
+                                color: isPrintMode
+                                  ? "#6B7280"
+                                  : "text.secondary",
                                 display: "block",
                                 fontSize: "0.7rem",
                               }}
@@ -1039,7 +1055,9 @@ export function ModernInvoicePreview({
                             <Typography
                               variant="caption"
                               sx={{
-                                color: "text.secondary",
+                                color: isPrintMode
+                                  ? "#6B7280"
+                                  : "text.secondary",
                                 display: "block",
                                 fontSize: "0.7rem",
                               }}
@@ -1069,7 +1087,7 @@ export function ModernInvoicePreview({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.secondary",
+                        color: isPrintMode ? "#6B7280" : "text.secondary",
                         display: "block",
                       }}
                     >
@@ -1086,7 +1104,7 @@ export function ModernInvoicePreview({
                 <Box
                   sx={{
                     borderTop: 1,
-                    borderColor: "divider",
+                    borderColor: isPrintMode ? "#E5E7EB" : "divider",
                     pt: 2,
                     mt: "auto",
                   }}
@@ -1094,7 +1112,7 @@ export function ModernInvoicePreview({
                   <Typography
                     variant="caption"
                     sx={{
-                      color: "text.secondary",
+                      color: isPrintMode ? "#6B7280" : "text.secondary",
                       fontWeight: 500,
                       mb: 1.5,
                       display: "block",
@@ -1111,10 +1129,17 @@ export function ModernInvoicePreview({
                         mb: 1,
                       }}
                     >
-                      <Email size={12} color={theme.palette.primary.main} />
+                      <Email
+                        size={12}
+                        color={
+                          isPrintMode ? "#000000" : theme.palette.primary.main
+                        }
+                      />
                       <Typography
                         variant="caption"
-                        sx={{ color: "text.secondary" }}
+                        sx={{
+                          color: isPrintMode ? "#6B7280" : "text.secondary",
+                        }}
                       >
                         {COMPANY_DETAILS.email}
                       </Typography>
@@ -1122,11 +1147,15 @@ export function ModernInvoicePreview({
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <LocationOn
                         size={12}
-                        color={theme.palette.primary.main}
+                        color={
+                          isPrintMode ? "#000000" : theme.palette.primary.main
+                        }
                       />
                       <Typography
                         variant="caption"
-                        sx={{ color: "text.secondary" }}
+                        sx={{
+                          color: isPrintMode ? "#6B7280" : "text.secondary",
+                        }}
                       >
                         {COMPANY_DETAILS.website}
                       </Typography>
@@ -1143,6 +1172,8 @@ export function ModernInvoicePreview({
                   p: 3,
                   display: "flex",
                   flexDirection: "column",
+                  bgcolor: isPrintMode ? "#FFFFFF" : "transparent",
+                  color: isPrintMode ? "#000000" : "text.primary",
                 }}
               >
                 {/* Invoice Title */}
@@ -1152,7 +1183,7 @@ export function ModernInvoicePreview({
                     sx={{
                       fontSize: "3rem",
                       fontWeight: "bold",
-                      color: "text.primary",
+                      color: isPrintMode ? "#000000" : "text.primary",
                       letterSpacing: "-0.025em",
                       mb: 0.5,
                       fontFamily: brand.fonts.heading,
@@ -1163,7 +1194,7 @@ export function ModernInvoicePreview({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: "text.secondary",
+                      color: isPrintMode ? "#6B7280" : "text.secondary",
                       fontFamily: brand.fonts.body,
                     }}
                   >
@@ -1184,7 +1215,7 @@ export function ModernInvoicePreview({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.secondary",
+                        color: isPrintMode ? "#6B7280" : "text.secondary",
                         mb: 0.5,
                         display: "block",
                       }}
@@ -1195,7 +1226,7 @@ export function ModernInvoicePreview({
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: "text.primary",
+                        color: isPrintMode ? "#000000" : "text.primary",
                       }}
                     >
                       {COMPANY_DETAILS.gstNumber}
@@ -1205,7 +1236,7 @@ export function ModernInvoicePreview({
                     <Typography
                       variant="caption"
                       sx={{
-                        color: "text.secondary",
+                        color: isPrintMode ? "#6B7280" : "text.secondary",
                         mb: 0.5,
                         display: "block",
                       }}
@@ -1216,7 +1247,7 @@ export function ModernInvoicePreview({
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: "text.primary",
+                        color: isPrintMode ? "#000000" : "text.primary",
                       }}
                     >
                       #{invoice.invoiceNumber || invoice.invoiceId}
@@ -1233,31 +1264,47 @@ export function ModernInvoicePreview({
                       display: "grid",
                       gridTemplateColumns: "2fr 1fr 1fr 1fr",
                       gap: 1.5,
-                      bgcolor: isPrintMode
-                        ? alpha(theme.palette.background.default, 0.5)
-                        : "background.default",
-                      color: "text.primary",
+                      bgcolor: isPrintMode ? "#F5F5F5" : "background.default",
+                      color: isPrintMode ? "#000000" : "text.primary",
                       borderRadius: `${brand.borderRadius * 0.25}px ${brand.borderRadius * 0.25}px 0 0`,
                     }}
                   >
-                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 600,
+                        color: isPrintMode ? "#000000" : "text.primary",
+                      }}
+                    >
                       Description
                     </Typography>
                     <Typography
                       variant="caption"
-                      sx={{ fontWeight: 600, textAlign: "center" }}
+                      sx={{
+                        fontWeight: 600,
+                        textAlign: "center",
+                        color: isPrintMode ? "#000000" : "text.primary",
+                      }}
                     >
                       HSN/SAC
                     </Typography>
                     <Typography
                       variant="caption"
-                      sx={{ fontWeight: 600, textAlign: "center" }}
+                      sx={{
+                        fontWeight: 600,
+                        textAlign: "center",
+                        color: isPrintMode ? "#000000" : "text.primary",
+                      }}
                     >
                       Credits
                     </Typography>
                     <Typography
                       variant="caption"
-                      sx={{ fontWeight: 600, textAlign: "right" }}
+                      sx={{
+                        fontWeight: 600,
+                        textAlign: "right",
+                        color: isPrintMode ? "#000000" : "text.primary",
+                      }}
                     >
                       Amount
                     </Typography>
@@ -1267,7 +1314,7 @@ export function ModernInvoicePreview({
                   <Box
                     sx={{
                       border: 1,
-                      borderColor: "divider",
+                      borderColor: isPrintMode ? "#E5E7EB" : "divider",
                       borderTop: "none",
                     }}
                   >
@@ -1278,7 +1325,9 @@ export function ModernInvoicePreview({
                         gridTemplateColumns: "2fr 1fr 1fr 1fr",
                         gap: 1.5,
                         "&:hover": {
-                          bgcolor: alpha(theme.palette.action.hover, 0.5),
+                          bgcolor: isPrintMode
+                            ? "#F9FAFB"
+                            : alpha(theme.palette.action.hover, 0.5),
                         },
                       }}
                     >
@@ -1287,7 +1336,7 @@ export function ModernInvoicePreview({
                           variant="body2"
                           sx={{
                             fontWeight: 500,
-                            color: "text.primary",
+                            color: isPrintMode ? "#000000" : "text.primary",
                           }}
                         >
                           {invoice.package.name}
@@ -1295,7 +1344,7 @@ export function ModernInvoicePreview({
                         <Typography
                           variant="caption"
                           sx={{
-                            color: "text.secondary",
+                            color: isPrintMode ? "#6B7280" : "text.secondary",
                             display: "block",
                           }}
                         >
@@ -1306,7 +1355,7 @@ export function ModernInvoicePreview({
                         variant="body2"
                         sx={{
                           textAlign: "center",
-                          color: "text.secondary",
+                          color: isPrintMode ? "#6B7280" : "text.secondary",
                         }}
                       >
                         {invoice.tax.hsn || "998314"}
@@ -1315,7 +1364,7 @@ export function ModernInvoicePreview({
                         variant="body2"
                         sx={{
                           textAlign: "center",
-                          color: "text.secondary",
+                          color: isPrintMode ? "#6B7280" : "text.secondary",
                         }}
                       >
                         {invoice.package.credits.toLocaleString()}
@@ -1325,7 +1374,7 @@ export function ModernInvoicePreview({
                         sx={{
                           textAlign: "right",
                           fontWeight: 600,
-                          color: "text.primary",
+                          color: isPrintMode ? "#000000" : "text.primary",
                         }}
                       >
                         {formatAmount(
@@ -1351,7 +1400,7 @@ export function ModernInvoicePreview({
                       variant="body2"
                       sx={{
                         fontWeight: 500,
-                        color: "text.secondary",
+                        color: isPrintMode ? "#6B7280" : "text.secondary",
                       }}
                     >
                       Subtotal:
@@ -1360,7 +1409,7 @@ export function ModernInvoicePreview({
                       variant="body2"
                       sx={{
                         fontWeight: 600,
-                        color: "text.primary",
+                        color: isPrintMode ? "#000000" : "text.primary",
                       }}
                     >
                       {formatAmount(subtotal, invoice.amounts.currency)}
@@ -1382,7 +1431,7 @@ export function ModernInvoicePreview({
                           variant="body2"
                           sx={{
                             fontWeight: 500,
-                            color: "text.secondary",
+                            color: isPrintMode ? "#6B7280" : "text.secondary",
                           }}
                         >
                           CGST ({invoice.tax.rate / 2}%):
@@ -1391,7 +1440,7 @@ export function ModernInvoicePreview({
                           variant="body2"
                           sx={{
                             fontWeight: 600,
-                            color: "text.primary",
+                            color: isPrintMode ? "#000000" : "text.primary",
                           }}
                         >
                           {formatAmount(cgstAmount, invoice.amounts.currency)}
@@ -1410,7 +1459,7 @@ export function ModernInvoicePreview({
                           variant="body2"
                           sx={{
                             fontWeight: 500,
-                            color: "text.secondary",
+                            color: isPrintMode ? "#6B7280" : "text.secondary",
                           }}
                         >
                           SGST ({invoice.tax.rate / 2}%):
@@ -1419,7 +1468,7 @@ export function ModernInvoicePreview({
                           variant="body2"
                           sx={{
                             fontWeight: 600,
-                            color: "text.primary",
+                            color: isPrintMode ? "#000000" : "text.primary",
                           }}
                         >
                           {formatAmount(sgstAmount, invoice.amounts.currency)}
@@ -1441,7 +1490,7 @@ export function ModernInvoicePreview({
                         variant="body2"
                         sx={{
                           fontWeight: 500,
-                          color: "text.secondary",
+                          color: isPrintMode ? "#6B7280" : "text.secondary",
                         }}
                       >
                         IGST ({invoice.tax.rate}%):
@@ -1450,7 +1499,7 @@ export function ModernInvoicePreview({
                         variant="body2"
                         sx={{
                           fontWeight: 600,
-                          color: "text.primary",
+                          color: isPrintMode ? "#000000" : "text.primary",
                         }}
                       >
                         {formatAmount(igstAmount, invoice.amounts.currency)}
@@ -1465,7 +1514,7 @@ export function ModernInvoicePreview({
                       alignItems: "center",
                       py: 1,
                       borderTop: 2,
-                      borderColor: "text.primary",
+                      borderColor: isPrintMode ? "#000000" : "text.primary",
                       mt: 1,
                     }}
                   >
@@ -1473,7 +1522,7 @@ export function ModernInvoicePreview({
                       variant="h6"
                       sx={{
                         fontWeight: "bold",
-                        color: "text.primary",
+                        color: isPrintMode ? "#000000" : "text.primary",
                         fontFamily: brand.fonts.heading,
                       }}
                     >
@@ -1483,7 +1532,7 @@ export function ModernInvoicePreview({
                       variant="h6"
                       sx={{
                         fontWeight: "bold",
-                        color: "text.primary",
+                        color: isPrintMode ? "#000000" : "text.primary",
                       }}
                     >
                       {formatAmount(total, invoice.amounts.currency)}
