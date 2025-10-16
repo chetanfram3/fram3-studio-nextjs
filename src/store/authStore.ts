@@ -21,6 +21,7 @@ interface AuthState {
   // Actions
   setUser: (user: User | null) => void;
   setClaims: (claims: TokenClaims | null) => void;
+  updateClaims: (updates: Partial<TokenClaims>) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setProfileLoaded: (loaded: boolean) => void;
@@ -41,6 +42,9 @@ export const useAuthStore = create<AuthState>()(
       // Actions
       setUser: (user) => set({ user }),
       setClaims: (claims) => set({ claims }),
+      updateClaims: (updates) => set((state) => ({
+        claims: state.claims ? { ...state.claims, ...updates } : null
+      })),
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
       setProfileLoaded: (loaded) => set({ profileLoaded: loaded }),
