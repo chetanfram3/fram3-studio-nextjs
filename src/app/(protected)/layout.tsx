@@ -17,6 +17,7 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
+
   // Initialize FCM when user is authenticated
   useEffect(() => {
     const setupFCM = async () => {
@@ -34,7 +35,6 @@ export default function ProtectedLayout({
   // Register service worker and listen for background messages
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      // Register service worker
       navigator.serviceWorker
         .register("/firebase-messaging-sw.js")
         .then((registration) => {
@@ -44,7 +44,6 @@ export default function ProtectedLayout({
           logger.error("Service Worker registration failed:", error);
         });
 
-      // Listen for messages from service worker (background notifications)
       const messageHandler = (event: MessageEvent) => {
         if (event.data && event.data.type === "NOTIFICATION_RECEIVED") {
           logger.debug(
@@ -52,7 +51,6 @@ export default function ProtectedLayout({
             event.data.notification
           );
 
-          // Add notification to store
           const { addNotification } = useNotificationStore.getState();
           addNotification({
             ...event.data.notification,
@@ -63,7 +61,6 @@ export default function ProtectedLayout({
 
       navigator.serviceWorker.addEventListener("message", messageHandler);
 
-      // Cleanup listener on unmount
       return () => {
         navigator.serviceWorker.removeEventListener("message", messageHandler);
       };
@@ -75,8 +72,9 @@ export default function ProtectedLayout({
       requireAuth={true}
       redirectTo="/signin"
       loadingText="Checking authentication..."
+      checkOnboarding={true}
+      onboardingPath="/create-now"
     >
-      {/* 🆕 NEW: Wrap with ConsentGate to enforce legal agreement */}
       <ConsentGate>
         <SidebarProvider>
           <Box
@@ -86,10 +84,8 @@ export default function ProtectedLayout({
               bgcolor: "background.default",
             }}
           >
-            {/* Sidebar Component */}
             <Sidebar />
 
-            {/* Main Content Area */}
             <Box
               component="main"
               sx={{
@@ -104,15 +100,13 @@ export default function ProtectedLayout({
               }}
             >
               <ImpersonationBanner />
-              {/* Header */}
               <Header />
 
-              {/* Page Content */}
               <Box
                 sx={{
                   flexGrow: 1,
                   p: { xs: 2, sm: 3, md: 4 },
-                  mt: 8, // Account for fixed header height
+                  mt: 8,
                   overflow: "auto",
                 }}
               >
