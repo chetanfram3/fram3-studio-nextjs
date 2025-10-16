@@ -106,7 +106,7 @@ const Cr3ditSys: React.FC = () => {
   };
 
   const handleManageSubscription = () => {
-    window.location.href = "/dashboard/payments";
+    window.location.href = "/payments";
   };
 
   // Calculate enhanced summary with quickStats
