@@ -10,12 +10,12 @@ import {
   TextField,
   Card,
   CardContent,
-  Grid,
   Chip,
   Dialog,
   DialogContent,
-  CircularProgress,
+  Tooltip,
   keyframes,
+  Grid,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
@@ -33,6 +33,12 @@ import {
 import logger from "@/utils/logger";
 import { completeOnboarding } from "@/services/userService";
 import { auth } from "@/lib/firebase";
+import {
+  CREATIVE_CONSTANTS,
+  getEnabledOptions,
+  getAllEnabledContentTypes,
+  type ContentType,
+} from "@/config/creativeConstants";
 
 // Pulsating animation keyframes
 const pulse = keyframes`
@@ -45,54 +51,6 @@ const pulse = keyframes`
     transform: scale(1.05);
   }
 `;
-
-// Content type tabs
-const contentTabs = ["IMAGE", "VIDEO", "AUDIO", "TEXT"] as const;
-type ContentType = (typeof contentTabs)[number];
-
-// Options for each content type
-const contentOptions: Record<ContentType, string[]> = {
-  IMAGE: [
-    "Product Mockup",
-    "Storyboards",
-    "Character Design",
-    "Logo Creation",
-    "Social Media Graphics",
-    "Poster Design",
-    "Infographics",
-    "Brand Assets",
-  ],
-  VIDEO: [
-    "Commercial",
-    "Explainer Video",
-    "Social Media Video",
-    "Animation",
-    "Tutorial",
-    "Product Demo",
-    "Brand Story",
-    "Event Highlights",
-  ],
-  AUDIO: [
-    "Podcast Intro",
-    "Background Music",
-    "Voiceover",
-    "Sound Effects",
-    "Jingle Creation",
-    "Audio Logo",
-    "Meditation Sounds",
-    "Nature Sounds",
-  ],
-  TEXT: [
-    "Blog Post",
-    "Social Media Caption",
-    "Email Newsletter",
-    "Product Description",
-    "Script Writing",
-    "Story Creation",
-    "Press Release",
-    "Ad Copy",
-  ],
-};
 
 // Icon mapping for content types
 const contentTypeIcons: Record<ContentType, typeof ImageIcon> = {
@@ -125,7 +83,6 @@ function CreditLoadingDialog({
       setIsAnimating(false);
       setKeepPulsating(true);
 
-      // Start animation after short delay
       const timer = setTimeout(() => {
         const animationInterval = setInterval(() => {
           setCount((prev) => {
@@ -133,11 +90,9 @@ function CreditLoadingDialog({
               clearInterval(animationInterval);
               setIsAnimating(true);
 
-              // Keep pulsating for 2 more seconds after reaching 100
               setTimeout(() => {
                 setKeepPulsating(false);
 
-                // Then complete after pulsating stops
                 setTimeout(() => {
                   onComplete();
                 }, 500);
@@ -145,9 +100,9 @@ function CreditLoadingDialog({
 
               return 100;
             }
-            return prev + 2; // Increment by 2 to reach 100 in ~2 seconds
+            return prev + 2;
           });
-        }, 40); // Update every 40ms
+        }, 40);
 
         return () => clearInterval(animationInterval);
       }, 300);
@@ -155,12 +110,6 @@ function CreditLoadingDialog({
       return () => clearTimeout(timer);
     }
   }, [open, onComplete]);
-
-  // Get the correct brand color based on theme mode
-  const primaryColor =
-    theme.palette.mode === "dark"
-      ? brand.colors.dark.primary
-      : brand.colors.light.primary;
 
   return (
     <Dialog
@@ -173,7 +122,8 @@ function CreditLoadingDialog({
           bgcolor: "background.paper",
           borderRadius: `${brand.borderRadius * 3}px`,
           backgroundImage: "none !important",
-          border: `2px solid ${primaryColor}`,
+          border: 2,
+          borderColor: "primary.main",
           boxShadow: theme.shadows[24],
           width: 360,
           maxWidth: 360,
@@ -200,7 +150,6 @@ function CreditLoadingDialog({
               mx: "auto",
             }}
           >
-            {/* Outer pulsating circles */}
             <Box
               sx={{
                 position: "absolute",
@@ -215,21 +164,25 @@ function CreditLoadingDialog({
                   cx="40"
                   cy="40"
                   r="35"
-                  fill={primaryColor}
+                  fill={theme.palette.primary.main}
                   opacity="0.2"
                 />
                 <circle
                   cx="40"
                   cy="40"
                   r="25"
-                  fill={primaryColor}
+                  fill={theme.palette.primary.main}
                   opacity="0.6"
                 />
-                <circle cx="40" cy="40" r="15" fill={primaryColor} />
+                <circle
+                  cx="40"
+                  cy="40"
+                  r="15"
+                  fill={theme.palette.primary.main}
+                />
               </svg>
             </Box>
 
-            {/* $ Symbol in center */}
             <Box
               sx={{
                 position: "absolute",
@@ -243,7 +196,7 @@ function CreditLoadingDialog({
                 sx={{
                   fontSize: "1rem",
                   fontWeight: "bold",
-                  color: theme.palette.mode === "dark" ? "#0F0F0F" : "#FFFFFF",
+                  color: theme.palette.primary.contrastText,
                 }}
               >
                 $
@@ -257,7 +210,7 @@ function CreditLoadingDialog({
           variant="h2"
           sx={{
             fontWeight: 700,
-            color: primaryColor,
+            color: "primary.main",
             mb: 2,
             fontFamily: "monospace",
             fontSize: "3.5rem",
@@ -276,6 +229,7 @@ function CreditLoadingDialog({
             mb: 1,
             fontWeight: 600,
             fontSize: "1.125rem",
+            fontFamily: brand.fonts.heading,
           }}
         >
           Credits added to your account
@@ -310,19 +264,12 @@ function SidebarHintOverlay({
   const brand = getCurrentBrand();
   const [mouseInCorner, setMouseInCorner] = useState(false);
 
-  const primaryColor =
-    theme.palette.mode === "dark"
-      ? brand.colors.dark.primary
-      : brand.colors.light.primary;
-
   useEffect(() => {
     if (!open) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Check if mouse is in bottom-left corner (within 100px from edges)
       if (e.clientX <= 100 && e.clientY >= window.innerHeight - 100) {
         setMouseInCorner(true);
-        // Close overlay after a short delay
         setTimeout(() => {
           onClose();
         }, 500);
@@ -351,7 +298,6 @@ function SidebarHintOverlay({
       }}
       onClick={onClose}
     >
-      {/* Arrow pointing to sidebar toggle */}
       <Box
         sx={{
           position: "relative",
@@ -368,7 +314,8 @@ function SidebarHintOverlay({
             width: 60,
             height: 60,
             borderRadius: "50%",
-            border: `3px solid ${primaryColor}`,
+            border: 3,
+            borderColor: "primary.main",
             animation: `${pulse} 2s ease-in-out infinite`,
           }}
         />
@@ -381,7 +328,8 @@ function SidebarHintOverlay({
             left: -20,
             bgcolor: "background.paper",
             borderRadius: `${brand.borderRadius * 2}px`,
-            border: `2px solid ${primaryColor}`,
+            border: 2,
+            borderColor: "primary.main",
             p: 3,
             minWidth: 300,
             boxShadow: theme.shadows[24],
@@ -394,7 +342,7 @@ function SidebarHintOverlay({
               height: 0,
               borderLeft: "12px solid transparent",
               borderRight: "12px solid transparent",
-              borderTop: `12px solid ${primaryColor}`,
+              borderTop: `12px solid ${theme.palette.primary.main}`,
             },
           }}
         >
@@ -403,27 +351,22 @@ function SidebarHintOverlay({
               sx={{
                 width: 40,
                 height: 40,
-                bgcolor: primaryColor,
+                bgcolor: "primary.main",
                 borderRadius: "50%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                color: theme.palette.primary.contrastText,
               }}
             >
-              <Typography
-                sx={{
-                  fontSize: "1.5rem",
-                  color: theme.palette.mode === "dark" ? "#0F0F0F" : "#FFFFFF",
-                }}
-              >
-                <ViewSidebarOutlined />
-              </Typography>
+              <ViewSidebarOutlined />
             </Box>
             <Typography
               variant="h6"
               sx={{
                 fontWeight: 700,
-                color: primaryColor,
+                color: "primary.main",
+                fontFamily: brand.fonts.heading,
               }}
             >
               Open Sidebar
@@ -453,7 +396,6 @@ function SidebarHintOverlay({
         </Box>
 
         {/* Animated arrow */}
-        {/* Animated arrow */}
         <Box
           sx={{
             position: "absolute",
@@ -473,8 +415,8 @@ function SidebarHintOverlay({
           <ShowIcon
             sx={{
               fontSize: "4rem",
-              color: primaryColor,
-              filter: "drop-shadow(0 0 8px rgba(255, 213, 0, 0.5))",
+              color: "primary.main",
+              filter: `drop-shadow(0 0 8px ${theme.palette.primary.main}80)`,
             }}
           />
         </Box>
@@ -485,7 +427,7 @@ function SidebarHintOverlay({
 
 /**
  * Describe Idea Page - What would you like to create?
- * Now includes integrated onboarding dialog
+ * Now includes integrated onboarding dialog and creativeConstants
  */
 export default function DescribeIdeaPage() {
   const router = useRouter();
@@ -494,7 +436,11 @@ export default function DescribeIdeaPage() {
   const brand = getCurrentBrand();
   const { user } = useAuthStore();
 
-  const [activeTab, setActiveTab] = useState<ContentType>("IMAGE");
+  // Get all enabled content types
+  const enabledContentTypes = getAllEnabledContentTypes();
+  const [activeTab, setActiveTab] = useState<ContentType>(
+    enabledContentTypes[0] || "IMAGE"
+  );
   const [customPrompt, setCustomPrompt] = useState("");
 
   // Check if this is a first-time user from query params
@@ -518,14 +464,7 @@ export default function DescribeIdeaPage() {
     }
   }, [isFirstTime, user]);
 
-  // Get primary color based on theme mode
-  const primaryColor =
-    theme.palette.mode === "dark"
-      ? brand.colors.dark.primary
-      : brand.colors.light.primary;
-
   const handleCreditLoadingComplete = async () => {
-    // Guard at the very top
     if (onboardingCompletedRef.current) {
       logger.debug("Onboarding already completed, skipping");
       setShowCreditDialog(false);
@@ -539,21 +478,16 @@ export default function DescribeIdeaPage() {
     }
 
     logger.debug("Credit loading completed");
-
-    // Mark as processing IMMEDIATELY to prevent duplicate calls
     onboardingCompletedRef.current = true;
 
     try {
-      // Close dialog first
       setShowCreditDialog(false);
 
       if (isFirstTime) {
-        // Show sidebar hint
         setTimeout(() => {
           setShowSidebarHint(true);
         }, 500);
 
-        // Wait for sidebar hint to appear, then complete onboarding
         setTimeout(async () => {
           try {
             if (!auth.currentUser) {
@@ -562,14 +496,13 @@ export default function DescribeIdeaPage() {
               return;
             }
 
-            // 1. Update backend
             await completeOnboarding();
             logger.debug("Backend updated successfully");
           } catch (error) {
             logger.error("Failed to complete onboarding:", error);
             onboardingCompletedRef.current = false;
           }
-        }, 600); // Call after sidebar hint is shown (500ms + small buffer)
+        }, 600);
       }
     } catch (error) {
       logger.error("Error in credit loading complete flow:", error);
@@ -583,11 +516,15 @@ export default function DescribeIdeaPage() {
     logger.debug("Sidebar hint dismissed");
   };
 
-  const handleOptionSelect = (option: string) => {
-    logger.debug("Option selected", { type: activeTab, option });
-    // TODO: Navigate to playground with selected option
+  const handleOptionSelect = (optionKey: string) => {
+    const option = getEnabledOptions(activeTab).find(
+      (o) => o.key === optionKey
+    );
+    if (!option) return;
+
+    logger.debug("Option selected", { type: activeTab, optionKey, option });
     router.push(
-      `/creative/playground?type=${activeTab.toLowerCase()}&option=${encodeURIComponent(option)}`
+      `${option.path}?type=${activeTab.toLowerCase()}&key=${optionKey}`
     );
   };
 
@@ -598,10 +535,13 @@ export default function DescribeIdeaPage() {
         prompt: customPrompt,
       });
       router.push(
-        `/creative/playground?type=${activeTab.toLowerCase()}&prompt=${encodeURIComponent(customPrompt)}`
+        `/creative/ai-script-generator?type=${activeTab.toLowerCase()}&prompt=${encodeURIComponent(customPrompt)}`
       );
     }
   };
+
+  // Get enabled options for current tab
+  const currentOptions = CREATIVE_CONSTANTS[activeTab]?.options || [];
 
   return (
     <>
@@ -613,7 +553,7 @@ export default function DescribeIdeaPage() {
               variant="h3"
               sx={{
                 fontWeight: 700,
-                color: primaryColor,
+                color: "primary.main",
                 mb: 2,
                 fontFamily: brand.fonts.heading,
               }}
@@ -625,6 +565,7 @@ export default function DescribeIdeaPage() {
               sx={{
                 color: "text.secondary",
                 fontWeight: 400,
+                fontFamily: brand.fonts.body,
               }}
             >
               Choose a category or describe your idea
@@ -638,6 +579,7 @@ export default function DescribeIdeaPage() {
                   bgcolor: "action.hover",
                   color: "text.primary",
                   fontWeight: 600,
+                  fontFamily: brand.fonts.body,
                 }}
               />
             )}
@@ -657,49 +599,55 @@ export default function DescribeIdeaPage() {
                 bgcolor: "background.paper",
                 borderRadius: `${brand.borderRadius * 2}px`,
                 p: 1,
-                border: `1px solid ${theme.palette.divider}`,
+                border: 1,
+                borderColor: "divider",
                 gap: 1,
               }}
             >
-              {contentTabs.map((tab) => {
+              {(Object.keys(CREATIVE_CONSTANTS) as ContentType[]).map((tab) => {
                 const TabIcon = contentTypeIcons[tab];
+                const isEnabled = CREATIVE_CONSTANTS[tab].isEnabled;
                 return (
-                  <Button
+                  <Tooltip
                     key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    startIcon={<TabIcon />}
-                    variant={activeTab === tab ? "contained" : "text"}
-                    sx={{
-                      px: 4,
-                      py: 2,
-                      borderRadius: `${brand.borderRadius}px`,
-                      textTransform: "none",
-                      fontWeight: 600,
-                      fontSize: "1rem",
-                      minWidth: 140,
-                      ...(activeTab === tab
-                        ? {
-                            bgcolor: primaryColor,
-                            color:
-                              theme.palette.mode === "dark"
-                                ? "#0F0F0F"
-                                : "#FFFFFF",
-                            "&:hover": {
-                              bgcolor: primaryColor,
-                              opacity: 0.9,
-                            },
-                          }
-                        : {
-                            color: "text.secondary",
-                            "&:hover": {
-                              bgcolor: "action.hover",
-                              color: primaryColor,
-                            },
-                          }),
-                    }}
+                    title={!isEnabled ? "Coming Soon" : ""}
+                    arrow
                   >
-                    {tab}
-                  </Button>
+                    <span>
+                      <Button
+                        onClick={() => isEnabled && setActiveTab(tab)}
+                        startIcon={<TabIcon />}
+                        variant={activeTab === tab ? "contained" : "text"}
+                        color={activeTab === tab ? "primary" : "inherit"}
+                        disabled={!isEnabled}
+                        sx={{
+                          px: 4,
+                          py: 2,
+                          borderRadius: `${brand.borderRadius}px`,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          fontSize: "1rem",
+                          minWidth: 140,
+                          fontFamily: brand.fonts.body,
+                          ...(activeTab === tab
+                            ? {}
+                            : {
+                                color: isEnabled
+                                  ? "text.secondary"
+                                  : "text.disabled",
+                                "&:hover": isEnabled
+                                  ? {
+                                      bgcolor: "action.hover",
+                                      color: "primary.main",
+                                    }
+                                  : {},
+                              }),
+                        }}
+                      >
+                        {tab}
+                      </Button>
+                    </span>
+                  </Tooltip>
                 );
               })}
             </Box>
@@ -714,6 +662,7 @@ export default function DescribeIdeaPage() {
                 color: "text.primary",
                 mb: 3,
                 textAlign: "center",
+                fontFamily: brand.fonts.heading,
               }}
             >
               Popular {activeTab.toLowerCase()} options
@@ -732,46 +681,79 @@ export default function DescribeIdeaPage() {
                   justifyContent: "center",
                 }}
               >
-                {contentOptions[activeTab].map((option) => (
-                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={option}>
-                    <Card
-                      sx={{
-                        cursor: "pointer",
-                        transition: "all 0.3s ease",
-                        border: `1px solid ${theme.palette.divider}`,
-                        bgcolor: "background.paper",
-                        height: "100%",
-                        "&:hover": {
-                          borderColor: primaryColor,
-                          bgcolor: "action.hover",
-                          transform: "translateY(-4px)",
-                          boxShadow: theme.shadows[8],
-                        },
-                      }}
-                      onClick={() => handleOptionSelect(option)}
-                    >
-                      <CardContent sx={{ p: 3 }}>
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                        >
-                          <SparkleIcon
-                            sx={{
-                              color: primaryColor,
-                              fontSize: "1.5rem",
-                            }}
-                          />
+                {currentOptions.map((option) => (
+                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={option.key}>
+                    <Tooltip
+                      title={
+                        <Box>
                           <Typography
-                            variant="body1"
-                            sx={{
-                              fontWeight: 600,
-                              color: "text.primary",
-                            }}
+                            variant="subtitle2"
+                            sx={{ fontWeight: 600, mb: 0.5 }}
                           >
-                            {option}
+                            {option.title}
+                          </Typography>
+                          <Typography variant="caption">
+                            {option.description}
                           </Typography>
                         </Box>
-                      </CardContent>
-                    </Card>
+                      }
+                      arrow
+                      placement="top"
+                    >
+                      <Card
+                        sx={{
+                          cursor: option.isEnabled ? "pointer" : "not-allowed",
+                          transition: "all 0.3s ease",
+                          border: 1,
+                          borderColor: "divider",
+                          bgcolor: "background.paper",
+                          height: "100%",
+                          opacity: option.isEnabled ? 1 : 0.5,
+                          ...(option.isEnabled && {
+                            "&:hover": {
+                              borderColor: "primary.main",
+                              bgcolor: "action.hover",
+                              transform: "translateY(-4px)",
+                              boxShadow: theme.shadows[8],
+                            },
+                          }),
+                        }}
+                        onClick={() =>
+                          option.isEnabled && handleOptionSelect(option.key)
+                        }
+                      >
+                        <CardContent sx={{ p: 3 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
+                            <SparkleIcon
+                              sx={{
+                                color: option.isEnabled
+                                  ? "primary.main"
+                                  : "text.disabled",
+                                fontSize: "1.5rem",
+                              }}
+                            />
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontWeight: 600,
+                                color: option.isEnabled
+                                  ? "text.primary"
+                                  : "text.disabled",
+                                fontFamily: brand.fonts.body,
+                              }}
+                            >
+                              {option.value}
+                            </Typography>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </Tooltip>
                   </Grid>
                 ))}
               </Grid>
@@ -787,6 +769,7 @@ export default function DescribeIdeaPage() {
                 color: "text.primary",
                 mb: 3,
                 textAlign: "center",
+                fontFamily: brand.fonts.heading,
               }}
             >
               Or describe your custom idea
@@ -796,12 +779,13 @@ export default function DescribeIdeaPage() {
                 position: "relative",
                 bgcolor: "background.paper",
                 borderRadius: `${brand.borderRadius * 2}px`,
-                border: `2px solid ${theme.palette.divider}`,
+                border: 2,
+                borderColor: "divider",
                 p: 2,
                 transition: "all 0.3s ease",
                 "&:focus-within": {
-                  borderColor: primaryColor,
-                  boxShadow: `0 0 0 3px ${primaryColor}20`,
+                  borderColor: "primary.main",
+                  boxShadow: `0 0 0 3px ${theme.palette.primary.main}20`,
                 },
               }}
             >
@@ -818,7 +802,8 @@ export default function DescribeIdeaPage() {
                   sx: {
                     fontSize: "1.125rem",
                     color: "text.primary",
-                    pr: 8, // Add padding right for the button
+                    fontFamily: brand.fonts.body,
+                    pr: 8,
                     "& textarea::placeholder": {
                       color: "text.disabled",
                       opacity: 1,
@@ -828,6 +813,7 @@ export default function DescribeIdeaPage() {
               />
               <Button
                 variant="contained"
+                color="primary"
                 onClick={handleCustomPromptSubmit}
                 disabled={!customPrompt.trim()}
                 sx={{
@@ -839,17 +825,7 @@ export default function DescribeIdeaPage() {
                   width: 44,
                   height: 44,
                   p: 0,
-                  bgcolor: primaryColor,
-                  color: theme.palette.mode === "dark" ? "#0F0F0F" : "#FFFFFF",
                   borderRadius: `${brand.borderRadius}px`,
-                  "&:hover": {
-                    bgcolor: primaryColor,
-                    opacity: 0.9,
-                  },
-                  "&:disabled": {
-                    bgcolor: "action.disabledBackground",
-                    color: "text.disabled",
-                  },
                 }}
               >
                 <ArrowIcon />
@@ -859,11 +835,13 @@ export default function DescribeIdeaPage() {
         </Box>
       </Container>
 
-      {/* Credit Loading Dialog - Integrated */}
+      {/* Credit Loading Dialog */}
       <CreditLoadingDialog
         open={showCreditDialog}
         onComplete={handleCreditLoadingComplete}
       />
+
+      {/* Sidebar Hint Overlay */}
       <SidebarHintOverlay
         open={showSidebarHint}
         onClose={handleSidebarHintClose}
