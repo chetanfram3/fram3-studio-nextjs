@@ -429,7 +429,7 @@ export function CustomInvoiceTable({
   }
 
   return (
-    <Box sx={{ bgcolor: "background.default" }}>
+    <Box sx={{ bgcolor: "background.paper" }}>
       {/* Header with Search and Filters */}
       <Card
         sx={{

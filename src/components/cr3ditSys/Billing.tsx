@@ -1203,7 +1203,7 @@ export function BillingCard(props: Partial<BillingProps>) {
           sx: {
             height: "90vh",
             borderRadius: `${brand.borderRadius}px`,
-            bgcolor: "background.default",
+            bgcolor: "background.paper",
           },
         }}
       >
