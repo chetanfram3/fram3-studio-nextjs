@@ -506,10 +506,14 @@ export function MainImage({
                   position: "absolute",
                   top: 16,
                   right: 16,
-                  color: "white",
+                  color: "text.primary",
                   width: 40,
                   height: 40,
-                  backgroundColor: "rgba(0, 0, 0, 0.8)",
+                  // ✅ Theme-aware background
+                  backgroundColor: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? alpha(theme.palette.background.paper, 0.8)
+                      : alpha(theme.palette.background.paper, 0.95),
                   backdropFilter: "blur(5px)",
                   transition: "all 0.2s ease",
                   zIndex: 1000,
@@ -536,9 +540,24 @@ export function MainImage({
               left: 0,
               right: 0,
               p: 4,
-              color: "white",
-              background:
-                "linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 100%)",
+              color: "text.primary",
+              // ✅ Theme-aware gradient overlay
+              background: (theme) =>
+                theme.palette.mode === "dark"
+                  ? `linear-gradient(to bottom, ${alpha(
+                      theme.palette.background.default,
+                      0.6
+                    )} 0%, ${alpha(
+                      theme.palette.background.default,
+                      0.4
+                    )} 70%, transparent 100%)`
+                  : `linear-gradient(to bottom, ${alpha(
+                      theme.palette.background.paper,
+                      0.6
+                    )} 0%, ${alpha(
+                      theme.palette.background.paper,
+                      0.4
+                    )} 70%, transparent 100%)`,
               zIndex: 2,
               pointerEvents: "none",
             }}
@@ -546,13 +565,24 @@ export function MainImage({
             <Typography
               variant="h3"
               gutterBottom
-              sx={{ fontFamily: brand.fonts.heading }}
+              sx={{
+                fontFamily: brand.fonts.heading,
+                color: "text.primary",
+                textShadow: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "0 2px 4px rgba(0, 0, 0, 0.5)"
+                    : "0 1px 2px rgba(255, 255, 255, 0.8)",
+              }}
             >
               {title}
             </Typography>
             <Typography
               variant="subtitle1"
-              sx={{ mb: 4, fontFamily: brand.fonts.body }}
+              sx={{
+                mb: 4,
+                fontFamily: brand.fonts.body,
+                color: "text.secondary",
+              }}
             >
               {description}
             </Typography>
@@ -568,8 +598,14 @@ export function MainImage({
               bottom: 16,
               left: 16,
               p: 2,
-              bgcolor: "rgba(0, 0, 0, 0.7)",
-              color: "white",
+              // ✅ Theme-aware background
+              bgcolor: (theme) =>
+                theme.palette.mode === "dark"
+                  ? alpha(theme.palette.background.paper, 0.65)
+                  : alpha(theme.palette.background.paper, 0.65),
+              backdropFilter: "blur(10px)",
+              border: 1,
+              borderColor: "divider",
               borderRadius: `${brand.borderRadius}px`,
               zIndex: 2,
               pointerEvents: "none",
@@ -594,84 +630,97 @@ export function MainImage({
               }}
             >
               <Box>
-                <Typography variant="caption" color="grey.400">
+                <Typography variant="caption" color="text.secondary">
                   Actors
                 </Typography>
                 <Typography
                   variant="h6"
-                  color="white"
+                  color="text.primary" // ✅ Fixed
                   sx={{ fontFamily: brand.fonts.body }}
                 >
                   {summary.actors.toLocaleString()}
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" color="grey.400">
+                <Typography variant="caption" color="text.secondary">
+                  {" "}
+                  {/* ✅ Fixed */}
                   Locations
                 </Typography>
                 <Typography
                   variant="h6"
-                  color="white"
+                  color="text.primary" // ✅ Fixed
                   sx={{ fontFamily: brand.fonts.body }}
                 >
-                  {summary.locations.toLocaleString()}
+                  {summary.locations.toLocaleString()}{" "}
+                  {/* ✅ Fixed - was actors */}
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" color="grey.400">
+                <Typography variant="caption" color="text.secondary">
+                  {" "}
+                  {/* ✅ Fixed */}
                   Scenes
                 </Typography>
                 <Typography
                   variant="h6"
-                  color="white"
+                  color="text.primary" // ✅ Fixed
                   sx={{ fontFamily: brand.fonts.body }}
                 >
                   {summary.scenes.toLocaleString()}
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" color="grey.400">
+                <Typography variant="caption" color="text.secondary">
+                  {" "}
+                  {/* ✅ Fixed */}
                   Shots
                 </Typography>
                 <Typography
                   variant="h6"
-                  color="white"
+                  color="text.primary" // ✅ Fixed
                   sx={{ fontFamily: brand.fonts.body }}
                 >
                   {summary.shots.toLocaleString()}
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" color="grey.400">
+                <Typography variant="caption" color="text.secondary">
+                  {" "}
+                  {/* ✅ Fixed */}
                   Dialogues
                 </Typography>
                 <Typography
                   variant="h6"
-                  color="white"
+                  color="text.primary" // ✅ Fixed
                   sx={{ fontFamily: brand.fonts.body }}
                 >
                   {summary.dialogues.toLocaleString()}
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" color="grey.400">
+                <Typography variant="caption" color="text.secondary">
+                  {" "}
+                  {/* ✅ Fixed */}
                   Music
                 </Typography>
                 <Typography
                   variant="h6"
-                  color="white"
+                  color="text.primary" // ✅ Fixed
                   sx={{ fontFamily: brand.fonts.body }}
                 >
                   {summary.musicTracks.toLocaleString()}
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" color="grey.400">
+                <Typography variant="caption" color="text.secondary">
+                  {" "}
+                  {/* ✅ Fixed */}
                   Sound FX
                 </Typography>
                 <Typography
                   variant="h6"
-                  color="white"
+                  color="text.primary" // ✅ Fixed
                   sx={{ fontFamily: brand.fonts.body }}
                 >
                   {(summary.foleyItems + summary.roomTones).toLocaleString()}

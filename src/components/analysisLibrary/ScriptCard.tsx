@@ -7,7 +7,7 @@ import {
   VisibilityOutlined as ViewIcon,
   InfoOutlined as InfoIcon,
 } from "@mui/icons-material";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, alpha } from "@mui/material/styles";
 import NextImage from "next/image";
 import { FavoriteButton } from "./FavouriteButton";
 import type { Script } from "@/types";
@@ -173,31 +173,59 @@ export function ScriptCard({
           left: 0,
           right: 0,
           p: 2,
-          background:
-            "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, transparent 100%)",
+          // ✅ Theme-aware gradient overlay
+          background: (theme) =>
+            theme.palette.mode === "dark"
+              ? // Dark mode: Darker overlay for contrast
+                `linear-gradient(to top, ${alpha(
+                  theme.palette.background.default,
+                  0.95
+                )} 0%, ${alpha(
+                  theme.palette.background.default,
+                  0.85
+                )} 50%, transparent 100%)`
+              : // Light mode: Lighter overlay with better readability
+                `linear-gradient(to top, ${alpha(
+                  theme.palette.background.paper,
+                  0.98
+                )} 0%, ${alpha(
+                  theme.palette.background.paper,
+                  0.92
+                )} 50%, ${alpha(
+                  theme.palette.background.paper,
+                  0.7
+                )} 70%, transparent 100%)`,
         }}
       >
         <Typography
           variant="body2"
           fontWeight="bold"
-          color="white"
+          // ✅ Use theme text color instead of hardcoded white
           sx={{
+            color: "text.primary",
             display: "block",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            textShadow: (theme) =>
+              theme.palette.mode === "dark"
+                ? "0 1px 2px rgba(0, 0, 0, 0.5)"
+                : "0 1px 2px rgba(255, 255, 255, 0.8)",
           }}
         >
           {script.scriptTitle || "Untitled"}
         </Typography>
         <Typography
           variant="caption"
-          sx={{ display: "block", color: theme.palette.text.secondary }}
+          sx={{
+            display: "block",
+            color: "text.secondary",
+          }}
         >
           v{script.versions[0]?.versionNumber || 1}
         </Typography>
 
-        {/* Action buttons */}
+        {/* Action buttons remain the same */}
         <Box
           sx={{ position: "absolute", bottom: 8, right: 0, display: "flex" }}
         >
@@ -272,7 +300,7 @@ export function SkeletonCard() {
         />
       </Box>
 
-      {/* Bottom overlay */}
+      {/* Bottom overlay for skeleton - THEME AWARE */}
       <Box
         sx={{
           position: "absolute",
@@ -280,7 +308,11 @@ export function SkeletonCard() {
           left: 0,
           right: 0,
           p: 2,
-          background: "rgba(0, 0, 0, 0.7)",
+          // ✅ Theme-aware background
+          background: (theme) =>
+            theme.palette.mode === "dark"
+              ? alpha(theme.palette.background.default, 0.9)
+              : alpha(theme.palette.background.paper, 0.95),
         }}
       >
         {/* Title skeleton */}
@@ -288,7 +320,14 @@ export function SkeletonCard() {
           variant="text"
           width="70%"
           height={28}
-          sx={{ mb: 1, bgcolor: "grey.300" }}
+          sx={{
+            mb: 1,
+            // ✅ Theme-aware skeleton color
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? alpha(theme.palette.primary.main, 0.2)
+                : alpha(theme.palette.grey[400], 0.3),
+          }}
         />
 
         {/* Version number skeleton */}
@@ -296,7 +335,14 @@ export function SkeletonCard() {
           variant="text"
           width="30%"
           height={20}
-          sx={{ mb: 2, bgcolor: "grey.300" }}
+          sx={{
+            mb: 2,
+            // ✅ Theme-aware skeleton color
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? alpha(theme.palette.primary.main, 0.2)
+                : alpha(theme.palette.grey[400], 0.3),
+          }}
         />
 
         {/* Action buttons skeleton */}
@@ -313,13 +359,17 @@ export function SkeletonCard() {
             variant="circular"
             width={24}
             height={24}
-            sx={{ bgcolor: theme.palette.primary.main }}
+            sx={{
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.3),
+            }}
           />
           <Skeleton
             variant="circular"
             width={24}
             height={24}
-            sx={{ bgcolor: theme.palette.primary.main }}
+            sx={{
+              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.3),
+            }}
           />
         </Box>
       </Box>

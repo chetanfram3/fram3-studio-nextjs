@@ -128,10 +128,26 @@ const styles = {
     left: 0,
     right: 0,
     p: 3,
+    // ✅ Theme-aware gradient overlay
     background:
       theme.palette.mode === "dark"
-        ? "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0.4) 100%)"
-        : "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0.3) 100%)",
+        ? // Dark mode: Dark overlay with good contrast
+          `linear-gradient(to top, ${alpha(
+            theme.palette.background.default,
+            0.95
+          )} 0%, ${alpha(theme.palette.background.default, 0.85)} 70%, ${alpha(
+            theme.palette.background.default,
+            0.4
+          )} 100%)`
+        : // Light mode: Light overlay for better readability
+          `linear-gradient(to top, ${alpha(
+            theme.palette.background.paper,
+            0.98
+          )} 0%, ${alpha(theme.palette.background.paper, 0.92)} 70%, ${alpha(
+            theme.palette.background.paper,
+            0.5
+          )} 100%)`,
+    // ✅ Use theme text color
     color: theme.palette.text.primary,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
@@ -148,7 +164,11 @@ const styles = {
     color: theme.palette.text.primary,
     width: 42,
     height: 42,
-    backgroundColor: alpha(theme.palette.background.paper, 0.5),
+    // ✅ Theme-aware button background
+    backgroundColor:
+      theme.palette.mode === "dark"
+        ? alpha(theme.palette.background.paper, 0.5)
+        : alpha(theme.palette.background.paper, 0.8),
     backdropFilter: "blur(5px)",
     transition: "all 0.2s ease",
     "&:hover": {
@@ -163,7 +183,11 @@ const styles = {
     color: theme.palette.text.primary,
     width: 36,
     height: 36,
-    backgroundColor: alpha(theme.palette.background.paper, 0.5),
+    // ✅ Theme-aware button background
+    backgroundColor:
+      theme.palette.mode === "dark"
+        ? alpha(theme.palette.background.paper, 0.5)
+        : alpha(theme.palette.background.paper, 0.8),
     backdropFilter: "blur(5px)",
     transition: "all 0.2s ease",
     "&:hover": {
@@ -177,7 +201,11 @@ const styles = {
     left: 16,
     backdropFilter: "blur(5px)",
     color: theme.palette.primary.main,
-    background: alpha(theme.palette.background.paper, 0.7),
+    // ✅ Theme-aware chip background
+    background:
+      theme.palette.mode === "dark"
+        ? alpha(theme.palette.background.paper, 0.7)
+        : alpha(theme.palette.background.paper, 0.9),
     fontWeight: "bold",
     fontFamily: getCurrentBrand().fonts.body,
   }),
@@ -187,7 +215,11 @@ const styles = {
     right: 16,
     backdropFilter: "blur(5px)",
     color: theme.palette.primary.main,
-    background: alpha(theme.palette.background.paper, 0.7),
+    // ✅ Theme-aware chip background
+    background:
+      theme.palette.mode === "dark"
+        ? alpha(theme.palette.background.paper, 0.7)
+        : alpha(theme.palette.background.paper, 0.9),
     fontWeight: "bold",
     fontFamily: getCurrentBrand().fonts.body,
   }),
