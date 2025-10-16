@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Box,
@@ -31,6 +31,7 @@ import {
   ViewSidebarOutlined,
 } from "@mui/icons-material";
 import logger from "@/utils/logger";
+import { completeOnboarding } from "@/services/userService";
 
 // Pulsating animation keyframes
 const pulse = keyframes`
@@ -490,7 +491,7 @@ export default function DescribeIdeaPage() {
   const searchParams = useSearchParams();
   const theme = useTheme();
   const brand = getCurrentBrand();
-  const { user } = useAuthStore();
+  const { user, updateClaims } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState<ContentType>("IMAGE");
   const [customPrompt, setCustomPrompt] = useState("");
@@ -499,6 +500,7 @@ export default function DescribeIdeaPage() {
   const isFirstTime = searchParams.get("firstTime") === "true";
   const [showCreditDialog, setShowCreditDialog] = useState(isFirstTime);
   const [showSidebarHint, setShowSidebarHint] = useState(false);
+  const onboardingCompletedRef = useRef(false);
 
   useEffect(() => {
     if (isFirstTime) {
@@ -515,22 +517,50 @@ export default function DescribeIdeaPage() {
       : brand.colors.light.primary;
 
   const handleCreditLoadingComplete = async () => {
+    // Guard at the very top
+    if (onboardingCompletedRef.current) {
+      logger.debug("Onboarding already completed, skipping");
+      setShowCreditDialog(false);
+      return;
+    }
+
     logger.debug("Credit loading completed");
 
-    try {
-      // TODO: Save credits to Firestore/Backend if needed
-      // await saveCreditsToBackend(user?.uid, 100);
+    // Mark as processing IMMEDIATELY to prevent duplicate calls
+    onboardingCompletedRef.current = true;
 
+    try {
+      // Close dialog first
       setShowCreditDialog(false);
-      // Show sidebar hint for first-time users
+
       if (isFirstTime) {
+        // Show sidebar hint
         setTimeout(() => {
           setShowSidebarHint(true);
         }, 500);
+
+        // Wait for sidebar hint to appear, then complete onboarding
+        setTimeout(async () => {
+          try {
+            // 1. Update Zustand immediately (optimistic update)
+            updateClaims({ isNewUser: false });
+            logger.debug("Updated isNewUser in Zustand store");
+
+            // 2. Update backend
+            await completeOnboarding();
+            logger.debug("Backend updated successfully");
+          } catch (error) {
+            logger.error("Failed to complete onboarding:", error);
+
+            // Rollback optimistic update on error
+            updateClaims({ isNewUser: true });
+            onboardingCompletedRef.current = false;
+          }
+        }, 600); // Call after sidebar hint is shown (500ms + small buffer)
       }
     } catch (error) {
-      logger.error("Failed to save credits:", error);
-      // Even if saving fails, close dialog and continue
+      logger.error("Error in credit loading complete flow:", error);
+      onboardingCompletedRef.current = false;
       setShowCreditDialog(false);
     }
   };
