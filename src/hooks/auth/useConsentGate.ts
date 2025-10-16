@@ -196,7 +196,8 @@ export function useConsentGate() {
                 error: null,
             });
 
-            // Redirect to sign-in page
+            // ✅ Redirect to clean sign-in page (no 'from' parameter)
+            window.location.href = '/signin';
 
             logger.debug("User logged out successfully after declining consent");
         } catch (error) {
