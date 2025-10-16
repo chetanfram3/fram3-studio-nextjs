@@ -1203,49 +1203,11 @@ export function BillingCard(props: Partial<BillingProps>) {
           sx: {
             height: "90vh",
             borderRadius: `${brand.borderRadius}px`,
-            bgcolor: "background.paper",
+            bgcolor: "background.default",
+            backgroundImage: 'none'
           },
         }}
       >
-        <DialogTitle>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: `${brand.borderRadius}px`,
-                  bgcolor: "primary.main",
-                }}
-              >
-                <FileText
-                  size={20}
-                  color={theme.palette.primary.contrastText}
-                />
-              </Box>
-              <Typography
-                variant="h6"
-                fontWeight="bold"
-                color="text.primary"
-                sx={{ fontFamily: brand.fonts.heading }}
-              >
-                All Invoices & Orders
-              </Typography>
-            </Box>
-            <IconButton onClick={handleCloseInvoiceTable}>
-              <Close size={20} />
-            </IconButton>
-          </Box>
-        </DialogTitle>
         <DialogContent sx={{ p: 3, overflow: "hidden" }}>
           <Box sx={{ height: "100%", overflow: "auto" }}>
             <CustomInvoiceTable

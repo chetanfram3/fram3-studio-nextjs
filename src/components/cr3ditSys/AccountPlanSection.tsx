@@ -423,6 +423,7 @@ const AutoRechargeCard = ({
                     borderRadius: `${brand.borderRadius}px`,
                     border: `1px solid ${theme.palette.divider}`,
                     fontFamily: brand.fonts.body,
+                    backgroundColor: 'background-paper'
                   }}
                   action={
                     <Button
