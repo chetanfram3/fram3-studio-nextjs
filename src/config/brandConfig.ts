@@ -94,8 +94,13 @@ export const brands: Record<string, BrandConfig> = {
         secondary: '#ffa500',         // Orange-Gold - accents
         secondaryLight: '#ffc04d',    // Light Orange-Gold
         secondaryDark: '#ff8c00',     // Dark Orange-Gold
-        background: '#8d600d15',      // Very subtle bronze tint (15% opacity)
-        surface: '#e8dece',           // White - cards/surfaces
+
+        // ✅ FIX: Surface should be LIGHTER than background
+        // background: '#f5efe5',        // Warm beige - page background (darker)
+        // surface: '#e8dece',  
+        background: '#e8dece',         // Very light beige - cards/dropdowns (lighter)
+        surface: '#f5efe5',
+
         text: '#1a1a1a',              // Deep Charcoal - primary text
         textSecondary: '#6b7280',     // Medium Gray - secondary text
         accent: '#ffa500',            // Orange-Gold - strategic highlights
