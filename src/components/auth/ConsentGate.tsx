@@ -2,6 +2,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import {
   Dialog,
   DialogTitle,
@@ -58,6 +59,7 @@ export default function ConsentGate({ children }: ConsentGateProps) {
   const theme = useTheme();
   const brand = getCurrentBrand();
   const { isDarkMode } = useThemeMode();
+  const pathname = usePathname();
 
   const {
     showModal,
@@ -95,12 +97,18 @@ export default function ConsentGate({ children }: ConsentGateProps) {
   if (!showModal) {
     return <>{children}</>;
   }
-
+  const isOnboardingPage =
+    pathname === "/create-now" || pathname.startsWith("/create-now");
   // Render blocking consent modal
   return (
     <>
       {/* Render children behind modal (blocked) */}
-      <Box sx={{ filter: "blur(4px)", pointerEvents: "none" }}>{children}</Box>
+      {/* ✅ Conditionally render children behind modal */}
+      {!isOnboardingPage && (
+        <Box sx={{ filter: "blur(4px)", pointerEvents: "none" }}>
+          {children}
+        </Box>
+      )}
 
       {/* Blocking Consent Modal */}
       <Dialog
