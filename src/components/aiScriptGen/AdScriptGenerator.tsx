@@ -295,6 +295,7 @@ function AdScriptGeneratorContent() {
   const [isLoadingPreset, setIsLoadingPreset] = useState(false);
   const [presetLoadError, setPresetLoadError] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const presetLoadedRef = useRef(false);
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -384,14 +385,29 @@ function AdScriptGeneratorContent() {
       const type = searchParams.get("type");
       const key = searchParams.get("key");
 
-      // Skip if no params or already loading
-      if (!type || !key || isLoadingPreset) {
+      // ENHANCED GUARDS
+      // 1. Skip if no params
+      if (!type || !key) {
+        return;
+      }
+
+      // 2. Skip if already loading
+      if (isLoadingPreset) {
+        return;
+      }
+
+      // 3. Skip if already loaded (prevents re-runs)
+      if (presetLoadedRef.current) {
+        logger.debug("Preset already loaded, skipping", { type, key });
         return;
       }
 
       logger.debug("Loading preset from URL params:", { type, key });
       setIsLoadingPreset(true);
       setPresetLoadError(null);
+
+      // Mark as loading to prevent concurrent loads
+      presetLoadedRef.current = true;
 
       try {
         // Load the preset
@@ -418,7 +434,9 @@ function AdScriptGeneratorContent() {
 
           logger.debug("Preset loaded successfully:", { type, key });
         } else {
-          // Preset not found or invalid
+          // Reset the ref so user can retry if needed
+          presetLoadedRef.current = false;
+
           const errorMsg = `Could not load preset for ${type}/${key}`;
           setPresetLoadError(errorMsg);
           logger.warn(errorMsg);
@@ -426,6 +444,9 @@ function AdScriptGeneratorContent() {
           CustomToast("warning", "Preset not found. Using default values.");
         }
       } catch (error) {
+        // Reset the ref on error so user can retry
+        presetLoadedRef.current = false;
+
         const errorMsg =
           error instanceof Error ? error.message : "Unknown error";
         logger.error("Failed to load preset:", { type, key, error: errorMsg });
@@ -438,7 +459,17 @@ function AdScriptGeneratorContent() {
     };
 
     void loadPresetFromUrl();
-  }, [searchParams, form, isLoadingPreset]);
+
+    // IMPORTANT: Only depend on searchParams
+    // Don't include form, isLoadingPreset, etc. to prevent re-runs
+  }, [searchParams]);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup: Reset the ref when component unmounts
+      presetLoadedRef.current = false;
+    };
+  }, []);
 
   // ============================================================================
   // CALLBACKS
