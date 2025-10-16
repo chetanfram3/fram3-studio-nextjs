@@ -335,7 +335,7 @@ export function AddCreditsModal({
     const validation = validateCreditPackage(
       customCredits,
       customAmount,
-      config
+      config.validation
     );
     setValidationErrors(validation.errors);
     setIsValidPackage(validation.isValid);
@@ -384,6 +384,7 @@ export function AddCreditsModal({
   // Payment success handler
   const handlePaymentSuccess = async (response: RazorpayResponse) => {
     try {
+      // Processing toast for verification
       CustomToast.info("Verifying payment", {
         details: "Confirming your payment with bank...",
         duration: 3000,
@@ -397,9 +398,10 @@ export function AddCreditsModal({
 
       const result = await verifyPayment(verifyParams);
 
-      const verifiedCredits = result.credits.loaded;
-      const newBalance = result.credits.newBalance;
-      const transactionId = result.credits.transactionId;
+      // ✅ FIX: Access result.data instead of result directly
+      const verifiedCredits = result.data.credits.loaded;
+      const newBalance = result.data.credits.newBalance;
+      const transactionId = result.data.credits.transactionId;
 
       setPaymentStatus("success");
       setPaymentResult({
@@ -408,16 +410,19 @@ export function AddCreditsModal({
           newBalance: newBalance,
         },
         transactionId: transactionId,
-        paymentDetails: result.payment,
-        gstCompliance: result.gstCompliance,
+        paymentDetails: result.data.payment,
+        gstCompliance: result.data.gstCompliance,
       });
 
       if (onCreditsAdded) {
         onCreditsAdded(verifiedCredits);
       }
 
+      // Success toast with verified data
       CustomToast.success("Payment verified successfully", {
-        details: `${formatCredits(verifiedCredits)} credits added • Transaction ID: ${transactionId}`,
+        details: `${formatCredits(
+          verifiedCredits
+        )} credits added • Transaction ID: ${transactionId}`,
         duration: 4000,
       });
 
@@ -425,13 +430,14 @@ export function AddCreditsModal({
         credits: verifiedCredits,
         newBalance: newBalance,
         transactionId: transactionId,
-        gstCompliant: result.gstCompliance.gstRate,
+        gstCompliant: result.data.gstCompliance?.gstRate,
       });
-    } catch (err) {
+    } catch (err: any) {
       setPaymentStatus("error");
       setError("Payment verification failed. Please contact support.");
       console.error("Payment verification error:", err);
 
+      // Error toast for verification failure
       CustomToast.error("Payment verification failed", {
         details: "Please contact support with your payment ID",
         duration: 6000,
@@ -552,12 +558,12 @@ export function AddCreditsModal({
       });
 
       const razorpayOptions = {
-        key: orderResponse.key_id,
-        amount: orderResponse.amount,
-        currency: orderResponse.currency,
+        key: orderResponse.data.key_id,
+        amount: orderResponse.data.amount,
+        currency: orderResponse.data.currency,
         name: "FRAM3 Studio",
         description: `${formatCredits(credits)} Credits`,
-        order_id: orderResponse.orderId,
+        order_id: orderResponse.data.orderId,
         handler: handlePaymentSuccess,
         prefill: {
           email: userProfile?.email || "user@example.com",
