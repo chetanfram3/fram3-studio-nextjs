@@ -636,7 +636,7 @@ export function ModernInvoicePreview({
                   }}
                 >
                   <img
-                    src="/logo512.png"
+                    src={brand.logo.signin}
                     alt="Company Logo"
                     style={{
                       width: "100%",
