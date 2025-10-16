@@ -116,12 +116,12 @@ export const CREATIVE_CONSTANTS: Record<ContentType, ContentTypeConfig> = {
         isEnabled: true,
       },
       {
-        key: "animation",
-        value: "Animation",
-        title: "Animation",
-        description: "Develop animated content for various purposes",
+        key: "trailer",
+        value: "Trailer",
+        title: "Trailer",
+        description: "A Trailer for your product or film",
         path: "/ai-script-generator",
-        isEnabled: false,
+        isEnabled: true,
       },
       {
         key: "tutorial",
