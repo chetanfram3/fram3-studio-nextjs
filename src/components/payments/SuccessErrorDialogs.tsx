@@ -56,7 +56,10 @@ const GradientAvatar = styled(Avatar)<{ gradient: string; size?: number }>(
   })
 );
 
-const ModernButton = styled(Button)<{
+// ✅ FIXED: Added shouldForwardProp to prevent buttonVariant from reaching DOM
+const ModernButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== "buttonVariant",
+})<{
   buttonVariant?: "primary" | "secondary" | "success" | "error";
 }>(({ theme, buttonVariant = "primary" }) => {
   const getButtonStyles = () => {
@@ -93,10 +96,10 @@ const ModernButton = styled(Button)<{
         };
       default:
         return {
-          background: theme.palette.secondary.main,
-          color: theme.palette.secondary.contrastText,
+          background: theme.palette.primary.main,
+          color: theme.palette.primary.contrastText,
           "&:hover": {
-            background: theme.palette.secondary.dark,
+            background: theme.palette.primary.dark,
             transform: "translateY(-1px)",
           },
         };
@@ -176,7 +179,8 @@ export const SuccessErrorDialogs: React.FC<SuccessErrorDialogsProps> = ({
           transition: { timeout: 600 },
         }}
       >
-        <DialogTitle sx={{ textAlign: "center", pt: 4, pb: 2 }}>
+        {/* ✅ FIXED: Changed from DialogTitle to Box to avoid nested heading issues */}
+        <Box sx={{ textAlign: "center", pt: 4, pb: 2, px: 3 }}>
           <GradientAvatar
             gradient="linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)"
             size={80}
@@ -191,18 +195,22 @@ export const SuccessErrorDialogs: React.FC<SuccessErrorDialogsProps> = ({
               }}
             />
           </GradientAvatar>
-          <Typography
-            variant="h4"
-            fontWeight="bold"
-            color="success.main"
-            sx={{ mb: 1 }}
+          {/* ✅ FIXED: Using Box instead of Typography h4 to avoid nested headings */}
+          <Box
+            component="div"
+            sx={{
+              fontSize: "2.125rem", // h4 equivalent
+              fontWeight: "bold",
+              color: "success.main",
+              mb: 1,
+            }}
           >
             Payment Successful!
-          </Typography>
+          </Box>
           <Typography variant="body1" color="text.secondary">
             Your credits have been added to your account
           </Typography>
-        </DialogTitle>
+        </Box>
 
         <DialogContent sx={{ px: 4, py: 2, textAlign: "center" }}>
           <Box sx={{ mb: 3 }}>
@@ -280,7 +288,8 @@ export const SuccessErrorDialogs: React.FC<SuccessErrorDialogsProps> = ({
           transition: { direction: "up" },
         }}
       >
-        <DialogTitle sx={{ textAlign: "center", pt: 4, pb: 2 }}>
+        {/* ✅ FIXED: Changed from DialogTitle to Box to avoid nested heading issues */}
+        <Box sx={{ textAlign: "center", pt: 4, pb: 2, px: 3 }}>
           <GradientAvatar
             gradient="linear-gradient(135deg, #f44336 0%, #d32f2f 100%)"
             size={80}
@@ -295,18 +304,22 @@ export const SuccessErrorDialogs: React.FC<SuccessErrorDialogsProps> = ({
               }}
             />
           </GradientAvatar>
-          <Typography
-            variant="h4"
-            fontWeight="bold"
-            color="error.main"
-            sx={{ mb: 1 }}
+          {/* ✅ FIXED: Using Box instead of Typography h4 to avoid nested headings */}
+          <Box
+            component="div"
+            sx={{
+              fontSize: "2.125rem", // h4 equivalent
+              fontWeight: "bold",
+              color: "error.main",
+              mb: 1,
+            }}
           >
             Payment Failed
-          </Typography>
+          </Box>
           <Typography variant="body1" color="text.secondary">
             We encountered an issue processing your payment
           </Typography>
-        </DialogTitle>
+        </Box>
 
         <DialogContent sx={{ px: 4, py: 2, textAlign: "center" }}>
           <InfoContainer>
