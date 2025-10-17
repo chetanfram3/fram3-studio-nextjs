@@ -169,6 +169,7 @@ export function SentimentAnalysis({ data }: SentimentAnalysisProps) {
         >
           <Typography
             variant="h6"
+            component="span"
             sx={{
               color: "text.primary",
               fontFamily: brand.fonts.heading,
