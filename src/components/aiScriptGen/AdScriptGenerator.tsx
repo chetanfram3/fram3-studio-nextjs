@@ -648,7 +648,7 @@ function AdScriptGeneratorContent() {
           CustomToast("success", "Script Generated Successfully!");
 
           startTransition(() => {
-            router.push(`/dashboard/scripts/generated/${genScriptId}`);
+            router.push(`/ai-script-editor/generated/${genScriptId}`);
           });
         } else {
           throw new Error("Script generation did not complete");
@@ -704,7 +704,7 @@ function AdScriptGeneratorContent() {
           clearGenerationState();
           CustomToast("success", "Your script is ready!");
           startTransition(() => {
-            router.push(`/dashboard/scripts/generated/${genScriptId}`);
+            router.push(`/ai-script-editor/generated/${genScriptId}`);
           });
           return;
         } else if (currentStatus.status === "failed") {
@@ -729,7 +729,7 @@ function AdScriptGeneratorContent() {
             clearGenerationState();
             CustomToast("success", "Script Generated Successfully!");
             startTransition(() => {
-              router.push(`/dashboard/scripts/generated/${genScriptId}`);
+              router.push(`/ai-script-editor/generated/${genScriptId}`);
             });
             break;
           } else if (result.status === "failed") {
