@@ -40,7 +40,7 @@ interface VersionThumbnailStripProps {
   allVersions: ImageVersion[];
   currentVersion?: ImageVersion;
   onVersionSelect: (version: ImageVersion) => void;
-  onRestoreVersion?: (version: ImageVersion) => void;
+  onRestoreVersion?: (targetVersion: number) => void;
   isLoading?: boolean;
   disabled?: boolean;
   maxVisibleThumbnails?: number;
@@ -51,7 +51,7 @@ interface VersionDetailsModalProps {
   version: ImageVersion | null;
   isCurrent: boolean;
   onClose: () => void;
-  onRestore?: (version: ImageVersion) => void;
+  onRestore?: (targetVersion: number) => void;
   onSelect: (version: ImageVersion) => void;
 }
 
@@ -109,7 +109,10 @@ function VersionDetailsModal({
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { borderRadius: `${brand.borderRadius}px`, backgroundImage: 'none', },
+        sx: {
+          borderRadius: `${brand.borderRadius}px`,
+          backgroundImage: "none",
+        },
       }}
     >
       <DialogTitle
@@ -299,7 +302,7 @@ function VersionDetailsModal({
         {!isCurrent && onRestore && (
           <Button
             onClick={() => {
-              onRestore(version);
+              onRestore(version.version);
               onClose();
             }}
             variant="contained"

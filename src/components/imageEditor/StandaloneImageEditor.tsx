@@ -152,6 +152,7 @@ export function StandaloneImageEditor({
     isGenerating,
     isRestoring,
     isUpscaling,
+    restoreVersionAsync,
     resetEditMutation,
     resetGenerateMutation,
     resetRestoreMutation,
@@ -398,6 +399,53 @@ export function StandaloneImageEditor({
     [allVersions, handleVersionSelect]
   );
 
+const handleRestoreVersion = useCallback(
+  async (targetVersion: number) => {
+    if (!config) return;
+    
+    try {
+      logger.info("Restoring version", { targetVersion });
+      
+      // Build restore params based on config type
+      const restoreParams: any = {
+        scriptId: config.scriptId,
+        versionId: config.versionId,
+        type: config.type,
+        targetVersion,
+      };
+
+      // Add type-specific params
+      if (config.type === "shots") {
+        restoreParams.sceneId = config.sceneId;
+        restoreParams.shotId = config.shotId;
+      } else if (config.type === "actor") {
+        restoreParams.actorId = config.actorId;
+        restoreParams.actorVersionId = config.actorVersionId;
+      } else if (config.type === "location") {
+        restoreParams.locationId = config.locationId;
+        restoreParams.locationVersionId = config.locationVersionId;
+        restoreParams.promptType = config.promptType;
+      }
+
+      // Call the restore mutation
+      await restoreVersionAsync(restoreParams);
+
+      // Refetch versions to get updated data
+      refetchVersions();
+      
+      // Call parent refresh if provided
+      if (onDataRefresh) {
+        onDataRefresh();
+      }
+
+      logger.info("Version restored successfully", { targetVersion });
+    } catch (error) {
+      logger.error("Failed to restore version", { error, targetVersion });
+    }
+  },
+  [config, restoreVersionAsync, refetchVersions, onDataRefresh]
+);
+
   const isProcessing =
     isEditing ||
     isGenerating ||
@@ -630,10 +678,7 @@ export function StandaloneImageEditor({
                 allVersions={allVersions}
                 currentVersion={viewingVersion}
                 onVersionSelect={handleVersionSelect}
-                onRestoreVersion={(version) => {
-                  handleVersionSelect(version);
-                  refetchVersions();
-                }}
+                onRestoreVersion={handleRestoreVersion}
                 isLoading={isLoadingVersions}
                 disabled={isProcessing}
                 maxVisibleThumbnails={8}

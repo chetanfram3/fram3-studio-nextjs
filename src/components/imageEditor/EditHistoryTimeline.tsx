@@ -1,4 +1,4 @@
-// src/components/imageEditor/timeline/EditHistoryTimeline.tsx
+// src/components/imageEditor/EditHistoryTimeline.tsx
 "use client";
 
 import {
