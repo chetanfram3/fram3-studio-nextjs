@@ -172,11 +172,6 @@ export default function ScriptCopyTo({
   const { user } = useAuthStore();
   const { isAdmin, isSuperAdmin } = useSubscription();
 
-  // Admin check - hide component if not admin
-  if (!isAdmin && !isSuperAdmin) {
-    return null;
-  }
-
   // UI State
   const [isCreating, setIsCreating] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -434,6 +429,11 @@ export default function ScriptCopyTo({
         return <Share size={16} />;
     }
   };
+
+  // Admin check - hide component if not admin
+  if (!isAdmin && !isSuperAdmin) {
+    return null;
+  }
 
   return (
     <Box className={className}>

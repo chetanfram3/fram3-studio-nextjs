@@ -429,7 +429,7 @@ export default function BrandDetailsSection({
                   fontFamily: brand.fonts.body,
                 }}
               >
-                Select your brand's primary voice
+                Select your brand&apos;s primary voice
               </Typography>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                 {voiceOptions.map((option) => (

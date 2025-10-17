@@ -139,71 +139,51 @@ export default function Analytics({ scriptId, versionId }: AnalyticsProps) {
       "tokenAnalytics"
     );
 
-  // ==========================================
-  // LOADING & ERROR STATES
-  // ==========================================
-  if (isLoading) {
-    return <LoadingAnimation message="Loading analytics data..." />;
-  }
+  const analytics = data?.data;
 
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography color="error">
-          An error occurred while loading analytics data
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (!data || !data.success) {
-    return (
-      <AnalysisInProgress message="Analytics data is not available. Please check back later." />
-    );
-  }
-
-  const analytics = data.data;
-
-  // ==========================================
-  // COMPUTED DATA (Memoized for performance)
-  // ==========================================
-
-  // Model data for charts
+  // ✅ ALL HOOKS HERE - using optional analytics
   const modelData = useMemo(
     () =>
-      Object.entries(analytics.modelBreakdown).map(([model, stats]) => ({
-        id: model.replace("gemini-", "").replace(/-(preview|001|\d{5})/g, ""),
-        label: model
-          .replace("gemini-", "")
-          .replace(/-(preview|001|\d{5})/g, ""),
-        value: stats.totalTokens,
-        requests: stats.requests,
-        inputTokens: stats.inputTokens,
-        outputTokens: stats.outputTokens,
-      })),
-    [analytics.modelBreakdown]
+      analytics?.modelBreakdown
+        ? Object.entries(analytics.modelBreakdown).map(([model, stats]) => ({
+            id: model
+              .replace("gemini-", "")
+              .replace(/-(preview|001|\d{5})/g, ""),
+            label: model
+              .replace("gemini-", "")
+              .replace(/-(preview|001|\d{5})/g, ""),
+            value: stats.totalTokens,
+            requests: stats.requests,
+            inputTokens: stats.inputTokens,
+            outputTokens: stats.outputTokens,
+          }))
+        : [],
+    [analytics?.modelBreakdown]
   );
 
-  // Analysis type data
   const analysisTypeData = useMemo(
     () =>
-      Object.entries(analytics.analysisTypeBreakdown)
-        .map(([type, stats]) => ({
-          id: type,
-          type: ANALYSIS_TITLES[type as AnalysisType] || type,
-          requests: stats.requests,
-          totalTokens: stats.totalTokens,
-          inputTokens: stats.inputTokens,
-          outputTokens: stats.outputTokens,
-          efficiency:
-            Math.round((stats.outputTokens / stats.inputTokens) * 100) / 100,
-        }))
-        .sort((a, b) => b.totalTokens - a.totalTokens),
-    [analytics.analysisTypeBreakdown]
+      analytics?.analysisTypeBreakdown
+        ? Object.entries(analytics.analysisTypeBreakdown)
+            .map(([type, stats]) => ({
+              id: type,
+              type: ANALYSIS_TITLES[type as AnalysisType] || type,
+              requests: stats.requests,
+              totalTokens: stats.totalTokens,
+              inputTokens: stats.inputTokens,
+              outputTokens: stats.outputTokens,
+              efficiency:
+                Math.round((stats.outputTokens / stats.inputTokens) * 100) /
+                100,
+            }))
+            .sort((a, b) => b.totalTokens - a.totalTokens)
+        : [],
+    [analytics?.analysisTypeBreakdown]
   );
 
-  // Location data
   const locationChartData = useMemo(() => {
+    if (!analytics?.analysisModelMapping) return [];
+
     const locationData = Object.values(analytics.analysisModelMapping).reduce(
       (acc, item) => {
         const location = item.location;
@@ -226,23 +206,25 @@ export default function Analytics({ scriptId, versionId }: AnalyticsProps) {
       requests: item.requests,
       tokens: item.tokens,
     }));
-  }, [analytics.analysisModelMapping]);
+  }, [analytics?.analysisModelMapping]);
 
-  // Model comparison data
   const modelComparisonData = useMemo(
     () =>
-      Object.entries(analytics.modelBreakdown).map(([model, stats]) => ({
-        model: model
-          .replace("gemini-", "")
-          .replace(/-(preview|001|\d{5})/g, ""),
-        inputTokens: stats.inputTokens,
-        outputTokens: stats.outputTokens,
-        efficiency: Number((stats.outputTokens / stats.inputTokens).toFixed(3)),
-      })),
-    [analytics.modelBreakdown]
+      analytics?.modelBreakdown
+        ? Object.entries(analytics.modelBreakdown).map(([model, stats]) => ({
+            model: model
+              .replace("gemini-", "")
+              .replace(/-(preview|001|\d{5})/g, ""),
+            inputTokens: stats.inputTokens,
+            outputTokens: stats.outputTokens,
+            efficiency: Number(
+              (stats.outputTokens / stats.inputTokens).toFixed(3)
+            ),
+          }))
+        : [],
+    [analytics?.modelBreakdown]
   );
 
-  // Pie chart colors using theme
   const pieColors = useMemo(
     () => [
       theme.palette.primary.main,
@@ -255,48 +237,48 @@ export default function Analytics({ scriptId, versionId }: AnalyticsProps) {
     [theme.palette]
   );
 
-  // Table rows for detailed breakdown
   const tableRows = useMemo(
     () =>
-      Object.entries(analytics.detailedAnalysisBreakdown).map(
-        ([_key, analysis], index) => {
-          const analysisStats =
-            analytics.analysisTypeBreakdown[analysis.analysisType];
-
-          return {
-            id: index,
-            analysisType:
-              ANALYSIS_TITLES[analysis.analysisType as AnalysisType] ||
-              analysis.analysisType,
-            originalAnalysisType: analysis.analysisType,
-            requests: analysis.totalRequests,
-            inputTokens: analysisStats?.inputTokens || 0,
-            outputTokens: analysisStats?.outputTokens || 0,
-            totalTokens: analysis.totalTokens,
-            avgTokensPerRequest: analysis.averageTokensPerRequest,
-            efficiency: analysisStats
-              ? (
-                  analysisStats.outputTokens / analysisStats.inputTokens
-                ).toFixed(3)
-              : "0.000",
-            cost: analysis.totalCost,
-            credits: analysis.totalCredits,
-            models: Object.keys(analysis.modelUsage)
-              .map((model) =>
-                model
-                  .replace("gemini-", "")
-                  .replace(/-(preview|001|\d{5})/g, "")
-              )
-              .join(", "),
-            locations: [
-              ...new Set(
-                Object.values(analysis.modelUsage).map((m) => m.location)
-              ),
-            ].join(", "),
-          };
-        }
-      ),
-    [analytics.detailedAnalysisBreakdown, analytics.analysisTypeBreakdown]
+      analytics?.detailedAnalysisBreakdown && analytics?.analysisTypeBreakdown
+        ? Object.entries(analytics.detailedAnalysisBreakdown).map(
+            ([_key, analysis], index) => {
+              const analysisStats =
+                analytics.analysisTypeBreakdown[analysis.analysisType];
+              return {
+                id: index,
+                analysisType:
+                  ANALYSIS_TITLES[analysis.analysisType as AnalysisType] ||
+                  analysis.analysisType,
+                originalAnalysisType: analysis.analysisType,
+                requests: analysis.totalRequests,
+                inputTokens: analysisStats?.inputTokens || 0,
+                outputTokens: analysisStats?.outputTokens || 0,
+                totalTokens: analysis.totalTokens,
+                avgTokensPerRequest: analysis.averageTokensPerRequest,
+                efficiency: analysisStats
+                  ? (
+                      analysisStats.outputTokens / analysisStats.inputTokens
+                    ).toFixed(3)
+                  : "0.000",
+                cost: analysis.totalCost,
+                credits: analysis.totalCredits,
+                models: Object.keys(analysis.modelUsage)
+                  .map((model) =>
+                    model
+                      .replace("gemini-", "")
+                      .replace(/-(preview|001|\d{5})/g, "")
+                  )
+                  .join(", "),
+                locations: [
+                  ...new Set(
+                    Object.values(analysis.modelUsage).map((m) => m.location)
+                  ),
+                ].join(", "),
+              };
+            }
+          )
+        : [],
+    [analytics?.detailedAnalysisBreakdown, analytics?.analysisTypeBreakdown]
   );
 
   // DataGrid columns
@@ -415,6 +397,28 @@ export default function Analytics({ scriptId, versionId }: AnalyticsProps) {
     [theme.palette]
   );
 
+  // ==========================================
+  // LOADING & ERROR STATES
+  // ==========================================
+  if (isLoading) {
+    return <LoadingAnimation message="Loading analytics data..." />;
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error">
+          An error occurred while loading analytics data
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (!data || !data.success || !analytics) {
+    return (
+      <AnalysisInProgress message="Analytics data is not available. Please check back later." />
+    );
+  }
   return (
     <Box
       sx={{

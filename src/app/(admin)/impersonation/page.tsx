@@ -133,31 +133,6 @@ export default function ImpersonationPage() {
   const [userOptions, setUserOptions] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Admin access check
-  if (!isAdmin && !isSuperAdmin) {
-    return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Paper
-          sx={{
-            p: 4,
-            borderRadius: `${brand.borderRadius}px`,
-            border: `1px solid ${theme.palette.error.main}`,
-          }}
-        >
-          <Alert severity="error">
-            <Typography variant="h6" gutterBottom>
-              Access Denied
-            </Typography>
-            <Typography>
-              You do not have permission to access this page. This feature is
-              only available to administrators.
-            </Typography>
-          </Alert>
-        </Paper>
-      </Container>
-    );
-  }
-
   // Reset form
   const resetForm = useCallback(() => {
     setTargetUser(null);
@@ -188,6 +163,31 @@ export default function ImpersonationPage() {
 
     return () => clearTimeout(timeoutId);
   }, [userInput]);
+
+  // Admin access check
+  if (!isAdmin && !isSuperAdmin) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Paper
+          sx={{
+            p: 4,
+            borderRadius: `${brand.borderRadius}px`,
+            border: `1px solid ${theme.palette.error.main}`,
+          }}
+        >
+          <Alert severity="error">
+            <Typography variant="h6" gutterBottom>
+              Access Denied
+            </Typography>
+            <Typography>
+              You do not have permission to access this page. This feature is
+              only available to administrators.
+            </Typography>
+          </Alert>
+        </Paper>
+      </Container>
+    );
+  }
 
   // Handle impersonation start
   const handleStartImpersonation = async () => {
