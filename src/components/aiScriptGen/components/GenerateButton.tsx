@@ -90,7 +90,7 @@ export default function GenerateButton({
   // STATE
   // ==========================================
   const [expanded, setExpanded] = useState(false);
-  const [sliderValue, setSliderValue] = useState<number>(1); // Default to moderate
+  const [sliderValue, setSliderValue] = useState<number>(2); // Default to moderate
 
   // ==========================================
   // COMPUTED VALUES (Memoized for performance)
