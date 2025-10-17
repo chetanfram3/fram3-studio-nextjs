@@ -67,7 +67,7 @@ export default function ScriptEditorPage() {
             // Navigate to the new version URL using startTransition for non-blocking update
             startTransition(() => {
               router.replace(
-                `/scripts/generated/${genScriptId}/${result.data.currentVersion}`
+                `/ai-script-editor/generated/${genScriptId}/${result.data.currentVersion}`
               );
             });
           }
