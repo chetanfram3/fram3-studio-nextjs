@@ -128,7 +128,7 @@ export function MarketShareDialog({
             borderColor: "divider",
           }}
         >
-          <Typography variant="h6" color="primary.main">
+          <Typography variant="h6" color="primary.main" component="span">
             Market Share Analysis
           </Typography>
           <IconButton

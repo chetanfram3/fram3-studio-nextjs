@@ -430,6 +430,7 @@ export function ImageGenerationOverlay({
               variant="body2"
               color="text.primary"
               fontWeight="medium"
+              component="span"
               sx={{ fontFamily: brand.fonts.body }}
             >
               Generate New Version
