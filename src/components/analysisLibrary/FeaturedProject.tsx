@@ -864,7 +864,7 @@ export function FeaturedProject({
         sx={styles.dialog}
       >
         <DialogTitle sx={styles.dialogTitle(theme)}>
-          <Typography variant="h6">Edit Key Visual</Typography>
+          Edit Key Visual
           <IconButton
             onClick={handleCloseEditDialog}
             size="small"
