@@ -367,7 +367,7 @@ const GeneratedScriptsPage: React.FC = () => {
   };
 
   const handleGenerateNew = () => {
-    router.push("/dashboard/ai-script");
+    router.push("/ai-script-generator");
   };
 
   const handleViewModeChange = (

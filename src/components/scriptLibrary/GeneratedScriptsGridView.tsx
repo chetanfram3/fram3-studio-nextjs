@@ -614,7 +614,7 @@ export const GeneratedScriptsGridView: React.FC<
                       startIcon={<Edit sx={{ fontSize: 16 }} />}
                       onClick={(e) => {
                         e.stopPropagation();
-                        router.push(`/scripts/generated/${row.id}`);
+                        router.push(`/ai-script-editor/generated/${row.id}`);
                       }}
                       sx={{
                         flex: 1,
@@ -658,7 +658,7 @@ export const GeneratedScriptsGridView: React.FC<
                                 row.analyzedVersions.length - 1
                               ];
                             router.push(
-                              `/dashboard/story/${latestAnalyzed.analyzedScriptId}/version/${latestAnalyzed.analyzedVersionId}/3`
+                              `/story/${latestAnalyzed.analyzedScriptId}/version/${latestAnalyzed.analyzedVersionId}/3`
                             );
                           }
                         }}
