@@ -27,6 +27,7 @@ import {
   AutoAwesome as GenerateIcon,
   ZoomIn as UpscaleIcon,
   Layers as LayersIcon,
+  History as HistoryIcon, // ADDED: History icon
   ExpandLess as CollapseUpIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
@@ -40,6 +41,7 @@ import { useImageEditor, useImageVersions } from "@/hooks/useImageEditor";
 import logger from "@/utils/logger";
 import { VersionThumbnailStrip } from "./VersionThumbnailStrip";
 import { ImageEditorToolbar, type ToolbarButton } from "./ImageEditorToolbar";
+import { EditHistoryTimeline } from "./EditHistoryTimeline"; // ADDED: Import EditHistoryTimeline
 
 interface StandaloneImageEditorProps {
   config?: ImageViewerConfig;
@@ -59,7 +61,13 @@ interface StandaloneImageEditorProps {
   defaultMode?: "edit" | "generate" | "upscale" | "versions";
 }
 
-type EditorMode = "edit" | "generate" | "upscale" | "versions" | null;
+type EditorMode =
+  | "edit"
+  | "generate"
+  | "upscale"
+  | "versions"
+  | "history"
+  | null; // ADDED: "history" to EditorMode
 
 /**
  * StandaloneImageEditor - Overlays displayed on top of image (like ImageViewerContainer)
@@ -69,6 +77,7 @@ type EditorMode = "edit" | "generate" | "upscale" | "versions" | null;
  * - Bottom toolbar with icon buttons
  * - Edit/Generate/Upscale overlays appear ON TOP of the image (not in separate panel)
  * - Versions use collapsible film strip at bottom
+ * - History timeline in collapsible panel // ADDED: History feature
  * - Clean toggle system matching ImageViewerContainer pattern
  */
 export function StandaloneImageEditor({
@@ -171,6 +180,10 @@ export function StandaloneImageEditor({
     currentlyViewingVersion || imageData?.versions?.current;
   const totalVersions =
     imageData?.versions?.totalVersions || imageVersionsData?.totalVersions || 0;
+
+  // ADDED: Extract edit history data
+  const totalEdits = imageData?.versions?.totalEdits || 0;
+  const editHistory = (imageData?.versions?.editHistory || []) as any[];
 
   // Function to load high-res image in background
   const loadHighResImage = useCallback((imageUrl: string) => {
@@ -287,6 +300,7 @@ export function StandaloneImageEditor({
       setActiveMode(null);
       setAdditionalImagesMode(false);
       setAdditionalImageUrls([]);
+      setOverlayIsEditing(false);
       if (config) {
         refetchVersions();
       }
@@ -298,6 +312,7 @@ export function StandaloneImageEditor({
   const handleGenerateComplete = useCallback(
     (result: unknown) => {
       setActiveMode(null);
+      setOverlayIsEditing(false);
       if (config) {
         refetchVersions();
       }
@@ -309,6 +324,7 @@ export function StandaloneImageEditor({
   const handleUpscaleComplete = useCallback(
     (result: unknown) => {
       setActiveMode(null);
+      setOverlayIsEditing(false);
       if (config) {
         refetchVersions();
       }
@@ -370,6 +386,18 @@ export function StandaloneImageEditor({
     [currentlyViewingVersion, loadHighResImage]
   );
 
+  // ADDED: Handle version jump from history timeline
+  const handleVersionJump = useCallback(
+    (version: number) => {
+      const targetVersion = allVersions.find((v) => v.version === version);
+      if (targetVersion) {
+        handleVersionSelect(targetVersion);
+        setActiveMode(null); // Close history panel
+      }
+    },
+    [allVersions, handleVersionSelect]
+  );
+
   const isProcessing =
     isEditing ||
     isGenerating ||
@@ -390,6 +418,17 @@ export function StandaloneImageEditor({
       disabled: !config || totalVersions === 0,
       tooltip: "View all versions",
       badge: totalVersions > 0 ? totalVersions : undefined,
+    },
+    // ADDED: History button
+    {
+      id: "history",
+      label: "History",
+      icon: <HistoryIcon />,
+      active: activeMode === "history",
+      onClick: () => handleModeToggle("history"),
+      disabled: !config || totalEdits === 0,
+      tooltip: "View edit history",
+      badge: totalEdits > 0 ? totalEdits : undefined,
     },
     {
       id: "edit",
@@ -599,6 +638,33 @@ export function StandaloneImageEditor({
                 disabled={isProcessing}
                 maxVisibleThumbnails={8}
               />
+            )}
+          </Paper>
+        </Collapse>
+
+        {/* ADDED: History Timeline - Collapsible panel below image */}
+        <Collapse in={activeMode === "history"}>
+          <Paper
+            elevation={8}
+            sx={{
+              borderTop: 2,
+              borderColor: "secondary.main",
+              borderTopLeftRadius: `${brand.borderRadius}px`,
+              borderTopRightRadius: `${brand.borderRadius}px`,
+              bgcolor: "background.paper",
+              overflow: "auto",
+              maxHeight: 400,
+            }}
+          >
+            {config && editHistory.length > 0 && (
+              <Box sx={{ p: 2 }}>
+                <EditHistoryTimeline
+                  editHistory={editHistory}
+                  currentVersion={viewingVersion?.version || 0}
+                  onVersionJump={handleVersionJump}
+                  compact={false}
+                />
+              </Box>
             )}
           </Paper>
         </Collapse>

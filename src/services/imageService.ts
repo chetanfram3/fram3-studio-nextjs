@@ -281,8 +281,12 @@ export function transformToLegacyImageData(data: CompleteImageData) {
                 isCurrent: true,
                 lastEditedAt: data.versions.current.lastEditedAt,
                 prompt: data.versions.current.prompt || "",
+                imageMetadata: data.versions.current.imageMetadata, // ADD THIS LINE
+                generationType: data.versions.current.generationType, // ADD THIS LINE (nice to have)
+                seed: data.versions.current.seed, // ADD THIS LINE (nice to have)
+                aspectRatio: data.versions.current.aspectRatio, // ADD THIS LINE (nice to have)
             },
-            archived: data.versions.archived,
+            archived: data.versions.archived, // This already has imageMetadata from backend
             totalVersions: data.imageStatus.totalVersions,
             totalEdits: data.imageStatus.totalEdits,
             editHistory: data.editHistory,

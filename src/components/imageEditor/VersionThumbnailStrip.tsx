@@ -18,6 +18,8 @@ import {
   alpha,
   Skeleton,
   Divider,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   ChevronLeft as PrevIcon,
@@ -32,6 +34,7 @@ import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { ImageVersion } from "@/types/storyBoard/types";
 import { format } from "date-fns";
+import { ImageMetadataPanel } from "./ImageMetadataPanel";
 
 interface VersionThumbnailStripProps {
   allVersions: ImageVersion[];
@@ -53,7 +56,7 @@ interface VersionDetailsModalProps {
 }
 
 /**
- * Version Details Modal - Compact version
+ * Version Details Modal - With Metadata Tab
  */
 function VersionDetailsModal({
   open,
@@ -65,6 +68,7 @@ function VersionDetailsModal({
 }: VersionDetailsModalProps) {
   const theme = useTheme();
   const brand = getCurrentBrand();
+  const [selectedTab, setSelectedTab] = useState(0);
 
   if (!version) return null;
 
@@ -105,7 +109,7 @@ function VersionDetailsModal({
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { borderRadius: `${brand.borderRadius}px` },
+        sx: { borderRadius: `${brand.borderRadius}px`, backgroundImage: 'none', },
       }}
     >
       <DialogTitle
@@ -135,129 +139,157 @@ function VersionDetailsModal({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 2 }}>
-        <Stack spacing={2}>
-          {/* Compact Image Preview */}
-          <Box
-            sx={{
-              width: "100%",
-              aspectRatio: "16/9",
-              borderRadius: `${brand.borderRadius}px`,
-              overflow: "hidden",
-              bgcolor: "background.default",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Box
-              component="img"
-              src={
-                version.thumbnailPath ||
-                version.signedUrl ||
-                "/placeHolder.webp"
-              }
-              alt={`Version ${version.version}`}
-              sx={{
-                maxWidth: "100%",
-                maxHeight: "100%",
-                objectFit: "contain",
-              }}
-            />
-          </Box>
+      <DialogContent dividers sx={{ p: 0 }}>
+        {/* Tabs */}
+        <Tabs
+          value={selectedTab}
+          onChange={(_, newValue) => setSelectedTab(newValue)}
+          sx={{
+            borderBottom: 1,
+            borderColor: "divider",
+            px: 2,
+          }}
+        >
+          <Tab label="Details" sx={{ fontFamily: brand.fonts.body }} />
+          <Tab label="Metadata" sx={{ fontFamily: brand.fonts.body }} />
+        </Tabs>
 
-          {/* Compact Info Grid */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "auto 1fr",
-              gap: 1,
-              fontSize: "0.875rem",
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              Version:
-            </Typography>
-            <Typography variant="body2" fontWeight={500}>
-              {version.version}
-            </Typography>
-
-            <Typography variant="body2" color="text.secondary">
-              Status:
-            </Typography>
-            <Chip
-              label={isCurrent ? "Current" : "Archived"}
-              size="small"
-              color={isCurrent ? "primary" : "default"}
-              sx={{ height: 20, width: "fit-content" }}
-            />
-
-            {version.generationType && (
-              <>
-                <Typography variant="body2" color="text.secondary">
-                  Type:
-                </Typography>
-                <Typography variant="body2" fontWeight={500}>
-                  {getGenerationTypeLabel(version.generationType)}
-                </Typography>
-              </>
-            )}
-
-            {version.aspectRatio && (
-              <>
-                <Typography variant="body2" color="text.secondary">
-                  Ratio:
-                </Typography>
-                <Typography variant="body2" fontWeight={500}>
-                  {version.aspectRatio}
-                </Typography>
-              </>
-            )}
-
-            <Typography variant="body2" color="text.secondary">
-              Date:
-            </Typography>
-            <Typography variant="body2" fontWeight={500}>
-              {formatDate(
-                isCurrent
-                  ? version.lastEditedAt
-                  : (version as any).archivedAt || version.lastEditedAt
-              )}
-            </Typography>
-          </Box>
-
-          {/* Prompt - Compact */}
-          {version.prompt && (
-            <Box>
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 600, display: "block", mb: 0.5 }}
-              >
-                Prompt
-              </Typography>
-              <Paper
-                variant="outlined"
+        {/* Tab Content */}
+        <Box sx={{ p: 2 }}>
+          {/* Tab 0: Details */}
+          {selectedTab === 0 && (
+            <Stack spacing={2}>
+              {/* Compact Image Preview */}
+              <Box
                 sx={{
-                  p: 1,
-                  bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  width: "100%",
+                  aspectRatio: "16/9",
                   borderRadius: `${brand.borderRadius}px`,
+                  overflow: "hidden",
+                  bgcolor: "background.default",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <Typography
-                  variant="caption"
+                <Box
+                  component="img"
+                  src={
+                    version.thumbnailPath ||
+                    version.signedUrl ||
+                    "/placeHolder.webp"
+                  }
+                  alt={`Version ${version.version}`}
                   sx={{
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    fontFamily: "monospace",
-                    lineHeight: 1.4,
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    objectFit: "cover",
                   }}
-                >
-                  {version.prompt}
+                />
+              </Box>
+
+              {/* Compact Info Grid */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr",
+                  gap: 1,
+                  fontSize: "0.875rem",
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Version:
                 </Typography>
-              </Paper>
-            </Box>
+                <Typography variant="body2" fontWeight={500}>
+                  {version.version}
+                </Typography>
+
+                <Typography variant="body2" color="text.secondary">
+                  Status:
+                </Typography>
+                <Chip
+                  label={isCurrent ? "Current" : "Archived"}
+                  size="small"
+                  color={isCurrent ? "primary" : "default"}
+                  sx={{ height: 20, width: "fit-content" }}
+                />
+
+                {version.generationType && (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      Type:
+                    </Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {getGenerationTypeLabel(version.generationType)}
+                    </Typography>
+                  </>
+                )}
+
+                {version.aspectRatio && (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      Ratio:
+                    </Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {version.aspectRatio}
+                    </Typography>
+                  </>
+                )}
+
+                <Typography variant="body2" color="text.secondary">
+                  Date:
+                </Typography>
+                <Typography variant="body2" fontWeight={500}>
+                  {formatDate(
+                    isCurrent
+                      ? version.lastEditedAt
+                      : (version as any).archivedAt || version.lastEditedAt
+                  )}
+                </Typography>
+              </Box>
+
+              {/* Prompt - Compact */}
+              {version.prompt && (
+                <Box>
+                  <Typography
+                    variant="caption"
+                    sx={{ fontWeight: 600, display: "block", mb: 0.5 }}
+                  >
+                    Prompt
+                  </Typography>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 1,
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                      borderRadius: `${brand.borderRadius}px`,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        fontFamily: "monospace",
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {version.prompt}
+                    </Typography>
+                  </Paper>
+                </Box>
+              )}
+            </Stack>
           )}
-        </Stack>
+
+          {/* Tab 1: Metadata */}
+          {selectedTab === 1 && (
+            <ImageMetadataPanel
+              metadata={version?.imageMetadata || null}
+              compact={false}
+            />
+          )}
+        </Box>
       </DialogContent>
 
       <DialogActions sx={{ p: 1.5, gap: 1 }}>
