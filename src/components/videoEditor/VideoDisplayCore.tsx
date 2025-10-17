@@ -190,8 +190,8 @@ export function VideoDisplayCore({
   // ==========================================
   // LOADING INDICATOR COMPONENT
   // ==========================================
-  const LoadingIndicator = useMemo(
-    () => () => (
+  const LoadingIndicator = useMemo(() => {
+    const Component = () => (
       <Box
         sx={{
           position: "absolute",
@@ -256,21 +256,23 @@ export function VideoDisplayCore({
           )}
         </Stack>
       </Box>
-    ),
-    [
-      brand.borderRadius,
-      brand.fonts.body,
-      loadingProgress,
-      videoStatus,
-      isLoadingHighRes,
-    ]
-  );
+    );
+
+    Component.displayName = "LoadingIndicator";
+    return Component;
+  }, [
+    brand.borderRadius,
+    brand.fonts.body,
+    loadingProgress,
+    videoStatus,
+    isLoadingHighRes,
+  ]);
 
   // ==========================================
   // ERROR INDICATOR COMPONENT
   // ==========================================
-  const ErrorIndicator = useMemo(
-    () => () => (
+  const ErrorIndicator = useMemo(() => {
+    const Component = () => (
       <Box
         sx={{
           position: "absolute",
@@ -312,15 +314,17 @@ export function VideoDisplayCore({
           {loadErrorMessage || "Failed to load video"}
         </Typography>
       </Box>
-    ),
-    [brand.borderRadius, brand.fonts.body, loadErrorMessage]
-  );
+    );
+
+    Component.displayName = "ErrorIndicator";
+    return Component;
+  }, [brand.borderRadius, brand.fonts.body, loadErrorMessage]);
 
   // ==========================================
   // PLACEHOLDER INDICATOR COMPONENT
   // ==========================================
-  const PlaceholderIndicator = useMemo(
-    () => () => (
+  const PlaceholderIndicator = useMemo(() => {
+    const Component = () => (
       <Box
         sx={{
           position: "absolute",
@@ -384,17 +388,19 @@ export function VideoDisplayCore({
           </Button>
         )}
       </Box>
-    ),
-    [
-      brand.fonts.heading,
-      brand.fonts.body,
-      config.sceneId,
-      config.shotId,
-      videoStatus,
-      onRefetchVersions,
-      handleCheckStatus,
-    ]
-  );
+    );
+
+    Component.displayName = "PlaceholderIndicator";
+    return Component;
+  }, [
+    brand.fonts.heading,
+    brand.fonts.body,
+    config.sceneId,
+    config.shotId,
+    videoStatus,
+    onRefetchVersions,
+    handleCheckStatus,
+  ]);
 
   return (
     <Box

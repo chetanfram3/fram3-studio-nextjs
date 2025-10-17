@@ -218,7 +218,8 @@ export const getCitiesByState = (countryCode: string, stateCode: string): ICity[
 
 // Get all cities by country (without state filtering)
 export const getAllCitiesByCountry = (countryCode: string): ICity[] => {
-  return City.getCitiesOfCountry(countryCode)
+  const cities = City.getCitiesOfCountry(countryCode);
+  return cities ?? [];
 }
 
 // Find country by name

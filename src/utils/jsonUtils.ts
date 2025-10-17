@@ -66,7 +66,7 @@ export const extractJsonFromText = <T>(text: string): T => {
     throw new Error("Invalid text input for JSON extraction");
   }
 
-  let cleanedText = text.trim().replace(/^\s+/, "");
+  const cleanedText = text.trim().replace(/^\s+/, "");
 
   // First try: Use jsonrepair to fix any common JSON issues (matches backend order)
   try {
@@ -192,7 +192,7 @@ export const extractJsonFromText = <T>(text: string): T => {
     throw new Error("No valid JSON end found in response");
   }
 
-  let jsonString = cleanedText.substring(dataStart, dataEnd + 1);
+  const jsonString = cleanedText.substring(dataStart, dataEnd + 1);
 
   // Last attempt: use jsonrepair on the extracted substring
   try {

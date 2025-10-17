@@ -800,7 +800,7 @@ export function CompositionDetails({
                                         fontWeight={500}
                                         color="text.primary"
                                       >
-                                        "{caption.text}"
+                                        &quot;{caption.text}&quot;
                                       </Typography>
                                       <Typography
                                         variant="caption"

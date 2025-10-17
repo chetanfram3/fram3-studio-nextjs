@@ -5,7 +5,11 @@ import { useMemo, useCallback, startTransition } from "react";
 import { Box, Typography, CircularProgress, IconButton } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { VideoViewerContainer, VideoData } from "./VideoViewerContainer";
+import {
+  VideoViewerContainer,
+  VideoData,
+  VideoVersion,
+} from "./VideoViewerContainer";
 import { VideoViewerConfig } from "./VideoDisplayCore";
 import { Shot } from "@/types/storyBoard/types";
 import { getCurrentBrand } from "@/config/brandConfig";
@@ -73,27 +77,6 @@ export function ShotVideoEditor({
   const brand = getCurrentBrand();
   const { isDarkMode } = useThemeMode();
 
-  // Runtime validation - React 19: No need for useMemo here
-  if (!shot && !videoData) {
-    logger.error("ShotVideoEditor: Either shot or videoData prop is required");
-    onError?.("Shot or video data is required");
-    return null;
-  }
-
-  if (!scriptId || !versionId || !sceneId) {
-    logger.error(
-      "ShotVideoEditor: scriptId, versionId, and sceneId are required"
-    );
-    onError?.("Script ID, Version ID, and Scene ID are required");
-    return null;
-  }
-
-  if (shot && !shot.shotId) {
-    logger.error("ShotVideoEditor: shotId is required when using shot data");
-    onError?.("Shot ID is required");
-    return null;
-  }
-
   // React 19: useMemo for video status detection
   const videoStatus = useMemo(() => {
     const isVideoPending =
@@ -137,6 +120,235 @@ export function ShotVideoEditor({
     }
   }, [onRefetchVersions, onError]);
 
+  // React 19: useMemo for config object
+  const config: VideoViewerConfig = useMemo(
+    () => ({
+      scriptId: scriptId!,
+      versionId: versionId!,
+      sceneId: sceneId!,
+      shotId: shot?.shotId || 1,
+      aspectRatio,
+    }),
+    [scriptId, versionId, sceneId, shot?.shotId, aspectRatio]
+  );
+
+  // React 19: useCallback for Shot to VideoData transformation
+  const transformShotToVideoData = useCallback((shotData: Shot): VideoData => {
+    const videoVersions = shotData.videoVersions;
+
+    if (!videoVersions) {
+      return {
+        videoSignedUrl: shotData.videoSignedUrl,
+        lipsyncVideoUrl:
+          shotData.lipsyncVideoUrl || shotData.hasLipsyncVideo
+            ? shotData.videoSignedUrl
+            : undefined,
+        thumbnailPath: shotData.thumbnailPath,
+      };
+    }
+
+    const transformedVersions = {
+      current: {
+        version: videoVersions.current.version,
+        videoSignedUrl: videoVersions.current.videoSignedUrl,
+        lipsyncVideoSignedUrl: videoVersions.current.lipsyncVideoSignedUrl,
+        prompt: videoVersions.current.prompt,
+        generationType: videoVersions.current.generationType,
+        seed: videoVersions.current.seed,
+        aspectRatio: videoVersions.current.aspectRatio,
+        imageVersion: videoVersions.current.imageVersion,
+        audioVersion: videoVersions.current.audioVersion,
+        isCurrent: videoVersions.current.isCurrent,
+        lastEditedAt: videoVersions.current.lastEditedAt,
+        videoMetadata: videoVersions.current.videoMetadata,
+        modelTier: videoVersions.current.modelTier,
+      },
+      archived: Object.entries(videoVersions.archived || {}).reduce(
+        (acc, [key, version]) => {
+          acc[parseInt(key)] = {
+            version: version.version,
+            videoSignedUrl: version.videoSignedUrl,
+            lipsyncVideoSignedUrl: version.lipsyncVideoSignedUrl,
+            prompt: version.prompt,
+            generationType: version.generationType,
+            seed: version.seed,
+            aspectRatio: version.aspectRatio,
+            imageVersion: version.imageVersion,
+            audioVersion: version.audioVersion,
+            isCurrent: version.isCurrent,
+            lastEditedAt: version.lastEditedAt,
+            archivedAt: version.archivedAt,
+            videoMetadata: version.videoMetadata,
+            modelTier: version.modelTier,
+          };
+          return acc;
+        },
+        {} as Record<number, VideoVersion>
+      ),
+      totalVersions: videoVersions.totalVersions,
+      totalEdits: videoVersions.totalEdits,
+      editHistory: videoVersions.editHistory,
+    };
+
+    return {
+      videoSignedUrl: shotData.videoSignedUrl,
+      lipsyncVideoUrl:
+        shotData.lipsyncVideoUrl || shotData.hasLipsyncVideo
+          ? shotData.videoSignedUrl
+          : undefined,
+      thumbnailPath: shotData.thumbnailPath,
+      versions: transformedVersions,
+    };
+  }, []);
+
+  // React 19: useCallback for VideoData to Shot transformation
+  const transformVideoDataToShot = useCallback(
+    (originalShot: Shot, updatedVideoData: VideoData): Shot => {
+      if (!updatedVideoData.versions) {
+        return {
+          ...originalShot,
+          videoSignedUrl: updatedVideoData.videoSignedUrl,
+          lipsyncVideoUrl: updatedVideoData.lipsyncVideoUrl,
+          hasLipsyncVideo: Boolean(updatedVideoData.lipsyncVideoUrl),
+          thumbnailPath:
+            updatedVideoData.thumbnailPath || originalShot.thumbnailPath,
+        };
+      }
+
+      const transformedVideoVersions = {
+        current: {
+          version: updatedVideoData.versions.current.version,
+          videoSignedUrl: updatedVideoData.versions.current.videoSignedUrl,
+          lipsyncVideoSignedUrl:
+            updatedVideoData.versions.current.lipsyncVideoSignedUrl,
+          prompt: updatedVideoData.versions.current.prompt,
+          generationType: updatedVideoData.versions.current.generationType,
+          seed: updatedVideoData.versions.current.seed,
+          aspectRatio: updatedVideoData.versions.current.aspectRatio,
+          imageVersion: updatedVideoData.versions.current.imageVersion,
+          audioVersion: updatedVideoData.versions.current.audioVersion,
+          isCurrent: updatedVideoData.versions.current.isCurrent,
+          lastEditedAt: updatedVideoData.versions.current.lastEditedAt,
+          videoMetadata: updatedVideoData.versions.current.videoMetadata,
+        },
+        archived: Object.entries(
+          updatedVideoData.versions.archived || {}
+        ).reduce(
+          (acc, [key, version]) => {
+            acc[parseInt(key)] = {
+              version: version.version,
+              videoSignedUrl: version.videoSignedUrl,
+              lipsyncVideoSignedUrl: version.lipsyncVideoSignedUrl,
+              prompt: version.prompt,
+              generationType: version.generationType,
+              seed: version.seed,
+              aspectRatio: version.aspectRatio,
+              imageVersion: version.imageVersion,
+              audioVersion: version.audioVersion,
+              isCurrent: version.isCurrent,
+              lastEditedAt: version.lastEditedAt,
+              archivedAt: version.archivedAt,
+              videoMetadata: version.videoMetadata,
+            };
+            return acc;
+          },
+          {} as Record<number, VideoVersion>
+        ),
+        totalVersions: updatedVideoData.versions.totalVersions,
+        totalEdits: updatedVideoData.versions.totalEdits,
+        editHistory: updatedVideoData.versions.editHistory,
+      };
+
+      return {
+        ...originalShot,
+        videoSignedUrl: updatedVideoData.videoSignedUrl,
+        lipsyncVideoUrl: updatedVideoData.lipsyncVideoUrl,
+        hasLipsyncVideo: Boolean(updatedVideoData.lipsyncVideoUrl),
+        thumbnailPath:
+          updatedVideoData.thumbnailPath || originalShot.thumbnailPath,
+        videoVersions: transformedVideoVersions,
+        currentVideoVersion: transformedVideoVersions.current.version,
+        videoPrompt: transformedVideoVersions.current.prompt,
+        videoGenerationType: transformedVideoVersions.current.generationType,
+        videoMetadata: transformedVideoVersions.current.videoMetadata,
+      };
+    },
+    []
+  );
+
+  // React 19: useMemo for source video data
+  const sourceVideoData: VideoData = useMemo(
+    () => videoData || (shot ? transformShotToVideoData(shot) : {}),
+    [videoData, shot, transformShotToVideoData]
+  );
+
+  // React 19: useCallback for video update handler
+  const handleVideoUpdate = useCallback(
+    (updatedVideoData: VideoData) => {
+      try {
+        logger.debug("ShotVideoEditor: Handling video update", {
+          hasVersions: !!updatedVideoData.versions,
+          currentVersion: updatedVideoData.versions?.current?.version,
+          hasVideo: !!(
+            updatedVideoData.videoSignedUrl || updatedVideoData.lipsyncVideoUrl
+          ),
+        });
+
+        // Use startTransition for non-urgent updates
+        startTransition(() => {
+          if (shot && onShotUpdate) {
+            const updatedShot = transformVideoDataToShot(
+              shot,
+              updatedVideoData
+            );
+            onShotUpdate(updatedShot);
+          } else if (onVideoUpdate) {
+            onVideoUpdate(updatedVideoData);
+          }
+        });
+      } catch (error) {
+        logger.error("Error updating video data", error);
+        onError?.("Failed to update video data");
+      }
+    },
+    [shot, onShotUpdate, onVideoUpdate, transformVideoDataToShot, onError]
+  );
+
+  // React 19: useCallback for data refresh handler
+  const handleDataRefresh = useCallback(() => {
+    try {
+      logger.info("ShotVideoEditor: Explicit data refresh requested");
+      if (onDataRefresh) {
+        startTransition(() => {
+          onDataRefresh();
+        });
+      }
+    } catch (error) {
+      logger.error("Error refreshing data", error);
+      onError?.("Failed to refresh data");
+    }
+  }, [onDataRefresh, onError]);
+
+  // Runtime validation - React 19: No need for useMemo here
+  if (!shot && !videoData) {
+    logger.error("ShotVideoEditor: Either shot or videoData prop is required");
+    onError?.("Shot or video data is required");
+    return null;
+  }
+
+  if (!scriptId || !versionId || !sceneId) {
+    logger.error(
+      "ShotVideoEditor: scriptId, versionId, and sceneId are required"
+    );
+    onError?.("Script ID, Version ID, and Scene ID are required");
+    return null;
+  }
+
+  if (shot && !shot.shotId) {
+    logger.error("ShotVideoEditor: shotId is required when using shot data");
+    onError?.("Shot ID is required");
+    return null;
+  }
   // Show placeholder for pending or no video states
   if (videoStatus.isVideoPending || videoStatus.hasNoVideo) {
     return (
@@ -264,215 +476,6 @@ export function ShotVideoEditor({
       </Box>
     );
   }
-
-  // React 19: useMemo for config object
-  const config: VideoViewerConfig = useMemo(
-    () => ({
-      scriptId: scriptId!,
-      versionId: versionId!,
-      sceneId: sceneId!,
-      shotId: shot?.shotId || 1,
-      aspectRatio,
-    }),
-    [scriptId, versionId, sceneId, shot?.shotId, aspectRatio]
-  );
-
-  // React 19: useCallback for Shot to VideoData transformation
-  const transformShotToVideoData = useCallback((shotData: Shot): VideoData => {
-    const videoVersions = shotData.videoVersions;
-
-    if (!videoVersions) {
-      return {
-        videoSignedUrl: shotData.videoSignedUrl,
-        lipsyncVideoUrl:
-          shotData.lipsyncVideoUrl || shotData.hasLipsyncVideo
-            ? shotData.videoSignedUrl
-            : undefined,
-        thumbnailPath: shotData.thumbnailPath,
-      };
-    }
-
-    const transformedVersions = {
-      current: {
-        version: videoVersions.current.version,
-        videoSignedUrl: videoVersions.current.videoSignedUrl,
-        lipsyncVideoSignedUrl: videoVersions.current.lipsyncVideoSignedUrl,
-        prompt: videoVersions.current.prompt,
-        generationType: videoVersions.current.generationType,
-        seed: videoVersions.current.seed,
-        aspectRatio: videoVersions.current.aspectRatio,
-        imageVersion: videoVersions.current.imageVersion,
-        audioVersion: videoVersions.current.audioVersion,
-        isCurrent: videoVersions.current.isCurrent,
-        lastEditedAt: videoVersions.current.lastEditedAt,
-        videoMetadata: videoVersions.current.videoMetadata,
-        modelTier: videoVersions.current.modelTier,
-      },
-      archived: Object.entries(videoVersions.archived || {}).reduce(
-        (acc, [key, version]) => {
-          acc[parseInt(key)] = {
-            version: version.version,
-            videoSignedUrl: version.videoSignedUrl,
-            lipsyncVideoSignedUrl: version.lipsyncVideoSignedUrl,
-            prompt: version.prompt,
-            generationType: version.generationType,
-            seed: version.seed,
-            aspectRatio: version.aspectRatio,
-            imageVersion: version.imageVersion,
-            audioVersion: version.audioVersion,
-            isCurrent: version.isCurrent,
-            lastEditedAt: version.lastEditedAt,
-            archivedAt: version.archivedAt,
-            videoMetadata: version.videoMetadata,
-            modelTier: version.modelTier,
-          };
-          return acc;
-        },
-        {} as Record<number, VideoData["versions"]>
-      ),
-      totalVersions: videoVersions.totalVersions,
-      totalEdits: videoVersions.totalEdits,
-      editHistory: videoVersions.editHistory,
-    };
-
-    return {
-      videoSignedUrl: shotData.videoSignedUrl,
-      lipsyncVideoUrl:
-        shotData.lipsyncVideoUrl || shotData.hasLipsyncVideo
-          ? shotData.videoSignedUrl
-          : undefined,
-      thumbnailPath: shotData.thumbnailPath,
-      versions: transformedVersions,
-    };
-  }, []);
-
-  // React 19: useCallback for VideoData to Shot transformation
-  const transformVideoDataToShot = useCallback(
-    (originalShot: Shot, updatedVideoData: VideoData): Shot => {
-      if (!updatedVideoData.versions) {
-        return {
-          ...originalShot,
-          videoSignedUrl: updatedVideoData.videoSignedUrl,
-          lipsyncVideoUrl: updatedVideoData.lipsyncVideoUrl,
-          hasLipsyncVideo: Boolean(updatedVideoData.lipsyncVideoUrl),
-          thumbnailPath:
-            updatedVideoData.thumbnailPath || originalShot.thumbnailPath,
-        };
-      }
-
-      const transformedVideoVersions = {
-        current: {
-          version: updatedVideoData.versions.current.version,
-          videoSignedUrl: updatedVideoData.versions.current.videoSignedUrl,
-          lipsyncVideoSignedUrl:
-            updatedVideoData.versions.current.lipsyncVideoSignedUrl,
-          prompt: updatedVideoData.versions.current.prompt,
-          generationType: updatedVideoData.versions.current.generationType,
-          seed: updatedVideoData.versions.current.seed,
-          aspectRatio: updatedVideoData.versions.current.aspectRatio,
-          imageVersion: updatedVideoData.versions.current.imageVersion,
-          audioVersion: updatedVideoData.versions.current.audioVersion,
-          isCurrent: updatedVideoData.versions.current.isCurrent,
-          lastEditedAt: updatedVideoData.versions.current.lastEditedAt,
-          videoMetadata: updatedVideoData.versions.current.videoMetadata,
-        },
-        archived: Object.entries(
-          updatedVideoData.versions.archived || {}
-        ).reduce(
-          (acc, [key, version]) => {
-            acc[parseInt(key)] = {
-              version: version.version,
-              videoSignedUrl: version.videoSignedUrl,
-              lipsyncVideoSignedUrl: version.lipsyncVideoSignedUrl,
-              prompt: version.prompt,
-              generationType: version.generationType,
-              seed: version.seed,
-              aspectRatio: version.aspectRatio,
-              imageVersion: version.imageVersion,
-              audioVersion: version.audioVersion,
-              isCurrent: version.isCurrent,
-              lastEditedAt: version.lastEditedAt,
-              archivedAt: version.archivedAt,
-              videoMetadata: version.videoMetadata,
-            };
-            return acc;
-          },
-          {} as Record<number, Shot["videoVersions"]>
-        ),
-        totalVersions: updatedVideoData.versions.totalVersions,
-        totalEdits: updatedVideoData.versions.totalEdits,
-        editHistory: updatedVideoData.versions.editHistory,
-      };
-
-      return {
-        ...originalShot,
-        videoSignedUrl: updatedVideoData.videoSignedUrl,
-        lipsyncVideoUrl: updatedVideoData.lipsyncVideoUrl,
-        hasLipsyncVideo: Boolean(updatedVideoData.lipsyncVideoUrl),
-        thumbnailPath:
-          updatedVideoData.thumbnailPath || originalShot.thumbnailPath,
-        videoVersions: transformedVideoVersions,
-        currentVideoVersion: transformedVideoVersions.current.version,
-        videoPrompt: transformedVideoVersions.current.prompt,
-        videoGenerationType: transformedVideoVersions.current.generationType,
-        videoMetadata: transformedVideoVersions.current.videoMetadata,
-      };
-    },
-    []
-  );
-
-  // React 19: useMemo for source video data
-  const sourceVideoData: VideoData = useMemo(
-    () => videoData || (shot ? transformShotToVideoData(shot) : {}),
-    [videoData, shot, transformShotToVideoData]
-  );
-
-  // React 19: useCallback for video update handler
-  const handleVideoUpdate = useCallback(
-    (updatedVideoData: VideoData) => {
-      try {
-        logger.debug("ShotVideoEditor: Handling video update", {
-          hasVersions: !!updatedVideoData.versions,
-          currentVersion: updatedVideoData.versions?.current?.version,
-          hasVideo: !!(
-            updatedVideoData.videoSignedUrl || updatedVideoData.lipsyncVideoUrl
-          ),
-        });
-
-        // Use startTransition for non-urgent updates
-        startTransition(() => {
-          if (shot && onShotUpdate) {
-            const updatedShot = transformVideoDataToShot(
-              shot,
-              updatedVideoData
-            );
-            onShotUpdate(updatedShot);
-          } else if (onVideoUpdate) {
-            onVideoUpdate(updatedVideoData);
-          }
-        });
-      } catch (error) {
-        logger.error("Error updating video data", error);
-        onError?.("Failed to update video data");
-      }
-    },
-    [shot, onShotUpdate, onVideoUpdate, transformVideoDataToShot, onError]
-  );
-
-  // React 19: useCallback for data refresh handler
-  const handleDataRefresh = useCallback(() => {
-    try {
-      logger.info("ShotVideoEditor: Explicit data refresh requested");
-      if (onDataRefresh) {
-        startTransition(() => {
-          onDataRefresh();
-        });
-      }
-    } catch (error) {
-      logger.error("Error refreshing data", error);
-      onError?.("Failed to refresh data");
-    }
-  }, [onDataRefresh, onError]);
 
   // Render video viewer container
   return (

@@ -314,7 +314,7 @@ export const MissingProfileDataCollection: React.FC<
                     ) : (
                       <>
                         Based on your location in{" "}
-                        {tempProfile.extendedInfo.details.address.state}, we'll
+                        {tempProfile.extendedInfo.details.address.state}, we&apos;ll
                         calculate{" "}
                         {tempProfile.extendedInfo.details.address.state ===
                         gstConfig?.businessState
