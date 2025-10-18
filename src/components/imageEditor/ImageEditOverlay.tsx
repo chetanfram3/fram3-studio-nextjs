@@ -277,7 +277,7 @@ export function ImageEditOverlay({
         topP: 0.8,
         ...(additionalImageUrls.length > 0 && { additionalImageUrls }),
         options: {
-          modelTier: modelTier.toString(),
+          modelTier: modelTier,
         },
       };
 

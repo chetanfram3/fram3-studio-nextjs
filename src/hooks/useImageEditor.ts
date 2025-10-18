@@ -324,7 +324,7 @@ export interface EditImageParams {
     temperature?: number;
     topP?: number;
     options?: {
-        modelTier?: string;
+        modelTier?: number;
     };
     // Shot-specific fields
     sceneId?: number;
@@ -354,7 +354,7 @@ export interface EditImageParams {
     temperature?: number;
     topP?: number;
     options?: {
-        modelTier?: string;
+        modelTier?: number;
     };
     // Shot-specific fields
     sceneId?: number;
