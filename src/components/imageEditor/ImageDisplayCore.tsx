@@ -225,7 +225,7 @@ export function ImageDisplayCore({
       }
     }
 
-    const url = `/image-editor?${params.toString()}`;
+    const url = `/ai/image-editor?${params.toString()}`;
 
     logger.info("Navigating to full screen image editor", { url });
     router.push(url);
