@@ -29,6 +29,7 @@ import LockIcon from "@mui/icons-material/Lock";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import LoadingDots from "../common/LoadingDots";
 
 interface ConsentGateProps {
   children: ReactNode;
@@ -73,24 +74,7 @@ export default function ConsentGate({ children }: ConsentGateProps) {
 
   // Show loading state while checking consent
   if (loading && !showModal) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "100vh",
-          bgcolor: "background.default",
-        }}
-      >
-        <Stack spacing={2} alignItems="center">
-          <CircularProgress size={48} />
-          <Typography variant="body2" color="text.secondary">
-            Checking your account status...
-          </Typography>
-        </Stack>
-      </Box>
-    );
+    return <LoadingDots isLoading={true} text="Checking your account status" />;
   }
 
   // If no modal needed, render children
