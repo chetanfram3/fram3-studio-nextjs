@@ -1,7 +1,7 @@
 // src/components/imageEditor/VersionDetailsModal.tsx
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -82,7 +82,7 @@ const getModelTierInfo = (modelTier: number, isDarkMode: boolean) => {
 
 /**
  * Version Details Modal with Dynamic Aspect Ratio
- * 
+ *
  * Features:
  * - Details and Metadata tabs
  * - Dynamic aspect ratio image preview
@@ -102,27 +102,30 @@ export function VersionDetailsModal({
   const brand = getCurrentBrand();
   const isDarkMode = theme.palette.mode === "dark";
   const [selectedTab, setSelectedTab] = useState(0);
-  
+
   // Dynamic aspect ratio for modal image
   const [modalAspectRatio, setModalAspectRatio] = useState<string>("16/9");
   const [modalImageLoaded, setModalImageLoaded] = useState(false);
 
   // Get model tier info
-  const modelTierInfo = version?.modelTier 
+  const modelTierInfo = version?.modelTier
     ? getModelTierInfo(version.modelTier, isDarkMode)
     : null;
 
   /**
    * Handle modal image load
    */
-  const handleModalImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    if (img.naturalWidth && img.naturalHeight) {
-      const ratio = `${img.naturalWidth}/${img.naturalHeight}`;
-      setModalAspectRatio(ratio);
-    }
-    setModalImageLoaded(true);
-  }, []);
+  const handleModalImageLoad = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement>) => {
+      const img = e.currentTarget;
+      if (img.naturalWidth && img.naturalHeight) {
+        const ratio = `${img.naturalWidth}/${img.naturalHeight}`;
+        setModalAspectRatio(ratio);
+      }
+      setModalImageLoaded(true);
+    },
+    []
+  );
 
   /**
    * Reset state when modal closes
@@ -170,6 +173,17 @@ export function VersionDetailsModal({
     return type ? labels[type] || type : "Unknown";
   };
 
+  useEffect(() => {
+    console.log("🔍 Version Debug:", {
+      isCurrent,
+      version: version?.version,
+      hasArchivedAt: version && "archivedAt" in version,
+      archivedAt: (version as any)?.archivedAt,
+      lastEditedAt: version?.lastEditedAt,
+      fullVersion: version,
+    });
+  }, [version, isCurrent]);
+
   if (!version) return null;
 
   return (
@@ -198,7 +212,7 @@ export function VersionDetailsModal({
           <Typography variant="h6" sx={{ fontFamily: brand.fonts.heading }}>
             Version {version.version}
           </Typography>
-          {isCurrent && (
+          {version.isCurrent && (
             <Chip
               label="Current"
               color="primary"
@@ -305,9 +319,9 @@ export function VersionDetailsModal({
                   Status:
                 </Typography>
                 <Chip
-                  label={isCurrent ? "Current" : "Archived"}
+                  label={version.isCurrent ? "Current" : "Archived"}
                   size="small"
-                  color={isCurrent ? "primary" : "default"}
+                  color={version.isCurrent ? "primary" : "default"}
                   sx={{ height: 20, width: "fit-content" }}
                 />
 
@@ -372,13 +386,15 @@ export function VersionDetailsModal({
                 )}
 
                 <Typography variant="body2" color="text.secondary">
-                  Date:
+                  {version.isCurrent ? "Last Edited" : "Archived"}:
                 </Typography>
                 <Typography variant="body2" fontWeight={500}>
                   {formatDate(
-                    isCurrent
+                    version.isCurrent
                       ? version.lastEditedAt
-                      : (version as any).archivedAt || version.lastEditedAt
+                      : (version as any).archivedAt ||
+                          version.lastEditedAt ||
+                          "Unknown date"
                   )}
                 </Typography>
               </Box>
@@ -431,7 +447,7 @@ export function VersionDetailsModal({
         <Button onClick={handleClose} variant="outlined" size="small">
           Close
         </Button>
-        {!isCurrent && onRestore && (
+        {!version.isCurrent && onRestore && (
           <Button
             onClick={() => {
               onRestore(version.version);
@@ -444,7 +460,7 @@ export function VersionDetailsModal({
             Restore
           </Button>
         )}
-        {!isCurrent && (
+        {!version.isCurrent && (
           <Button
             onClick={() => {
               onSelect(version);
