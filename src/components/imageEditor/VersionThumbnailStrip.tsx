@@ -363,8 +363,8 @@ export function VersionThumbnailStrip({
   }, [allVersions]);
 
   // Compact filmstrip dimensions
-  const thumbnailWidth = 80;
-  const thumbnailHeight = 45; // 16:9 aspect ratio
+  const thumbnailWidth = 160;
+  const thumbnailHeight = 90; // 16:9 aspect ratio
   const thumbnailGap = 8;
   const containerWidth = maxVisibleThumbnails * (thumbnailWidth + thumbnailGap);
   const maxScroll = Math.max(
