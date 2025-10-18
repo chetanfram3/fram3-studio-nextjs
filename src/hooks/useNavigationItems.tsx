@@ -11,6 +11,7 @@ import {
   AutoAwesomeOutlined as Sparkles,
   EditOutlined as EditIcon,
   AutoModeOutlined as AutoMode,
+  MmsOutlined as MMSIcon,
 } from "@mui/icons-material";
 import type { APIINFO } from "@/types/profile";
 import { fetchInfo } from "@/services/profileService";
@@ -93,6 +94,11 @@ export function useNavigationItems() {
         label: "Script Editor",
         path: "/ai-script-editor",
         Icon: EditIcon,
+      },
+      {
+        label: "Image Editor",
+        path: "/ai/image-editor",
+        Icon: MMSIcon,
       },
       {
         label: `v ${appVersion}`,
