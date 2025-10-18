@@ -287,9 +287,9 @@ function ImageEditorContent() {
       <Paper
         elevation={0}
         sx={{
-          p: 2,
+          p: 1,
           borderBottom: 1,
-          borderColor: "divider",
+          borderColor: "primary.main",
           bgcolor: "background.paper",
           flexShrink: 0,
         }}

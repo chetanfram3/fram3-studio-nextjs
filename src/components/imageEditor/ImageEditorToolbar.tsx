@@ -58,11 +58,9 @@ export function ImageEditorToolbar({
         alignItems: "center",
         py: padding,
         px: 2,
-        bgcolor: alpha(theme.palette.background.paper, 0.8),
-        backdropFilter: "blur(12px)",
+        bgcolor: theme.palette.background.paper,
         borderTop: 1,
-        borderColor: alpha(theme.palette.divider, 0.5),
-        boxShadow: `0 -4px 12px ${alpha(theme.palette.common.black, 0.05)}`,
+        borderColor: "primary.main",
       }}
     >
       <Stack
