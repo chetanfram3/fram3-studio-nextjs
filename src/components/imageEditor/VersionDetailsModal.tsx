@@ -1,7 +1,7 @@
 // src/components/imageEditor/VersionDetailsModal.tsx
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -172,17 +172,6 @@ export function VersionDetailsModal({
     };
     return type ? labels[type] || type : "Unknown";
   };
-
-  useEffect(() => {
-    console.log("🔍 Version Debug:", {
-      isCurrent,
-      version: version?.version,
-      hasArchivedAt: version && "archivedAt" in version,
-      archivedAt: (version as any)?.archivedAt,
-      lastEditedAt: version?.lastEditedAt,
-      fullVersion: version,
-    });
-  }, [version, isCurrent]);
 
   if (!version) return null;
 
