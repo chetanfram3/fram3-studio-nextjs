@@ -4,7 +4,7 @@
 import { ReactNode } from "react";
 import { Box, Container, Alert, Chip } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import AdminGuard from "@/components/auth/AdminGuard";
+import { UnifiedAuthGuard } from "@/components/auth";
 import { Header } from "@/components/header/Header";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { useSubscription } from "@/hooks/auth/useSubscription";
@@ -32,8 +32,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { isAdmin, isSuperAdmin, accessLevel } = useSubscription();
 
   return (
-    <AdminGuard
-      requireSuperAdmin={false}
+    <UnifiedAuthGuard
+      requiresAccess="admin"
       redirectTo="/signin"
       loadingText="Verifying admin access..."
     >
@@ -187,6 +187,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </Container>
         </Box>
       </Box>
-    </AdminGuard>
+    </UnifiedAuthGuard>
   );
 }

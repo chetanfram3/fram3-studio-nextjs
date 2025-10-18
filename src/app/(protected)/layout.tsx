@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import { Header } from "@/components/header/Header";
-import { AuthGuard, ConsentGate } from "@/components/auth";
+import { UnifiedAuthGuard, ConsentGate } from "@/components/auth";
 import { SidebarProvider, Sidebar } from "@/components/sidebar";
 import { Box } from "@mui/material";
 import { initializeFCM } from "@/services/fcmService";
@@ -17,7 +17,6 @@ export default function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-
   // Initialize FCM when user is authenticated
   useEffect(() => {
     const setupFCM = async () => {
@@ -68,12 +67,12 @@ export default function ProtectedLayout({
   }, []);
 
   return (
-    <AuthGuard
-      requireAuth={true}
+    <UnifiedAuthGuard
+      requiresAccess="authenticated"
       redirectTo="/signin"
-      loadingText="Checking authentication..."
       checkOnboarding={true}
       onboardingPath="/create-now"
+      loadingText="Checking authentication..."
     >
       <ConsentGate>
         <SidebarProvider>
@@ -118,6 +117,6 @@ export default function ProtectedLayout({
           </Box>
         </SidebarProvider>
       </ConsentGate>
-    </AuthGuard>
+    </UnifiedAuthGuard>
   );
 }
