@@ -117,6 +117,7 @@ export interface Line {
 
 // NEW: Version-related interfaces
 export interface ImageVersion {
+    seed?: number | null;
     imageMetadata: null;
     aspectRatio: any;
     generationType: any;
