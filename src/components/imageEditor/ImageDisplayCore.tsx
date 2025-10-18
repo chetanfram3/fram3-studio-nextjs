@@ -18,10 +18,12 @@ import { AutoFixHighOutlined as EditIcon } from "@mui/icons-material";
 import {
   ImageUpscale as UpscaleIcon,
   Plus as PlusIcon,
+  ExpandIcon,
   History as HistoryIcon,
   Wand2 as GenerateIcon,
 } from "lucide-react";
 import NextImage from "next/image";
+import { useRouter } from "next/navigation";
 import { ImageVersion } from "@/types/storyBoard/types";
 import logger from "@/utils/logger";
 
@@ -155,6 +157,7 @@ export function ImageDisplayCore({
 }: ImageDisplayCoreProps) {
   const theme = useTheme();
   const brand = getCurrentBrand();
+  const router = useRouter();
 
   const shouldShowLoading = !imageLoaded && hasSignedUrl && !hasLoadError;
   const shouldShowError = hasLoadError && loadErrorMessage;
@@ -189,6 +192,44 @@ export function ImageDisplayCore({
     border: 1,
     borderColor: "divider",
   });
+
+  const onFullScreenModeClick = () => {
+    if (!config.scriptId || !config.versionId || !config.type) {
+      logger.warn("Missing required config for full screen mode", { config });
+      return;
+    }
+
+    // Build query params
+    const params = new URLSearchParams({
+      scriptId: config.scriptId,
+      versionId: config.versionId,
+      type: config.type,
+    });
+
+    // Add type-specific params
+    if (config.type === "shots" && config.sceneId && config.shotId) {
+      params.append("sceneId", config.sceneId.toString());
+      params.append("shotId", config.shotId.toString());
+    } else if (config.type === "actor" && config.actorId) {
+      params.append("actorId", config.actorId.toString());
+      if (config.actorVersionId) {
+        params.append("actorVersionId", config.actorVersionId.toString());
+      }
+    } else if (config.type === "location" && config.locationId) {
+      params.append("locationId", config.locationId.toString());
+      if (config.locationVersionId) {
+        params.append("locationVersionId", config.locationVersionId.toString());
+      }
+      if (config.promptType) {
+        params.append("promptType", config.promptType);
+      }
+    }
+
+    const url = `/image-editor?${params.toString()}`;
+
+    logger.info("Navigating to full screen image editor", { url });
+    router.push(url);
+  };
 
   return (
     <Box
@@ -566,6 +607,23 @@ export function ImageDisplayCore({
                         >
                           <PlusIcon size={20} />
                         </Badge>
+                      </IconButton>
+                    </Tooltip>
+                    {/* Image Editor Navigate Button */}
+                    <Tooltip title="Open in full screen editor">
+                      <IconButton
+                        onClick={onFullScreenModeClick}
+                        disabled={isProcessing}
+                        color="primary"
+                        sx={{
+                          "&:hover": {
+                            bgcolor: "primary.main",
+                            color: "primary.contrastText",
+                          },
+                          transition: "all 0.2s ease-in-out",
+                        }}
+                      >
+                        <ExpandIcon size={20} />
                       </IconButton>
                     </Tooltip>
                   </Stack>
