@@ -5,27 +5,28 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Box,
-  Container,
   Alert,
-  CircularProgress,
   Paper,
   Typography,
   IconButton,
   Tooltip,
+  Stack,
 } from "@mui/material";
 import { ArrowBack as BackIcon } from "@mui/icons-material";
+import AutoStoriesIcon from "@mui/icons-material/AutoStories";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { StandaloneImageEditor } from "@/components/imageEditor/StandaloneImageEditor";
 import { ImageViewerConfig } from "@/components/imageEditor/ImageDisplayCore";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  getCompleteImageData, 
+import {
+  getCompleteImageData,
   transformToLegacyImageData,
-  type GetCompleteImageDataParams 
+  type GetCompleteImageDataParams,
 } from "@/services/imageService";
 import type { ImageType } from "@/types/image/types";
 import logger from "@/utils/logger";
+import LoadingAnimation from "@/components/common/LoadingAnimation";
 
 function ImageEditorContent() {
   const theme = useTheme();
@@ -37,7 +38,7 @@ function ImageEditorContent() {
   const scriptId = searchParams.get("scriptId");
   const versionId = searchParams.get("versionId");
   const type = searchParams.get("type") as ImageType | null;
-  
+
   // Type-specific params
   const sceneId = searchParams.get("sceneId");
   const shotId = searchParams.get("shotId");
@@ -69,16 +70,31 @@ function ImageEditorContent() {
         newConfig.shotId = Number(shotId);
       } else if (type === "actor" && actorId) {
         newConfig.actorId = Number(actorId);
-        newConfig.actorVersionId = actorVersionId ? Number(actorVersionId) : undefined;
+        newConfig.actorVersionId = actorVersionId
+          ? Number(actorVersionId)
+          : undefined;
       } else if (type === "location" && locationId) {
         newConfig.locationId = Number(locationId);
-        newConfig.locationVersionId = locationVersionId ? Number(locationVersionId) : undefined;
+        newConfig.locationVersionId = locationVersionId
+          ? Number(locationVersionId)
+          : undefined;
         newConfig.promptType = promptType || "wideShotLocationSetPrompt";
       }
 
       setConfig(newConfig);
     }
-  }, [scriptId, versionId, type, sceneId, shotId, actorId, actorVersionId, locationId, locationVersionId, promptType]);
+  }, [
+    scriptId,
+    versionId,
+    type,
+    sceneId,
+    shotId,
+    actorId,
+    actorVersionId,
+    locationId,
+    locationVersionId,
+    promptType,
+  ]);
 
   // Fetch image data if params provided
   const {
@@ -87,7 +103,16 @@ function ImageEditorContent() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["imageEditor", scriptId, versionId, type, sceneId, shotId, actorId, locationId],
+    queryKey: [
+      "imageEditor",
+      scriptId,
+      versionId,
+      type,
+      sceneId,
+      shotId,
+      actorId,
+      locationId,
+    ],
     queryFn: async () => {
       const params: GetCompleteImageDataParams = {
         scriptId: scriptId!,
@@ -101,10 +126,14 @@ function ImageEditorContent() {
         params.shotId = Number(shotId);
       } else if (type === "actor" && actorId) {
         params.actorId = Number(actorId);
-        params.actorVersionId = actorVersionId ? Number(actorVersionId) : undefined;
+        params.actorVersionId = actorVersionId
+          ? Number(actorVersionId)
+          : undefined;
       } else if (type === "location" && locationId) {
         params.locationId = Number(locationId);
-        params.locationVersionId = locationVersionId ? Number(locationVersionId) : undefined;
+        params.locationVersionId = locationVersionId
+          ? Number(locationVersionId)
+          : undefined;
         params.promptType = promptType || "wideShotLocationSetPrompt";
       }
 
@@ -116,9 +145,33 @@ function ImageEditorContent() {
     retry: 2,
   });
 
+  // Get story tab number based on type
+  const getStoryTabNumber = (imageType: ImageType | null): number => {
+    if (!imageType) return 0;
+    switch (imageType) {
+      case "location":
+      case "actor":
+        return 0;
+      case "shots":
+        return 2;
+      case "keyVisual":
+        return 1;
+      default:
+        return 0;
+    }
+  };
+
   // Handler for back button
   const handleBack = () => {
     router.back();
+  };
+
+  // Handler for story button
+  const handleGoToStory = () => {
+    if (scriptId && versionId) {
+      const tabNum = getStoryTabNumber(type);
+      router.push(`/story/${scriptId}/version/${versionId}/${tabNum}`);
+    }
   };
 
   // Handler for image updates
@@ -134,24 +187,7 @@ function ImageEditorContent() {
 
   // Loading state
   if (hasParams && isLoading) {
-    return (
-      <Box
-        sx={{
-          height: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "background.default",
-        }}
-      >
-        <Box sx={{ textAlign: "center" }}>
-          <CircularProgress size={48} />
-          <Typography variant="body1" sx={{ mt: 2, color: "text.secondary" }}>
-            Loading image editor...
-          </Typography>
-        </Box>
-      </Box>
-    );
+    return <LoadingAnimation message="Image Editor is loading..." />;
   }
 
   // Error state
@@ -176,11 +212,24 @@ function ImageEditorContent() {
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Tooltip title="Back">
-              <IconButton onClick={handleBack} color="primary" size="small">
-                <BackIcon />
-              </IconButton>
-            </Tooltip>
+            <Stack direction="row" spacing={1}>
+              <Tooltip title="Back">
+                <IconButton onClick={handleBack} color="primary" size="small">
+                  <BackIcon />
+                </IconButton>
+              </Tooltip>
+              {scriptId && versionId && (
+                <Tooltip title="Go to Story">
+                  <IconButton
+                    onClick={handleGoToStory}
+                    color="primary"
+                    size="small"
+                  >
+                    <AutoStoriesIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Stack>
             <Typography variant="h5" sx={{ fontFamily: brand.fonts.heading }}>
               Image Editor
             </Typography>
@@ -197,8 +246,8 @@ function ImageEditorContent() {
             p: 3,
           }}
         >
-          <Alert 
-            severity="error" 
+          <Alert
+            severity="error"
             sx={{ maxWidth: 500 }}
             action={
               <IconButton
@@ -214,7 +263,9 @@ function ImageEditorContent() {
               Failed to Load Image
             </Typography>
             <Typography variant="body2">
-              {error instanceof Error ? error.message : "An unknown error occurred"}
+              {error instanceof Error
+                ? error.message
+                : "An unknown error occurred"}
             </Typography>
           </Alert>
         </Box>
@@ -222,7 +273,6 @@ function ImageEditorContent() {
     );
   }
 
-  // Render editor
   return (
     <Box
       sx={{
@@ -233,7 +283,7 @@ function ImageEditorContent() {
         overflow: "hidden",
       }}
     >
-      {/* Header with Back Button */}
+      {/* Header with Back Button and Story Button */}
       <Paper
         elevation={0}
         sx={{
@@ -245,18 +295,31 @@ function ImageEditorContent() {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Tooltip title="Back">
-            <IconButton onClick={handleBack} color="primary" size="small">
-              <BackIcon />
-            </IconButton>
-          </Tooltip>
+          <Stack direction="row" spacing={1}>
+            <Tooltip title="Back">
+              <IconButton onClick={handleBack} color="primary" size="small">
+                <BackIcon />
+              </IconButton>
+            </Tooltip>
+            {hasParams && scriptId && versionId && (
+              <Tooltip title="Go to Story">
+                <IconButton
+                  onClick={handleGoToStory}
+                  color="primary"
+                  size="small"
+                >
+                  <AutoStoriesIcon />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Stack>
           <Typography variant="h5" sx={{ fontFamily: brand.fonts.heading }}>
             Image Editor
           </Typography>
           {!hasParams && (
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 color: "text.secondary",
                 ml: 1,
                 px: 1.5,
@@ -275,7 +338,7 @@ function ImageEditorContent() {
       <Box sx={{ flex: 1, overflow: "hidden" }}>
         <StandaloneImageEditor
           config={config}
-          imageData={hasParams ? completeImageData : undefined}
+          imageData={hasParams ? (completeImageData as any) : undefined}
           onImageUpdate={handleImageUpdate}
           onDataRefresh={handleDataRefresh}
           defaultMode="generate"
@@ -287,7 +350,7 @@ function ImageEditorContent() {
 
 /**
  * Image Editor Page
- * 
+ *
  * URL Parameters (all optional):
  * - scriptId: Script ID
  * - versionId: Version ID
@@ -296,7 +359,7 @@ function ImageEditorContent() {
  * - shotId: Shot ID (for shots)
  * - actorId: Actor ID (for actors)
  * - locationId: Location ID (for locations)
- * 
+ *
  * Examples:
  * - /image-editor (Generate mode - no params)
  * - /image-editor?scriptId=123&versionId=456&type=shots&sceneId=1&shotId=2
@@ -305,19 +368,7 @@ function ImageEditorContent() {
 export default function ImageEditorPage() {
   return (
     <Suspense
-      fallback={
-        <Box
-          sx={{
-            height: "100vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            bgcolor: "background.default",
-          }}
-        >
-          <CircularProgress size={48} />
-        </Box>
-      }
+      fallback={<LoadingAnimation message="Loading..." />}
     >
       <ImageEditorContent />
     </Suspense>
