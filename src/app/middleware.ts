@@ -42,7 +42,8 @@ const PROTECTED_ROUTES = [
     '/payments',
     '/assets',
     '/image-editor',
-    '/story'
+    '/story',
+    '/ai'
 ];
 
 const ADMIN_ROUTES = [
