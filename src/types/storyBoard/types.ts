@@ -117,6 +117,7 @@ export interface Line {
 
 // NEW: Version-related interfaces
 export interface ImageVersion {
+    imageMetadata: null;
     aspectRatio: any;
     generationType: any;
     prompt: string;
