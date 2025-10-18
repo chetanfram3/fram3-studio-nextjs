@@ -145,7 +145,7 @@ export function ProfileMenu({
         </ListItemButton>
 
         <ListItemButton
-          onClick={() => handleMenuItemClick("/legal")}
+          onClick={() => handleMenuItemClick("/user-legal")}
           sx={menuItemStyles}
         >
           <ListItemIcon>
