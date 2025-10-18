@@ -97,9 +97,9 @@ export function StandaloneImageEditor({
     ImageVersion | undefined
   >();
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [activeMode, setActiveMode] = useState<EditorMode>(
-    config ? null : defaultMode
-  );
+  const [activeMode, setActiveMode] = useState<EditorMode>(() => {
+    return config ? null : defaultMode;
+  });
   const [additionalImageUrls, setAdditionalImageUrls] = useState<string[]>([]);
   const [additionalImagesMode, setAdditionalImagesMode] = useState(false);
 
@@ -116,6 +116,14 @@ export function StandaloneImageEditor({
     width: number;
     height: number;
   } | null>(null);
+
+  useEffect(() => {
+    // If config exists and we're showing the default mode overlay,
+    // clear it (this shouldn't happen but acts as a safeguard)
+    if (config && activeMode === defaultMode) {
+      setActiveMode(null);
+    }
+  }, [config, activeMode, defaultMode]);
 
   // Hook parameters (only if config provided)
   const hookParams = useMemo(() => {
@@ -399,52 +407,52 @@ export function StandaloneImageEditor({
     [allVersions, handleVersionSelect]
   );
 
-const handleRestoreVersion = useCallback(
-  async (targetVersion: number) => {
-    if (!config) return;
-    
-    try {
-      logger.info("Restoring version", { targetVersion });
-      
-      // Build restore params based on config type
-      const restoreParams: any = {
-        scriptId: config.scriptId,
-        versionId: config.versionId,
-        type: config.type,
-        targetVersion,
-      };
+  const handleRestoreVersion = useCallback(
+    async (targetVersion: number) => {
+      if (!config) return;
 
-      // Add type-specific params
-      if (config.type === "shots") {
-        restoreParams.sceneId = config.sceneId;
-        restoreParams.shotId = config.shotId;
-      } else if (config.type === "actor") {
-        restoreParams.actorId = config.actorId;
-        restoreParams.actorVersionId = config.actorVersionId;
-      } else if (config.type === "location") {
-        restoreParams.locationId = config.locationId;
-        restoreParams.locationVersionId = config.locationVersionId;
-        restoreParams.promptType = config.promptType;
+      try {
+        logger.info("Restoring version", { targetVersion });
+
+        // Build restore params based on config type
+        const restoreParams: any = {
+          scriptId: config.scriptId,
+          versionId: config.versionId,
+          type: config.type,
+          targetVersion,
+        };
+
+        // Add type-specific params
+        if (config.type === "shots") {
+          restoreParams.sceneId = config.sceneId;
+          restoreParams.shotId = config.shotId;
+        } else if (config.type === "actor") {
+          restoreParams.actorId = config.actorId;
+          restoreParams.actorVersionId = config.actorVersionId;
+        } else if (config.type === "location") {
+          restoreParams.locationId = config.locationId;
+          restoreParams.locationVersionId = config.locationVersionId;
+          restoreParams.promptType = config.promptType;
+        }
+
+        // Call the restore mutation
+        await restoreVersionAsync(restoreParams);
+
+        // Refetch versions to get updated data
+        refetchVersions();
+
+        // Call parent refresh if provided
+        if (onDataRefresh) {
+          onDataRefresh();
+        }
+
+        logger.info("Version restored successfully", { targetVersion });
+      } catch (error) {
+        logger.error("Failed to restore version", { error, targetVersion });
       }
-
-      // Call the restore mutation
-      await restoreVersionAsync(restoreParams);
-
-      // Refetch versions to get updated data
-      refetchVersions();
-      
-      // Call parent refresh if provided
-      if (onDataRefresh) {
-        onDataRefresh();
-      }
-
-      logger.info("Version restored successfully", { targetVersion });
-    } catch (error) {
-      logger.error("Failed to restore version", { error, targetVersion });
-    }
-  },
-  [config, restoreVersionAsync, refetchVersions, onDataRefresh]
-);
+    },
+    [config, restoreVersionAsync, refetchVersions, onDataRefresh]
+  );
 
   const isProcessing =
     isEditing ||
