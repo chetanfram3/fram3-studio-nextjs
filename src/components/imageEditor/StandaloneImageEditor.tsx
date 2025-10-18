@@ -320,7 +320,8 @@ export function StandaloneImageEditor({
   const handleGenerateComplete = useCallback(
     (result: unknown) => {
       setActiveMode(null);
-      setOverlayIsEditing(false);
+      setOverlayIsGenerating(false);
+      setImageLoaded(false);
       if (config) {
         refetchVersions();
       }
@@ -332,7 +333,8 @@ export function StandaloneImageEditor({
   const handleUpscaleComplete = useCallback(
     (result: unknown) => {
       setActiveMode(null);
-      setOverlayIsEditing(false);
+      setOverlayIsUpscaling(false);
+      setImageLoaded(false);
       if (config) {
         refetchVersions();
       }
