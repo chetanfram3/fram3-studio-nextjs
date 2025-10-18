@@ -122,6 +122,7 @@ export interface CurrentVersion {
     seed: number | null;
     aspectRatio: string | null;
     fineTuneId: string | null;
+    modelTier?: number | null;
     isCurrent: true;
     lastEditedAt: Timestamp;
 }
@@ -137,6 +138,7 @@ export interface ArchivedVersion {
     seed: number | null;
     aspectRatio: string | null;
     fineTuneId: string | null;
+    modelTier?: number | null;
     isCurrent: false;
     archivedAt: Timestamp;
 }

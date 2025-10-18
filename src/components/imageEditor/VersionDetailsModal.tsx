@@ -24,11 +24,18 @@ import {
   CheckCircle as CurrentIcon,
   Restore as RestoreIcon,
 } from "@mui/icons-material";
+import {
+  Diamond as UltraIcon,
+  Star as PremiumIcon,
+  Circle as ProIcon,
+  Zap as BasicIcon,
+} from "lucide-react";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { ImageVersion } from "@/types/storyBoard/types";
 import { format } from "date-fns";
 import { ImageMetadataPanel } from "./ImageMetadataPanel";
+import { MODEL_TIERS } from "@/components/common/ModelTierSelector";
 
 interface VersionDetailsModalProps {
   open: boolean;
@@ -40,6 +47,40 @@ interface VersionDetailsModalProps {
 }
 
 /**
+ * Get model tier display information
+ */
+const getModelTierInfo = (modelTier: number, isDarkMode: boolean) => {
+  switch (modelTier) {
+    case MODEL_TIERS.BASIC:
+      return {
+        label: "Basic",
+        color: isDarkMode ? "#9e9e9e" : "#78909c",
+        icon: <BasicIcon size={12} />,
+      };
+    case MODEL_TIERS.PRO:
+      return {
+        label: "Pro",
+        color: isDarkMode ? "#2196f3" : "#64b5f6",
+        icon: <ProIcon size={12} />,
+      };
+    case MODEL_TIERS.PREMIUM:
+      return {
+        label: "Premium",
+        color: isDarkMode ? "#ff9800" : "#ffb74d",
+        icon: <PremiumIcon size={12} />,
+      };
+    case MODEL_TIERS.ULTRA:
+      return {
+        label: "Ultra",
+        color: isDarkMode ? "#9c27b0" : "#ba68c8",
+        icon: <UltraIcon size={12} />,
+      };
+    default:
+      return null;
+  }
+};
+
+/**
  * Version Details Modal with Dynamic Aspect Ratio
  * 
  * Features:
@@ -47,6 +88,7 @@ interface VersionDetailsModalProps {
  * - Dynamic aspect ratio image preview
  * - Restore version functionality
  * - Compact info display
+ * - Model tier display
  */
 export function VersionDetailsModal({
   open,
@@ -58,11 +100,17 @@ export function VersionDetailsModal({
 }: VersionDetailsModalProps) {
   const theme = useTheme();
   const brand = getCurrentBrand();
+  const isDarkMode = theme.palette.mode === "dark";
   const [selectedTab, setSelectedTab] = useState(0);
   
   // Dynamic aspect ratio for modal image
   const [modalAspectRatio, setModalAspectRatio] = useState<string>("16/9");
   const [modalImageLoaded, setModalImageLoaded] = useState(false);
+
+  // Get model tier info
+  const modelTierInfo = version?.modelTier 
+    ? getModelTierInfo(version.modelTier, isDarkMode)
+    : null;
 
   /**
    * Handle modal image load
@@ -114,8 +162,8 @@ export function VersionDetailsModal({
   const getGenerationTypeLabel = (type: string | null) => {
     const labels: Record<string, string> = {
       text_to_image: "Text to Image",
-      flux_pro_kontext: "Flux Pro",
-      nano_banana_edit: "Nano Edit",
+      flux_pro_kontext: "Image Edit",
+      nano_banana_edit: "Image Edit",
       upscale_2x: "2x Upscale",
       batch_generation: "Batch Generation",
     };
@@ -188,12 +236,12 @@ export function VersionDetailsModal({
               <Box
                 sx={{
                   width: "100%",
-                  aspectRatio: modalAspectRatio, // ✅ Dynamic!
+                  aspectRatio: modalAspectRatio,
                   borderRadius: `${brand.borderRadius}px`,
                   overflow: "hidden",
                   bgcolor: "background.default",
                   position: "relative",
-                  cursor: "pointer", // ✅ Show pointer on hover
+                  cursor: "pointer",
                 }}
               >
                 {/* Loading skeleton */}
@@ -229,9 +277,9 @@ export function VersionDetailsModal({
                     top: 0,
                     left: 0,
                     opacity: modalImageLoaded ? 1 : 0,
-                    transition: "opacity 0.3s ease-in-out, transform 0.3s ease", // ✅ Added transform transition
+                    transition: "opacity 0.3s ease-in-out, transform 0.3s ease",
                     "&:hover": {
-                      transform: "scale(1.05)", // ✅ Zoom on hover
+                      transform: "scale(1.05)",
                     },
                   }}
                 />
@@ -274,6 +322,33 @@ export function VersionDetailsModal({
                   </>
                 )}
 
+                {modelTierInfo && (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      Model:
+                    </Typography>
+                    <Chip
+                      icon={modelTierInfo.icon}
+                      label={modelTierInfo.label}
+                      size="small"
+                      sx={{
+                        height: 20,
+                        width: "fit-content",
+                        fontFamily: brand.fonts.body,
+                        fontWeight: 600,
+                        fontSize: "0.7rem",
+                        bgcolor: alpha(modelTierInfo.color, 0.2),
+                        color: modelTierInfo.color,
+                        border: 1,
+                        borderColor: alpha(modelTierInfo.color, 0.3),
+                        "& .MuiChip-icon": {
+                          color: modelTierInfo.color,
+                        },
+                      }}
+                    />
+                  </>
+                )}
+
                 {version.aspectRatio && (
                   <>
                     <Typography variant="body2" color="text.secondary">
@@ -281,6 +356,17 @@ export function VersionDetailsModal({
                     </Typography>
                     <Typography variant="body2" fontWeight={500}>
                       {version.aspectRatio}
+                    </Typography>
+                  </>
+                )}
+
+                {version.seed !== null && version.seed !== undefined && (
+                  <>
+                    <Typography variant="body2" color="text.secondary">
+                      Seed:
+                    </Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {version.seed}
                     </Typography>
                   </>
                 )}

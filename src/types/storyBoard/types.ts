@@ -125,6 +125,7 @@ export interface ImageVersion {
     destinationPath: string;
     signedUrl: string;
     thumbnailPath: string;
+    modelTier?: number | null;
     isCurrent: boolean;
     lastEditedAt?: string;
     archivedAt?: string;

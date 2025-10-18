@@ -285,6 +285,8 @@ export function transformToLegacyImageData(data: CompleteImageData) {
                 generationType: data.versions.current.generationType, // ADD THIS LINE (nice to have)
                 seed: data.versions.current.seed, // ADD THIS LINE (nice to have)
                 aspectRatio: data.versions.current.aspectRatio, // ADD THIS LINE (nice to have)
+                fineTuneId: data.versions.current.fineTuneId,
+                modelTier: data.versions.current.modelTier,
             },
             archived: data.versions.archived, // This already has imageMetadata from backend
             totalVersions: data.imageStatus.totalVersions,
