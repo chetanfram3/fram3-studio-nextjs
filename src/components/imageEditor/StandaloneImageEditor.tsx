@@ -42,6 +42,7 @@ import logger from "@/utils/logger";
 import { VersionThumbnailStrip } from "./VersionThumbnailStrip";
 import { ImageEditorToolbar, type ToolbarButton } from "./ImageEditorToolbar";
 import { EditHistoryTimeline } from "./EditHistoryTimeline"; // ADDED: Import EditHistoryTimeline
+import { useSearchParams } from "next/navigation";
 
 interface StandaloneImageEditorProps {
   config?: ImageViewerConfig;
@@ -89,6 +90,7 @@ export function StandaloneImageEditor({
 }: StandaloneImageEditorProps) {
   const theme = useTheme();
   const brand = getCurrentBrand();
+  const searchParams = useSearchParams();
 
   // State
   const [currentImageSrc, setCurrentImageSrc] =
@@ -98,8 +100,13 @@ export function StandaloneImageEditor({
   >();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [activeMode, setActiveMode] = useState<EditorMode>(() => {
-    return config ? null : defaultMode;
+    // Check if ANY URL params exist (indicating we're in a specific image context)
+    const hasUrlParams = searchParams.toString().length > 0;
+
+    // Only open generate by default if NO URL params exist
+    return !hasUrlParams ? "generate" : null;
   });
+
   const [additionalImageUrls, setAdditionalImageUrls] = useState<string[]>([]);
   const [additionalImagesMode, setAdditionalImagesMode] = useState(false);
 
@@ -116,14 +123,6 @@ export function StandaloneImageEditor({
     width: number;
     height: number;
   } | null>(null);
-
-  useEffect(() => {
-    // If config exists and we're showing the default mode overlay,
-    // clear it (this shouldn't happen but acts as a safeguard)
-    if (config && activeMode === defaultMode) {
-      setActiveMode(null);
-    }
-  }, [config, activeMode, defaultMode]);
 
   // Hook parameters (only if config provided)
   const hookParams = useMemo(() => {
