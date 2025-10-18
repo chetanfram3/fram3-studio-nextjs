@@ -7,34 +7,21 @@ import {
   Paper,
   IconButton,
   Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
   Stack,
-  Chip,
-  alpha,
   Skeleton,
   Divider,
-  Tabs,
-  Tab,
+  alpha,
 } from "@mui/material";
 import {
   ChevronLeft as PrevIcon,
   ChevronRight as NextIcon,
-  Info as InfoIcon,
-  Close as CloseIcon,
-  CheckCircle as CurrentIcon,
-  Restore as RestoreIcon,
   Theaters as FilmStripIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
 import { ImageVersion } from "@/types/storyBoard/types";
-import { format } from "date-fns";
-import { ImageMetadataPanel } from "./ImageMetadataPanel";
+import { VersionThumbnail } from "./VersionThumbnail";
+import { VersionDetailsModal } from "./VersionDetailsModal";
 
 interface VersionThumbnailStripProps {
   allVersions: ImageVersion[];
@@ -46,298 +33,17 @@ interface VersionThumbnailStripProps {
   maxVisibleThumbnails?: number;
 }
 
-interface VersionDetailsModalProps {
-  open: boolean;
-  version: ImageVersion | null;
-  isCurrent: boolean;
-  onClose: () => void;
-  onRestore?: (targetVersion: number) => void;
-  onSelect: (version: ImageVersion) => void;
-}
-
 /**
- * Version Details Modal - With Metadata Tab
- */
-function VersionDetailsModal({
-  open,
-  version,
-  isCurrent,
-  onClose,
-  onRestore,
-  onSelect,
-}: VersionDetailsModalProps) {
-  const theme = useTheme();
-  const brand = getCurrentBrand();
-  const [selectedTab, setSelectedTab] = useState(0);
-
-  if (!version) return null;
-
-  const formatDate = (date: string | { _seconds: number } | undefined) => {
-    if (!date) return "Unknown date";
-    if (typeof date === "string") {
-      try {
-        return format(new Date(date), "PPpp");
-      } catch {
-        return "Invalid date";
-      }
-    }
-    if (typeof date === "object" && "_seconds" in date) {
-      try {
-        return format(new Date(date._seconds * 1000), "PPpp");
-      } catch {
-        return "Invalid date";
-      }
-    }
-    return "Unknown date";
-  };
-
-  const getGenerationTypeLabel = (type: string | null) => {
-    const labels: Record<string, string> = {
-      text_to_image: "Text to Image",
-      flux_pro_kontext: "Flux Pro",
-      nano_banana_edit: "Nano Edit",
-      upscale_2x: "2x Upscale",
-      batch_generation: "Batch Generation",
-    };
-    return type ? labels[type] || type : "Unknown";
-  };
-
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: `${brand.borderRadius}px`,
-          backgroundImage: "none",
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          fontFamily: brand.fonts.heading,
-          pb: 1,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="h6" sx={{ fontFamily: brand.fonts.heading }}>
-            Version {version.version}
-          </Typography>
-          {isCurrent && (
-            <Chip
-              label="Current"
-              color="primary"
-              size="small"
-              icon={<CurrentIcon />}
-            />
-          )}
-        </Box>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent dividers sx={{ p: 0 }}>
-        {/* Tabs */}
-        <Tabs
-          value={selectedTab}
-          onChange={(_, newValue) => setSelectedTab(newValue)}
-          sx={{
-            borderBottom: 1,
-            borderColor: "divider",
-            px: 2,
-          }}
-        >
-          <Tab label="Details" sx={{ fontFamily: brand.fonts.body }} />
-          <Tab label="Metadata" sx={{ fontFamily: brand.fonts.body }} />
-        </Tabs>
-
-        {/* Tab Content */}
-        <Box sx={{ p: 2 }}>
-          {/* Tab 0: Details */}
-          {selectedTab === 0 && (
-            <Stack spacing={2}>
-              {/* Compact Image Preview */}
-              <Box
-                sx={{
-                  width: "100%",
-                  aspectRatio: "16/9",
-                  borderRadius: `${brand.borderRadius}px`,
-                  overflow: "hidden",
-                  bgcolor: "background.default",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Box
-                  component="img"
-                  src={
-                    version.thumbnailPath ||
-                    version.signedUrl ||
-                    "/placeHolder.webp"
-                  }
-                  alt={`Version ${version.version}`}
-                  sx={{
-                    maxWidth: "100%",
-                    maxHeight: "100%",
-                    objectFit: "cover",
-                  }}
-                />
-              </Box>
-
-              {/* Compact Info Grid */}
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: "auto 1fr",
-                  gap: 1,
-                  fontSize: "0.875rem",
-                }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Version:
-                </Typography>
-                <Typography variant="body2" fontWeight={500}>
-                  {version.version}
-                </Typography>
-
-                <Typography variant="body2" color="text.secondary">
-                  Status:
-                </Typography>
-                <Chip
-                  label={isCurrent ? "Current" : "Archived"}
-                  size="small"
-                  color={isCurrent ? "primary" : "default"}
-                  sx={{ height: 20, width: "fit-content" }}
-                />
-
-                {version.generationType && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      Type:
-                    </Typography>
-                    <Typography variant="body2" fontWeight={500}>
-                      {getGenerationTypeLabel(version.generationType)}
-                    </Typography>
-                  </>
-                )}
-
-                {version.aspectRatio && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      Ratio:
-                    </Typography>
-                    <Typography variant="body2" fontWeight={500}>
-                      {version.aspectRatio}
-                    </Typography>
-                  </>
-                )}
-
-                <Typography variant="body2" color="text.secondary">
-                  Date:
-                </Typography>
-                <Typography variant="body2" fontWeight={500}>
-                  {formatDate(
-                    isCurrent
-                      ? version.lastEditedAt
-                      : (version as any).archivedAt || version.lastEditedAt
-                  )}
-                </Typography>
-              </Box>
-
-              {/* Prompt - Compact */}
-              {version.prompt && (
-                <Box>
-                  <Typography
-                    variant="caption"
-                    sx={{ fontWeight: 600, display: "block", mb: 0.5 }}
-                  >
-                    Prompt
-                  </Typography>
-                  <Paper
-                    variant="outlined"
-                    sx={{
-                      p: 1,
-                      bgcolor: alpha(theme.palette.primary.main, 0.04),
-                      borderRadius: `${brand.borderRadius}px`,
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        fontFamily: "monospace",
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {version.prompt}
-                    </Typography>
-                  </Paper>
-                </Box>
-              )}
-            </Stack>
-          )}
-
-          {/* Tab 1: Metadata */}
-          {selectedTab === 1 && (
-            <ImageMetadataPanel
-              metadata={version?.imageMetadata || null}
-              compact={false}
-            />
-          )}
-        </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ p: 1.5, gap: 1 }}>
-        <Button onClick={onClose} variant="outlined" size="small">
-          Close
-        </Button>
-        {!isCurrent && onRestore && (
-          <Button
-            onClick={() => {
-              onRestore(version.version);
-              onClose();
-            }}
-            variant="contained"
-            size="small"
-            startIcon={<RestoreIcon />}
-          >
-            Restore
-          </Button>
-        )}
-        {!isCurrent && (
-          <Button
-            onClick={() => {
-              onSelect(version);
-              onClose();
-            }}
-            variant="contained"
-            color="primary"
-            size="small"
-          >
-            View
-          </Button>
-        )}
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-/**
- * Enhanced Compact Film Strip Version Thumbnail Strip
+ * Enhanced Compact Film Strip Version Thumbnail Strip with Dynamic Aspect Ratio
  *
  * Features:
  * - Film strip icon indicator on the left
  * - Vertical divider separator
+ * - Dynamic aspect ratio support (16:9, 9:16, 1:1, etc.)
  * - Improved visual hierarchy
  * - Compact design maintained
+ * - Smooth scrolling
+ * - Loading states
  */
 export function VersionThumbnailStrip({
   allVersions,
@@ -357,14 +63,14 @@ export function VersionThumbnailStrip({
   );
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Sort versions by version number descending
+  // Sort versions by version number descending (newest first)
   const sortedVersions = useMemo(() => {
     return [...allVersions].sort((a, b) => b.version - a.version);
   }, [allVersions]);
 
   // Compact filmstrip dimensions
   const thumbnailWidth = 160;
-  const thumbnailHeight = 90; // 16:9 aspect ratio
+  const thumbnailHeight = 90; // Default 16:9 aspect ratio (will be dynamic per image)
   const thumbnailGap = 8;
   const containerWidth = maxVisibleThumbnails * (thumbnailWidth + thumbnailGap);
   const maxScroll = Math.max(
@@ -375,9 +81,12 @@ export function VersionThumbnailStrip({
   const canScrollLeft = scrollPosition > 0;
   const canScrollRight = scrollPosition < maxScroll;
 
+  /**
+   * Handle scroll left/right
+   */
   const handleScroll = useCallback(
     (direction: "left" | "right") => {
-      const scrollAmount = (thumbnailWidth + thumbnailGap) * 3;
+      const scrollAmount = (thumbnailWidth + thumbnailGap) * 3; // Scroll 3 thumbnails at a time
       setScrollPosition((prev) => {
         if (direction === "left") {
           return Math.max(0, prev - scrollAmount);
@@ -386,9 +95,12 @@ export function VersionThumbnailStrip({
         }
       });
     },
-    [maxScroll, thumbnailWidth]
+    [maxScroll, thumbnailWidth, thumbnailGap]
   );
 
+  /**
+   * Handle thumbnail click
+   */
   const handleThumbnailClick = useCallback(
     (version: ImageVersion) => {
       if (!disabled) {
@@ -398,6 +110,9 @@ export function VersionThumbnailStrip({
     [disabled, onVersionSelect]
   );
 
+  /**
+   * Handle info button click
+   */
   const handleInfoClick = useCallback(
     (e: React.MouseEvent, version: ImageVersion) => {
       e.stopPropagation();
@@ -407,10 +122,20 @@ export function VersionThumbnailStrip({
     []
   );
 
+  /**
+   * Handle modal close
+   */
+  const handleModalClose = useCallback(() => {
+    setModalOpen(false);
+    setSelectedVersion(null);
+  }, []);
+
+  // No versions - don't render anything
   if (sortedVersions.length === 0) {
     return null;
   }
 
+  // Loading state
   if (isLoading) {
     return (
       <Paper
@@ -437,6 +162,7 @@ export function VersionThumbnailStrip({
             <Skeleton variant="circular" width={24} height={24} />
           </Box>
           <Divider orientation="vertical" flexItem />
+          {/* Loading thumbnails */}
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton
               key={index}
@@ -567,160 +293,16 @@ export function VersionThumbnailStrip({
                   currentVersion?.version === version.version;
 
                 return (
-                  <Box
+                  <VersionThumbnail
                     key={version.version}
-                    sx={{
-                      position: "relative",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {/* Thumbnail Frame */}
-                    <Paper
-                      onClick={() => handleThumbnailClick(version)}
-                      elevation={isCurrentVersion ? 6 : 2}
-                      sx={{
-                        width: thumbnailWidth,
-                        height: thumbnailHeight,
-                        borderRadius: `${brand.borderRadius / 2}px`,
-                        overflow: "hidden",
-                        cursor: disabled ? "default" : "pointer",
-                        border: 2,
-                        borderColor: isCurrentVersion
-                          ? "primary.main"
-                          : alpha(theme.palette.divider, 0.5),
-                        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-                        position: "relative",
-                        boxShadow: isCurrentVersion
-                          ? `0 0 12px ${alpha(theme.palette.primary.main, 0.3)}`
-                          : undefined,
-                        "&:hover": disabled
-                          ? {}
-                          : {
-                              borderColor: "primary.main",
-                              transform: "scale(1.08) translateY(-2px)",
-                              zIndex: 10,
-                              boxShadow: `0 4px 16px ${alpha(
-                                theme.palette.primary.main,
-                                0.25
-                              )}`,
-                            },
-                      }}
-                    >
-                      <Box
-                        component="img"
-                        src={
-                          version.thumbnailPath ||
-                          version.signedUrl ||
-                          "/placeHolder.webp"
-                        }
-                        alt={`V${version.version}`}
-                        sx={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-
-                      {/* Version Number Badge - Enhanced */}
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: 2,
-                          left: 2,
-                          bgcolor: alpha(theme.palette.background.paper, 0.95),
-                          backdropFilter: "blur(4px)",
-                          px: 0.75,
-                          py: 0.25,
-                          borderRadius: `${brand.borderRadius / 3}px`,
-                          lineHeight: 1,
-                          border: 1,
-                          borderColor: alpha(theme.palette.primary.main, 0.2),
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: "0.65rem",
-                            color: isCurrentVersion
-                              ? "primary.main"
-                              : "text.primary",
-                          }}
-                        >
-                          V{version.version}
-                        </Typography>
-                      </Box>
-
-                      {/* Current Badge - Enhanced */}
-                      {isCurrentVersion && (
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            top: 2,
-                            right: 2,
-                            bgcolor: "primary.main",
-                            color: "primary.contrastText",
-                            p: 0.25,
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            boxShadow: `0 2px 6px ${alpha(
-                              theme.palette.primary.main,
-                              0.4
-                            )}`,
-                          }}
-                        >
-                          <CurrentIcon sx={{ fontSize: 12 }} />
-                        </Box>
-                      )}
-
-                      {/* Info Button - Enhanced hover effect */}
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          background: `linear-gradient(to top, ${alpha(
-                            theme.palette.background.paper,
-                            0.95
-                          )} 0%, transparent 100%)`,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          opacity: 0,
-                          transition: "opacity 0.2s ease-in-out",
-                          pt: 1,
-                          pb: 0.5,
-                          ".MuiPaper-root:hover &": {
-                            opacity: 1,
-                          },
-                        }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={(e) => handleInfoClick(e, version)}
-                          sx={{
-                            width: 20,
-                            height: 20,
-                            minWidth: 20,
-                            color: "primary.main",
-                            bgcolor: alpha(theme.palette.background.paper, 0.9),
-                            border: 1,
-                            borderColor: alpha(theme.palette.primary.main, 0.2),
-                            "&:hover": {
-                              bgcolor: "primary.main",
-                              color: "primary.contrastText",
-                              borderColor: "primary.main",
-                            },
-                          }}
-                        >
-                          <InfoIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                      </Box>
-                    </Paper>
-                  </Box>
+                    version={version}
+                    isCurrentVersion={isCurrentVersion}
+                    disabled={disabled}
+                    thumbnailWidth={thumbnailWidth}
+                    thumbnailHeight={thumbnailHeight}
+                    onThumbnailClick={handleThumbnailClick}
+                    onInfoClick={handleInfoClick}
+                  />
                 );
               })}
             </Stack>
@@ -759,7 +341,7 @@ export function VersionThumbnailStrip({
         open={modalOpen}
         version={selectedVersion}
         isCurrent={selectedVersion?.version === currentVersion?.version}
-        onClose={() => setModalOpen(false)}
+        onClose={handleModalClose}
         onRestore={onRestoreVersion}
         onSelect={onVersionSelect}
       />
