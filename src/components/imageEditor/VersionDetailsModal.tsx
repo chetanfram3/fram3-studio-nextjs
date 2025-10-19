@@ -169,6 +169,7 @@ export function VersionDetailsModal({
       nano_banana_edit: "Image Edit",
       upscale_2x: "2x Upscale",
       batch_generation: "Batch Generation",
+      manual_upload: "User Added Image"
     };
     return type ? labels[type] || type : "Unknown";
   };
