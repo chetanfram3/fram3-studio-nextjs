@@ -4,12 +4,13 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { auth } from '@/lib/firebase';
 import { API_BASE_URL } from '@/config/constants';
 import CustomToast from '@/components/common/CustomToast';
+import type { ImageType } from '@/types/image/types'
 
 interface EditImageRequest {
     scriptId: string;
     versionId: string;
     prompt: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     sourceVersion?: number;
     // NEW: Multi-image support
     additionalImageUrls?: string[];
@@ -30,7 +31,7 @@ interface GenerateImageRequest {
     scriptId: string;
     versionId: string;
     prompt: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     aspectRatio?: string;
     fineTuneId?: string;
     seed?: number;
@@ -64,7 +65,7 @@ interface GenerateImageResponse {
 interface ImagePromptsParams {
     scriptId: string;
     versionId: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     imageVersion?: number; // Optional - if not provided, returns all prompts
     sceneId?: number;
     shotId?: number;
@@ -102,7 +103,7 @@ interface AllPromptsResponse {
 interface RestoreVersionRequest {
     scriptId: string;
     versionId: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     targetVersion: number;
     sceneId?: number;
     shotId?: number;
@@ -116,7 +117,7 @@ interface RestoreVersionRequest {
 interface ImageVersionsParams {
     scriptId: string;
     versionId: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     sceneId?: number;
     shotId?: number;
     actorId?: number;
@@ -156,7 +157,7 @@ interface MultiImageError extends Error {
 interface UpscaleImageRequest {
     scriptId: string;
     versionId: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     sourceVersion?: number;
     upscaleFactor?: number; // default: 2
     prompt?: string; // optional enhancement prompt
@@ -210,7 +211,7 @@ interface UpscaleImageResponse {
 export interface OptimizePromptRequest {
     scriptId: string;
     versionId: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     textPrompt: string;
     sourceVersion?: number;
     temperature?: number; // 0.0-1.0, default: 0
@@ -271,7 +272,7 @@ export interface OptimisedEditImageRequest {
     scriptId: string;
     versionId: string;
     prompt: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     sourceVersion?: number;
     additionalImageUrls?: string[];
     temperature?: number;
@@ -318,7 +319,7 @@ export interface EditImageParams {
     scriptId: string;
     versionId: string;
     prompt: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     sourceVersion?: number;
     additionalImageUrls?: string[];
     temperature?: number;
@@ -348,7 +349,7 @@ export interface EditImageParams {
     scriptId: string;
     versionId: string;
     prompt: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     sourceVersion?: number;
     additionalImageUrls?: string[];
     temperature?: number;
@@ -371,7 +372,7 @@ export interface EditImageParams {
 export interface GenerateImageParams {
     scriptId: string;
     versionId: string;
-    type: 'shots' | 'actor' | 'location' | 'keyVisual';
+    type: ImageType;
     prompt: string;
     aspectRatio: string;
     modelTier?: number | string;
@@ -882,7 +883,7 @@ function getUpscaleSuccessMessage(data: UpscaleImageResponse): string {
 }
 
 // Main hook for image editing
-export function useImageEditor(hookParams: { scriptId: string; versionId: string; type: "shots" | "keyVisual" | "actor" | "location"; } | { sceneId: number | undefined; shotId: number | undefined; scriptId: string; versionId: string; type: "shots" | "keyVisual" | "actor" | "location"; } | { actorId: number | undefined; actorVersionId: number | undefined; scriptId: string; versionId: string; type: "shots" | "keyVisual" | "actor" | "location"; } | { locationId: number | undefined; locationVersionId: number | undefined; promptType: string; scriptId: string; versionId: string; type: "shots" | "keyVisual" | "actor" | "location"; }) {
+export function useImageEditor(hookParams: { scriptId: string; versionId?: string; type: ImageType; } | { sceneId: number | undefined; shotId: number | undefined; scriptId: string; versionId: string; type: ImageType; } | { actorId: number | undefined; actorVersionId: number | undefined; scriptId: string; versionId: string; type: ImageType; } | { locationId: number | undefined; locationVersionId: number | undefined; promptType: string; scriptId: string; versionId: string; type: ImageType; }) {
     const queryClient = useQueryClient();
     const optimisedEditImageMutation = useMutation({
         mutationFn: optimisedEditImageService,
