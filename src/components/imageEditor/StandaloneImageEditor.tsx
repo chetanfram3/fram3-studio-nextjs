@@ -37,6 +37,7 @@ import { ImageEditOverlay } from "./ImageEditOverlay";
 import { ImageGenerationOverlay } from "./ImageGenerationOverlay";
 import { ImageUpscaleOverlay } from "./ImageUpscaleOverlay";
 import { ImageVersion } from "@/types/storyBoard/types";
+import AdditionalImagesUpload from "@/components/common/AdditionalImagesUpload";
 import { useImageEditor, useImageVersions } from "@/hooks/useImageEditor";
 import logger from "@/utils/logger";
 import { VersionThumbnailStrip } from "./VersionThumbnailStrip";
@@ -814,6 +815,14 @@ export function StandaloneImageEditor({
           />
         </Suspense>
       )}
+      <AdditionalImagesUpload
+        isVisible={additionalImagesMode}
+        onToggle={() => setAdditionalImagesMode(!additionalImagesMode)}
+        onImagesUpdate={setAdditionalImageUrls}
+        disabled={isProcessing}
+        maxImages={3}
+        maxSizeMB={10}
+      />
     </Box>
   );
 }
