@@ -15,7 +15,7 @@ export interface FirestoreTimestamp {
 export type Timestamp = FirestoreTimestamp | string;
 
 // Image type enum
-export type ImageType = "shots" | "actor" | "location" | "keyVisual";
+export type ImageType = "shots" | "actor" | "location" | "keyVisual" | "standalone";
 
 // Generation type enum
 export type GenerationType =
@@ -24,6 +24,7 @@ export type GenerationType =
     | "nano_banana_edit"
     | "upscale_2x"
     | "batch_generation"
+    | "manual_upload"
     | null;
 
 // Edit type enum
@@ -59,11 +60,18 @@ export interface KeyVisualIdentifiers {
     type: "keyVisual";
 }
 
+export interface StandaloneIdentifiers {
+    type: "standalone";
+    // Standalone has NO required identifiers beyond type
+    // assetId is used as scriptId in API calls
+}
+
 export type ImageIdentifiers =
     | ShotsIdentifiers
     | ActorIdentifiers
     | LocationIdentifiers
-    | KeyVisualIdentifiers;
+    | KeyVisualIdentifiers
+    | StandaloneIdentifiers;
 
 // Image Status
 export interface ImageStatus {
@@ -368,6 +376,13 @@ export interface ImageMetadataInfo {
     locationId?: number;
     locationVersionId?: number;
     promptType?: string;
+    title?: string;                    // For standalone assets
+    description?: string;              // For standalone assets
+    imageCategory?: string;            // For standalone assets
+    tags?: string[];                   // For standalone assets
+    projectName?: string;              // For standalone assets
+    notes?: string;                    // For standalone assets
+    assetId?: string;                  // The unique asset ID for standalone
     lastPromptSavedAt: Timestamp | null;
     lastAnalyzedAt: Timestamp | null;
 }
@@ -460,6 +475,15 @@ export interface BaseManualAddRequest {
     aspectRatio?: ManualAddAspectRatio; // Default: "16:9"
 }
 
+export interface StandaloneInitData {
+    title: string;
+    description?: string;
+    imageCategory?: string;
+    tags?: string[];
+    projectName?: string;
+    notes?: string;
+}
+
 export interface ShotsManualAddRequest extends BaseManualAddRequest, ShotsIdentifiers { }
 
 export interface ActorManualAddRequest extends BaseManualAddRequest, ActorIdentifiers { }
@@ -468,29 +492,50 @@ export interface LocationManualAddRequest extends BaseManualAddRequest, Location
 
 export interface KeyVisualManualAddRequest extends BaseManualAddRequest, KeyVisualIdentifiers { }
 
+export interface StandaloneManualAddInitRequest {
+    type: "standalone";
+    // NO scriptId for initialization
+    // NO versionId ever for standalone
+    initData: StandaloneInitData;      // REQUIRED for initialization
+    prompt: string;
+    imageUrl: string;
+    aspectRatio?: ManualAddAspectRatio;
+}
+
+// For adding to EXISTING standalone asset
+export interface StandaloneManualAddRequest extends BaseManualAddRequest {
+    type: "standalone";
+    // scriptId is actually the assetId (required in BaseManualAddRequest)
+    // NO versionId ever for standalone
+    // NO initData for existing assets
+}
+
 export type ManualAddImageRequest =
     | ShotsManualAddRequest
     | ActorManualAddRequest
     | LocationManualAddRequest
-    | KeyVisualManualAddRequest;
+    | KeyVisualManualAddRequest
+    | StandaloneManualAddInitRequest
+    | StandaloneManualAddRequest;
 
 // ============================================
 // MANUAL ADD RESPONSE TYPES
 // ============================================
 
 export interface ManualAddImageSuccessData {
-    newCurrentImagePath: string; // Signed URL to the image
+    newCurrentImagePath: string;
     newThumbnailPath: string;
     newCurrentVersion: number;
     availableVersions: number[];
     type: ImageType;
     prompt: string;
     aspectRatio: ManualAddAspectRatio;
-    seed: number; // Auto-generated
-    fineTuneId: null; // Always null for manual uploads
+    seed: number;
+    fineTuneId: null;
     generationType: 'manual_upload';
-    modelTier: 'ULTRA'; // Always ULTRA for manual uploads
-    sourceImageUrl: string; // Original URL provided
+    modelTier: 'ULTRA';
+    sourceImageUrl: string;
+    assetId?: string;
 }
 
 export interface ManualAddImageSuccessResponse {

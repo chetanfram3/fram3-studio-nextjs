@@ -5,6 +5,7 @@ import { useCallback, useMemo } from "react";
 import { ImageViewerContainer, ImageData } from "./ImageViewerContainer";
 import { ImageViewerConfig } from "./ImageDisplayCore";
 import { Shot } from "@/types/storyBoard/types";
+import { ImageType } from "@/types/image/types";
 
 interface ShotImageViewerProps {
   shot?: Shot;
@@ -13,7 +14,7 @@ interface ShotImageViewerProps {
   versionId?: string;
   onDataRefresh?: () => void;
   onShotUpdate?: (updatedShot: Shot) => void;
-  type: "shots" | "keyVisual" | "actor" | "location";
+  type: ImageType;
   imageData?: ImageData;
   onImageUpdate?: (updatedImageData: ImageData) => void;
   actorId?: number;

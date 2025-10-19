@@ -26,11 +26,12 @@ import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { ImageVersion } from "@/types/storyBoard/types";
 import logger from "@/utils/logger";
+import { ImageType } from "@/types/image/types";
 
 export interface ImageViewerConfig {
   scriptId: string;
   versionId: string;
-  type: "shots" | "keyVisual" | "actor" | "location";
+  type: ImageType;
   aspectRatio?: "16:9" | "9:16" | "1:1" | "auto";
 
   // Type-specific required props

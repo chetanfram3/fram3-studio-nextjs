@@ -22,12 +22,13 @@ import {
   useImageEditor,
   type UpscaleImageParams,
 } from "@/hooks/useImageEditor";
+import { ImageType } from "@/types/image/types";
 
 interface ImageUpscaleOverlayProps {
   // Required props
   scriptId: string;
   versionId: string;
-  type: "shots" | "actor" | "location" | "keyVisual";
+  type: ImageType;
   viewingVersion?: { version: number };
 
   // Type-specific props
@@ -107,6 +108,9 @@ export function ImageUpscaleOverlay({
         locationVersionId,
         promptType: promptType || "wideShotLocationSetPrompt",
       };
+    } else if (type === "standalone") {
+      // ✅ NEW: Standalone needs no additional params
+      return baseParams;
     }
     return baseParams;
   }, [

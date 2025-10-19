@@ -39,11 +39,12 @@ import {
   useModelTier,
   MODEL_TIERS,
 } from "@/components/common/ModelTierSelector";
+import { ImageType } from "@/types/image/types";
 
 interface ImageEditOverlayProps {
   scriptId: string;
   versionId: string;
-  type: "shots" | "keyVisual" | "actor" | "location";
+  type: ImageType;
   viewingVersion?: ImageVersion;
 
   // Shot-specific props
@@ -133,6 +134,9 @@ export function ImageEditOverlay({
         locationVersionId,
         promptType: promptType || "wideShotLocationSetPrompt",
       };
+    } else if (type === "standalone") {
+      // ✅ NEW: Standalone needs no additional params
+      return baseParams;
     }
     return baseParams;
   }, [

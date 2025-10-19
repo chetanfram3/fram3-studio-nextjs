@@ -34,9 +34,9 @@ import { ImageEditOverlay } from "./ImageEditOverlay";
 import { ImageGenerationOverlay } from "./ImageGenerationOverlay";
 import { ImageVersionNavigation } from "./ImageVersionNavigation";
 import logger from "@/utils/logger";
+import type { ImageType } from "@/types/image/types";
 
 // Types
-export type ImageType = "shots" | "keyVisual" | "actor" | "location";
 export type AspectRatio = "16:9" | "9:16" | "1:1" | "auto";
 
 export interface ImageData {
@@ -164,6 +164,9 @@ export function ImageViewerContainer({
         locationVersionId: config.locationVersionId,
         promptType: config.promptType || "wideShotLocationSetPrompt",
       };
+    } else if (config.type === "standalone") {
+      // ✅ NEW: Standalone needs no additional params
+      return baseParams;
     }
     return baseParams;
   }, [config]);
