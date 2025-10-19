@@ -6,6 +6,8 @@ import type {
     CompleteImageDataApiResponse,
     CompleteImageData,
     ImageType,
+    ManualAddImageRequest,
+    ManualAddImageResponse,
 } from "@/types/image/types";
 import { isSuccessResponse } from "@/types/image/types";
 
@@ -262,6 +264,71 @@ export function buildImageQueryParams(
     }
 
     return queryParams;
+}
+
+/**
+ * Manually add an existing image from a URL to the system with version management.
+ * No AI generation - just saves your provided image with metadata.
+ * 
+ * @param request - The manual add image request parameters
+ * @param token - Authentication token
+ * @returns Promise containing the response with image data or error
+ * 
+ * @example
+ * ```typescript
+ * const result = await manualAddImage({
+ *   scriptId: "abc123",
+ *   versionId: "v1",
+ *   type: "shots",
+ *   sceneId: 1,
+ *   shotId: 2,
+ *   prompt: "A cinematic wide shot",
+ *   imageUrl: "https://example.com/image.png",
+ *   aspectRatio: "16:9"
+ * }, token);
+ * 
+ * if (result.success) {
+ *   console.log('Image URL:', result.data.newCurrentImagePath);
+ * }
+ * ```
+ */
+export async function manualAddImage(
+  request: ManualAddImageRequest,
+  token: string
+): Promise<ManualAddImageResponse> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/images/v1/manual-add`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(request),
+      }
+    );
+
+    const data: ManualAddImageResponse = await response.json();
+
+    // Handle non-200 status codes
+    if (!response.ok) {
+      if ('error' in data) {
+        return data;
+      }
+      return {
+        success: false,
+        error: `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    return data;
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to add image',
+    };
+  }
 }
 
 /**

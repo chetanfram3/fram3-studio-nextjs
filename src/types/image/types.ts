@@ -449,3 +449,64 @@ export function convertFirestoreTimestamp(timestamp: Timestamp): Date {
 export function timestampToISO(timestamp: Timestamp): string {
     return convertFirestoreTimestamp(timestamp).toISOString();
 }
+
+export type ManualAddAspectRatio = '16:9' | '9:16' | '1:1';
+
+export interface BaseManualAddRequest {
+    scriptId: string;
+    versionId: string;
+    prompt: string;
+    imageUrl: string;
+    aspectRatio?: ManualAddAspectRatio; // Default: "16:9"
+}
+
+export interface ShotsManualAddRequest extends BaseManualAddRequest, ShotsIdentifiers { }
+
+export interface ActorManualAddRequest extends BaseManualAddRequest, ActorIdentifiers { }
+
+export interface LocationManualAddRequest extends BaseManualAddRequest, LocationIdentifiers { }
+
+export interface KeyVisualManualAddRequest extends BaseManualAddRequest, KeyVisualIdentifiers { }
+
+export type ManualAddImageRequest =
+    | ShotsManualAddRequest
+    | ActorManualAddRequest
+    | LocationManualAddRequest
+    | KeyVisualManualAddRequest;
+
+// ============================================
+// MANUAL ADD RESPONSE TYPES
+// ============================================
+
+export interface ManualAddImageSuccessData {
+    newCurrentImagePath: string; // Signed URL to the image
+    newThumbnailPath: string;
+    newCurrentVersion: number;
+    availableVersions: number[];
+    type: ImageType;
+    prompt: string;
+    aspectRatio: ManualAddAspectRatio;
+    seed: number; // Auto-generated
+    fineTuneId: null; // Always null for manual uploads
+    generationType: 'manual_upload';
+    modelTier: 'ULTRA'; // Always ULTRA for manual uploads
+    sourceImageUrl: string; // Original URL provided
+}
+
+export interface ManualAddImageSuccessResponse {
+    message: string;
+    success: true;
+    data: ManualAddImageSuccessData;
+}
+
+export interface ManualAddImageErrorResponse {
+    message?: string;
+    success: false;
+    error: string;
+    type?: ImageType;
+    modelTier?: 'ULTRA';
+}
+
+export type ManualAddImageResponse =
+    | ManualAddImageSuccessResponse
+    | ManualAddImageErrorResponse;
