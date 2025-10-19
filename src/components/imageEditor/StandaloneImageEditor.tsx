@@ -37,7 +37,7 @@ import { ImageEditOverlay } from "./ImageEditOverlay";
 import { ImageGenerationOverlay } from "./ImageGenerationOverlay";
 import { ImageUpscaleOverlay } from "./ImageUpscaleOverlay";
 import { ImageVersion } from "@/types/storyBoard/types";
-import AdditionalImagesUpload from "@/components/common/AdditionalImagesUpload";
+import GenericFileUpload from "@/components/common/GenericFileUpload";
 import { useImageEditor, useImageVersions } from "@/hooks/useImageEditor";
 import logger from "@/utils/logger";
 import { VersionThumbnailStrip } from "./VersionThumbnailStrip";
@@ -815,13 +815,18 @@ export function StandaloneImageEditor({
           />
         </Suspense>
       )}
-      <AdditionalImagesUpload
+
+      <GenericFileUpload
         isVisible={additionalImagesMode}
         onToggle={() => setAdditionalImagesMode(!additionalImagesMode)}
-        onImagesUpdate={setAdditionalImageUrls}
-        disabled={isProcessing}
-        maxImages={3}
-        maxSizeMB={10}
+        onClose={() => setAdditionalImagesMode(false)}
+        onFilesUpdate={setAdditionalImageUrls}
+        fileFilter="images"
+        maxFiles={5}
+        maxSizeMB={20}
+        maxFileSizeMB={8}
+        title="Upload Reference Images"
+        description="Add images for processing"
       />
     </Box>
   );

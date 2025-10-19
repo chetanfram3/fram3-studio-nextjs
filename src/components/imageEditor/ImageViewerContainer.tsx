@@ -26,7 +26,7 @@ import {
   useImageVersions,
   useImageHistory,
 } from "@/hooks/useImageEditor";
-import AdditionalImagesUpload from "@/components/common/AdditionalImagesUpload";
+import GenericFileUpload from "@/components/common/GenericFileUpload";
 import { ImageDisplayCore, ImageViewerConfig } from "./ImageDisplayCore";
 import { ImageVersionModal } from "./ImageVersionOverlay";
 import { ImageUpscaleOverlay } from "./ImageUpscaleOverlay";
@@ -1143,7 +1143,7 @@ export function ImageViewerContainer({
 
       {/* Additional Images Upload */}
       {mountedRef.current && (
-        <AdditionalImagesUpload
+        <GenericFileUpload
           isVisible={additionalImagesMode}
           onToggle={() => {
             if (mountedRef.current) {
@@ -1152,10 +1152,15 @@ export function ImageViewerContainer({
               });
             }
           }}
-          onImagesUpdate={handleAdditionalImagesUpdate}
+          onClose={() => setAdditionalImagesMode(false)}
+          onFilesUpdate={handleAdditionalImagesUpdate}
           disabled={isEditing || isGenerating || isRestoring}
-          maxImages={3}
-          maxSizeMB={10}
+          fileFilter="images"
+          maxFiles={3}
+          maxSizeMB={20}
+          maxFileSizeMB={8}
+          title="Upload Reference Images"
+          description="Add images for processing"
         />
       )}
 
