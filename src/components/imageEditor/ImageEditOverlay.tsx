@@ -364,354 +364,307 @@ export function ImageEditOverlay({
         position: "absolute",
         bottom: 0,
         left: 0,
-        right: additionalImagesMode ? "350px" : 0,
-        background: `linear-gradient(to top, ${theme.palette.background.paper}f0 0%, ${theme.palette.background.paper}b3 50%, transparent 100%)`,
+        right: 0, // ✅ Always full width
+        display: "flex",
+        justifyContent: "center",
         p: 3,
         pb: 7,
         zIndex: 10,
       }}
     >
-      <Stack spacing={2}>
-        {/* Header */}
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-        >
-          <Typography
-            variant="body2"
-            color="text.primary"
-            fontWeight="medium"
-            component="div"
-            sx={{ fontFamily: brand.fonts.body }}
+      <Box
+        sx={{
+          width: "100%",
+          maxWidth: "100%",
+          transition: theme.transitions.create(["max-width"], {
+            duration: theme.transitions.duration.standard,
+          }),
+          // 🆕 Move gradient background here (from outer Box)
+          background: `linear-gradient(to top, ${theme.palette.background.paper}f0 0%, ${theme.palette.background.paper}b3 50%, transparent 100%)`,
+          borderRadius: `${brand.borderRadius}px`,
+          position: "relative",
+        }}
+      >
+        <Stack spacing={2}>
+          {/* Header */}
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
           >
-            Edit Version {viewingVersion?.version}
-            {/* Show additional images count */}
-            {additionalImageUrls.length > 0 && (
-              <Chip
-                label={`+${additionalImageUrls.length} images`}
-                size="small"
-                color="primary"
-                sx={{
-                  ml: 1,
-                  height: 20,
-                  fontSize: "0.75rem",
-                  fontFamily: brand.fonts.body,
-                }}
-              />
-            )}
-            {/* Show selected model tier */}
-            {selectedTierOption && (
-              <Chip
-                label={selectedTierOption.label}
-                size="small"
-                sx={{
-                  ml: 1,
-                  height: 20,
-                  fontSize: "0.75rem",
-                  bgcolor: selectedTierOption.color,
-                  color: theme.palette.getContrastText(
-                    selectedTierOption.color
-                  ),
-                  fontFamily: brand.fonts.body,
-                }}
-              />
-            )}
-          </Typography>
-          <IconButton
-            onClick={handleCancel}
-            disabled={isProcessing}
-            color="primary"
-            sx={{ p: 0.5 }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Stack>
-
-        {/* Error Alerts */}
-        {imageEditorError && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 1,
-              borderRadius: `${brand.borderRadius}px`,
-              "& .MuiAlert-message": {
-                fontFamily: brand.fonts.body,
-              },
-            }}
-          >
-            {imageEditorError.message}
-          </Alert>
-        )}
-
-        {optimisedEditError && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 1,
-              borderRadius: `${brand.borderRadius}px`,
-              "& .MuiAlert-message": {
-                fontFamily: brand.fonts.body,
-              },
-            }}
-          >
-            {optimisedEditError.message}
-          </Alert>
-        )}
-
-        {optimizeError && (
-          <Alert
-            severity="error"
-            sx={{
-              mb: 1,
-              borderRadius: `${brand.borderRadius}px`,
-              "& .MuiAlert-message": {
-                fontFamily: brand.fonts.body,
-              },
-            }}
-          >
-            {optimizeError.message}
-          </Alert>
-        )}
-
-        {/* Multi-image editing info */}
-        {additionalImageUrls.length > 0 && (
-          <Alert
-            severity="info"
-            sx={{
-              mb: 1,
-              borderRadius: `${brand.borderRadius}px`,
-              "& .MuiAlert-message": {
-                fontFamily: brand.fonts.body,
-              },
-            }}
-          >
-            <Typography variant="caption" sx={{ fontFamily: brand.fonts.body }}>
-              Multi-image editing with {additionalImageUrls.length + 1} images
-              total.
-              {additionalImageUrls.length > 1
-                ? " Premium/Ultra users can use all images simultaneously."
-                : " Available for Pro+ users."}
+            <Typography
+              variant="body2"
+              color="text.primary"
+              fontWeight="medium"
+              component="div"
+              sx={{ fontFamily: brand.fonts.body }}
+            >
+              Edit Version {viewingVersion?.version}
+              {/* Show additional images count */}
+              {additionalImageUrls.length > 0 && (
+                <Chip
+                  label={`+${additionalImageUrls.length} images`}
+                  size="small"
+                  color="primary"
+                  sx={{
+                    ml: 1,
+                    height: 20,
+                    fontSize: "0.75rem",
+                    fontFamily: brand.fonts.body,
+                  }}
+                />
+              )}
+              {/* Show selected model tier */}
+              {selectedTierOption && (
+                <Chip
+                  label={selectedTierOption.label}
+                  size="small"
+                  sx={{
+                    ml: 1,
+                    height: 20,
+                    fontSize: "0.75rem",
+                    bgcolor: selectedTierOption.color,
+                    color: theme.palette.getContrastText(
+                      selectedTierOption.color
+                    ),
+                    fontFamily: brand.fonts.body,
+                  }}
+                />
+              )}
             </Typography>
-          </Alert>
-        )}
+            <IconButton
+              onClick={handleCancel}
+              disabled={isProcessing}
+              color="primary"
+              sx={{ p: 0.5 }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Stack>
 
-        {/* Prompt Input */}
-        <TextField
-          multiline
-          rows={2}
-          fullWidth
-          placeholder={
-            additionalImageUrls.length > 0
-              ? "Describe how to combine and edit these images..."
-              : "Describe the changes you want to make..."
-          }
-          value={editPrompt}
-          onChange={(e) => setEditPrompt(e.target.value)}
-          variant="outlined"
-          size="small"
-          disabled={isProcessing || disabled}
-          InputProps={{
-            endAdornment: editPrompt.trim() && (
-              <Stack direction="row" spacing={0.5} sx={{ mr: 1 }}>
-                {/* Optimization insights button */}
-                {optimizationData && (
-                  <Tooltip title="View optimization insights">
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        setShowOptimizationInsights(!showOptimizationInsights)
-                      }
-                      disabled={disabled}
-                      color="primary"
-                      sx={{
-                        opacity: 0.8,
-                        "&:hover": { opacity: 1 },
-                      }}
-                    >
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                )}
+          {/* Error Alerts */}
+          {imageEditorError && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: 1,
+                borderRadius: `${brand.borderRadius}px`,
+                "& .MuiAlert-message": {
+                  fontFamily: brand.fonts.body,
+                },
+              }}
+            >
+              {imageEditorError.message}
+            </Alert>
+          )}
 
-                {/* Optimize prompt button - standalone optimization */}
-                {isAdmin && (
-                  <Tooltip title="Optimize this prompt with AI (preview only)">
-                    <span>
+          {optimisedEditError && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: 1,
+                borderRadius: `${brand.borderRadius}px`,
+                "& .MuiAlert-message": {
+                  fontFamily: brand.fonts.body,
+                },
+              }}
+            >
+              {optimisedEditError.message}
+            </Alert>
+          )}
+
+          {optimizeError && (
+            <Alert
+              severity="error"
+              sx={{
+                mb: 1,
+                borderRadius: `${brand.borderRadius}px`,
+                "& .MuiAlert-message": {
+                  fontFamily: brand.fonts.body,
+                },
+              }}
+            >
+              {optimizeError.message}
+            </Alert>
+          )}
+
+          {/* Multi-image editing info */}
+          {additionalImageUrls.length > 0 && (
+            <Alert
+              severity="info"
+              sx={{
+                mb: 1,
+                borderRadius: `${brand.borderRadius}px`,
+                "& .MuiAlert-message": {
+                  fontFamily: brand.fonts.body,
+                },
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{ fontFamily: brand.fonts.body }}
+              >
+                Multi-image editing with {additionalImageUrls.length + 1} images
+                total.
+                {additionalImageUrls.length > 1
+                  ? " Premium/Ultra users can use all images simultaneously."
+                  : " Available for Pro+ users."}
+              </Typography>
+            </Alert>
+          )}
+
+          {/* Prompt Input */}
+          <TextField
+            multiline
+            rows={2}
+            fullWidth
+            placeholder={
+              additionalImageUrls.length > 0
+                ? "Describe how to combine and edit these images..."
+                : "Describe the changes you want to make..."
+            }
+            value={editPrompt}
+            onChange={(e) => setEditPrompt(e.target.value)}
+            variant="outlined"
+            size="small"
+            disabled={isProcessing || disabled}
+            InputProps={{
+              endAdornment: editPrompt.trim() && (
+                <Stack direction="row" spacing={0.5} sx={{ mr: 1 }}>
+                  {/* Optimization insights button */}
+                  {optimizationData && (
+                    <Tooltip title="View optimization insights">
                       <IconButton
                         size="small"
-                        onClick={handleOptimizePrompt}
-                        disabled={
-                          isProcessing || !editPrompt.trim() || disabled
+                        onClick={() =>
+                          setShowOptimizationInsights(!showOptimizationInsights)
                         }
+                        disabled={disabled}
                         color="primary"
                         sx={{
                           opacity: 0.8,
                           "&:hover": { opacity: 1 },
-                          "&:disabled": { opacity: 0.3 },
                         }}
                       >
-                        {isOptimizing ? (
-                          <Box
-                            sx={{
-                              width: 16,
-                              height: 16,
-                              border: `2px solid ${theme.palette.divider}`,
-                              borderTop: `2px solid ${theme.palette.primary.main}`,
-                              borderRadius: "50%",
-                              animation: "spin 1s linear infinite",
-                              "@keyframes spin": {
-                                "0%": { transform: "rotate(0deg)" },
-                                "100%": { transform: "rotate(360deg)" },
-                              },
-                            }}
-                          />
-                        ) : (
-                          <OptimizeIcon fontSize="small" />
-                        )}
+                        <InfoIcon fontSize="small" />
                       </IconButton>
-                    </span>
-                  </Tooltip>
-                )}
-              </Stack>
-            ),
-          }}
-          sx={{
-            "& .MuiOutlinedInput-root": {
-              bgcolor: isProcessing
-                ? theme.palette.action.hover
-                : "transparent",
-              backdropFilter: "blur(10px)",
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: `${brand.borderRadius}px`,
-              fontFamily: brand.fonts.body,
-              "& fieldset": {
-                border: "none",
-              },
-              "&:hover fieldset": {
-                border: "none",
-              },
-              "&.Mui-focused": {
-                borderColor: "primary.main",
-              },
-              "& input, & textarea": {
-                color: "text.primary",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                fontFamily: brand.fonts.body,
-                "&::placeholder": {
-                  color: "text.secondary",
-                  opacity: 0.7,
-                },
-              },
-            },
-          }}
-        />
+                    </Tooltip>
+                  )}
 
-        {/* Optimization Insights Panel */}
-        {optimizationData && showOptimizationInsights && (
-          <Collapse in={showOptimizationInsights}>
-            <Box
-              sx={{
-                mt: 2,
-                p: 2,
-                bgcolor: theme.palette.action.hover,
+                  {/* Optimize prompt button - standalone optimization */}
+                  {isAdmin && (
+                    <Tooltip title="Optimize this prompt with AI (preview only)">
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={handleOptimizePrompt}
+                          disabled={
+                            isProcessing || !editPrompt.trim() || disabled
+                          }
+                          color="primary"
+                          sx={{
+                            opacity: 0.8,
+                            "&:hover": { opacity: 1 },
+                            "&:disabled": { opacity: 0.3 },
+                          }}
+                        >
+                          {isOptimizing ? (
+                            <Box
+                              sx={{
+                                width: 16,
+                                height: 16,
+                                border: `2px solid ${theme.palette.divider}`,
+                                borderTop: `2px solid ${theme.palette.primary.main}`,
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                                "@keyframes spin": {
+                                  "0%": { transform: "rotate(0deg)" },
+                                  "100%": { transform: "rotate(360deg)" },
+                                },
+                              }}
+                            />
+                          ) : (
+                            <OptimizeIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  )}
+                </Stack>
+              ),
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                bgcolor: isProcessing
+                  ? theme.palette.action.hover
+                  : "transparent",
                 backdropFilter: "blur(10px)",
                 border: `1px solid ${theme.palette.divider}`,
                 borderRadius: `${brand.borderRadius}px`,
-              }}
-            >
-              <Stack spacing={1.5}>
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
-                  <Typography
-                    variant="caption"
-                    color="text.primary"
-                    fontWeight="medium"
-                    sx={{ fontFamily: brand.fonts.body }}
+                fontFamily: brand.fonts.body,
+                "& fieldset": {
+                  border: "none",
+                },
+                "&:hover fieldset": {
+                  border: "none",
+                },
+                "&.Mui-focused": {
+                  borderColor: "primary.main",
+                },
+                "& input, & textarea": {
+                  color: "text.primary",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  fontFamily: brand.fonts.body,
+                  "&::placeholder": {
+                    color: "text.secondary",
+                    opacity: 0.7,
+                  },
+                },
+              },
+            }}
+          />
+
+          {/* Optimization Insights Panel */}
+          {optimizationData && showOptimizationInsights && (
+            <Collapse in={showOptimizationInsights}>
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  bgcolor: theme.palette.action.hover,
+                  backdropFilter: "blur(10px)",
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: `${brand.borderRadius}px`,
+                }}
+              >
+                <Stack spacing={1.5}>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
                   >
-                    Optimization Insights
-                  </Typography>
-                  <IconButton
-                    size="small"
-                    onClick={() => setShowOptimizationInsights(false)}
-                    color="primary"
-                    sx={{ p: 0.5 }}
-                  >
-                    <CollapseIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
+                    <Typography
+                      variant="caption"
+                      color="text.primary"
+                      fontWeight="medium"
+                      sx={{ fontFamily: brand.fonts.body }}
+                    >
+                      Optimization Insights
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => setShowOptimizationInsights(false)}
+                      color="primary"
+                      sx={{ p: 0.5 }}
+                    >
+                      <CollapseIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
 
-                {optimizationInsights && (
-                  <Stack spacing={1}>
-                    {optimizationInsights.strategy && (
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "text.secondary",
-                            fontFamily: brand.fonts.body,
-                          }}
-                        >
-                          Strategy:
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.primary"
-                          sx={{ ml: 1, fontFamily: brand.fonts.body }}
-                        >
-                          {optimizationInsights.strategy}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {optimizationInsights.confidence !== undefined && (
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "text.secondary",
-                            fontFamily: brand.fonts.body,
-                          }}
-                        >
-                          Confidence:
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.primary"
-                          sx={{ ml: 1, fontFamily: brand.fonts.body }}
-                        >
-                          {Math.round(optimizationInsights.confidence * 100)}%
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {optimizationInsights.tokenCount && (
-                      <Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "text.secondary",
-                            fontFamily: brand.fonts.body,
-                          }}
-                        >
-                          Tokens:
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.primary"
-                          sx={{ ml: 1, fontFamily: brand.fonts.body }}
-                        >
-                          {optimizationInsights.tokenCount}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {optimizationInsights.potentialIssues &&
-                      optimizationInsights.potentialIssues.length > 0 && (
+                  {optimizationInsights && (
+                    <Stack spacing={1}>
+                      {optimizationInsights.strategy && (
                         <Box>
                           <Typography
                             variant="caption"
@@ -720,130 +673,197 @@ export function ImageEditOverlay({
                               fontFamily: brand.fonts.body,
                             }}
                           >
-                            Potential Issues:
+                            Strategy:
                           </Typography>
-                          {optimizationInsights.potentialIssues.map(
-                            (issue: string, index: number) => (
-                              <Typography
-                                key={index}
-                                variant="caption"
-                                color="warning.main"
-                                sx={{
-                                  display: "block",
-                                  ml: 1,
-                                  fontSize: "0.7rem",
-                                  fontFamily: brand.fonts.body,
-                                }}
-                              >
-                                • {issue}
-                              </Typography>
-                            )
-                          )}
+                          <Typography
+                            variant="caption"
+                            color="text.primary"
+                            sx={{ ml: 1, fontFamily: brand.fonts.body }}
+                          >
+                            {optimizationInsights.strategy}
+                          </Typography>
                         </Box>
                       )}
 
-                    {originalPrompt && originalPrompt !== editPrompt && (
-                      <Box>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="primary"
-                          onClick={() => {
-                            setEditPrompt(originalPrompt);
-                            setOptimizationData(null);
-                            setShowOptimizationInsights(false);
-                          }}
-                          disabled={disabled}
-                          sx={{
-                            fontSize: "0.7rem",
-                            py: 0.5,
-                            borderRadius: `${brand.borderRadius}px`,
-                            fontFamily: brand.fonts.body,
-                          }}
-                        >
-                          Revert to Original
-                        </Button>
-                      </Box>
-                    )}
-                  </Stack>
-                )}
-              </Stack>
-            </Box>
-          </Collapse>
-        )}
+                      {optimizationInsights.confidence !== undefined && (
+                        <Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "text.secondary",
+                              fontFamily: brand.fonts.body,
+                            }}
+                          >
+                            Confidence:
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.primary"
+                            sx={{ ml: 1, fontFamily: brand.fonts.body }}
+                          >
+                            {Math.round(optimizationInsights.confidence * 100)}%
+                          </Typography>
+                        </Box>
+                      )}
 
-        {/* Action Buttons */}
-        <Stack direction="row" spacing={1}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleEditSubmit}
-            disabled={!editPrompt.trim() || isProcessing || disabled}
-            size="small"
-            startIcon={selectedTierOption?.icon || <OptimizeIcon />}
-            sx={{
-              minWidth: 100,
-              borderRadius: `${brand.borderRadius}px`,
-              fontFamily: brand.fonts.body,
-              ...(selectedTierOption && {
-                bgcolor: selectedTierOption.color,
-                color: theme.palette.getContrastText(selectedTierOption.color),
-                "&:hover": {
-                  bgcolor: `${selectedTierOption.color}dd`,
-                },
-              }),
-            }}
-          >
-            {isOptimisedEditing
-              ? `Creating with ${selectedTierOption?.label || "AI"}...`
-              : isEditing
-                ? "Creating..."
-                : `Create with ${selectedTierOption?.label || "AI"}`}
-          </Button>
+                      {optimizationInsights.tokenCount && (
+                        <Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "text.secondary",
+                              fontFamily: brand.fonts.body,
+                            }}
+                          >
+                            Tokens:
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.primary"
+                            sx={{ ml: 1, fontFamily: brand.fonts.body }}
+                          >
+                            {optimizationInsights.tokenCount}
+                          </Typography>
+                        </Box>
+                      )}
 
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={handleCancel}
-            disabled={isProcessing}
-            size="small"
-            sx={{
-              bgcolor: "transparent",
-              backdropFilter: "blur(10px)",
-              borderRadius: `${brand.borderRadius}px`,
-              fontFamily: brand.fonts.body,
-            }}
-          >
-            Cancel
-          </Button>
+                      {optimizationInsights.potentialIssues &&
+                        optimizationInsights.potentialIssues.length > 0 && (
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: "text.secondary",
+                                fontFamily: brand.fonts.body,
+                              }}
+                            >
+                              Potential Issues:
+                            </Typography>
+                            {optimizationInsights.potentialIssues.map(
+                              (issue: string, index: number) => (
+                                <Typography
+                                  key={index}
+                                  variant="caption"
+                                  color="warning.main"
+                                  sx={{
+                                    display: "block",
+                                    ml: 1,
+                                    fontSize: "0.7rem",
+                                    fontFamily: brand.fonts.body,
+                                  }}
+                                >
+                                  • {issue}
+                                </Typography>
+                              )
+                            )}
+                          </Box>
+                        )}
 
-          {/* Additional Images Toggle Button */}
-          <Button
-            variant={additionalImagesMode ? "contained" : "outlined"}
-            color="primary"
-            onClick={onAdditionalImagesModeToggle}
-            disabled={isProcessing || disabled}
-            size="small"
-            startIcon={<PlusIcon size={16} />}
-            sx={{
-              backdropFilter: "blur(10px)",
-              borderRadius: `${brand.borderRadius}px`,
-              fontFamily: brand.fonts.body,
-            }}
-          >
-            Images ({additionalImageUrls.length})
-          </Button>
+                      {originalPrompt && originalPrompt !== editPrompt && (
+                        <Box>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => {
+                              setEditPrompt(originalPrompt);
+                              setOptimizationData(null);
+                              setShowOptimizationInsights(false);
+                            }}
+                            disabled={disabled}
+                            sx={{
+                              fontSize: "0.7rem",
+                              py: 0.5,
+                              borderRadius: `${brand.borderRadius}px`,
+                              fontFamily: brand.fonts.body,
+                            }}
+                          >
+                            Revert to Original
+                          </Button>
+                        </Box>
+                      )}
+                    </Stack>
+                  )}
+                </Stack>
+              </Box>
+            </Collapse>
+          )}
 
-          {/* Model Tier Selector */}
-          <ModelTierSelector
-            value={modelTier}
-            onChange={setModelTier}
-            disabled={isProcessing || disabled}
-            showDescription={true}
-            compact={true}
-          />
+          {/* Action Buttons */}
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleEditSubmit}
+              disabled={!editPrompt.trim() || isProcessing || disabled}
+              size="small"
+              startIcon={selectedTierOption?.icon || <OptimizeIcon />}
+              sx={{
+                minWidth: 100,
+                borderRadius: `${brand.borderRadius}px`,
+                fontFamily: brand.fonts.body,
+                ...(selectedTierOption && {
+                  bgcolor: selectedTierOption.color,
+                  color: theme.palette.getContrastText(
+                    selectedTierOption.color
+                  ),
+                  "&:hover": {
+                    bgcolor: `${selectedTierOption.color}dd`,
+                  },
+                }),
+              }}
+            >
+              {isOptimisedEditing
+                ? `Creating with ${selectedTierOption?.label || "AI"}...`
+                : isEditing
+                  ? "Creating..."
+                  : `Create with ${selectedTierOption?.label || "AI"}`}
+            </Button>
+
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleCancel}
+              disabled={isProcessing}
+              size="small"
+              sx={{
+                bgcolor: "transparent",
+                backdropFilter: "blur(10px)",
+                borderRadius: `${brand.borderRadius}px`,
+                fontFamily: brand.fonts.body,
+              }}
+            >
+              Cancel
+            </Button>
+
+            {/* Additional Images Toggle Button */}
+            <Button
+              variant={additionalImagesMode ? "contained" : "outlined"}
+              color="primary"
+              onClick={onAdditionalImagesModeToggle}
+              disabled={isProcessing || disabled}
+              size="small"
+              startIcon={<PlusIcon size={16} />}
+              sx={{
+                backdropFilter: "blur(10px)",
+                borderRadius: `${brand.borderRadius}px`,
+                fontFamily: brand.fonts.body,
+              }}
+            >
+              Images ({additionalImageUrls.length})
+            </Button>
+
+            {/* Model Tier Selector */}
+            <ModelTierSelector
+              value={modelTier}
+              onChange={setModelTier}
+              disabled={isProcessing || disabled}
+              showDescription={true}
+              compact={true}
+            />
+          </Stack>
         </Stack>
-      </Stack>
+      </Box>
     </Box>
   );
 }
