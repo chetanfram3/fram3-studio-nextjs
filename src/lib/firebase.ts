@@ -4,6 +4,7 @@ import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, setPersistence, browserLocalPersistence, onAuthStateChanged, onIdTokenChanged } from 'firebase/auth';
 import { getMessaging, Messaging, isSupported } from 'firebase/messaging';
 import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/store/authStore';
 import { checkUserProfile } from '@/services/userService';
@@ -24,6 +25,7 @@ let app: FirebaseApp;
 let auth: Auth;
 let messaging: Messaging | null = null;
 let db: Firestore;
+let storage: ReturnType<typeof getStorage>;
 const databaseId = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || '(default)';
 
 // Token refresh configuration
@@ -118,6 +120,7 @@ if (typeof window !== 'undefined') {
 
     // Initialize Firestore with custom database ID
     db = getFirestore(app, databaseId);
+    storage = getStorage(app);
 
     // Set persistence explicitly
     setPersistence(auth, browserLocalPersistence).catch((error) => {
@@ -226,4 +229,4 @@ if (typeof window !== 'undefined') {
   }
 }
 
-export { app, auth, messaging, db };
+export { app, auth, messaging, db, storage };
