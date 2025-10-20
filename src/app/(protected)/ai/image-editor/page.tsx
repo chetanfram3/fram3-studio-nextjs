@@ -273,11 +273,11 @@ function ImageEditorContent() {
             <Typography
               variant="body2"
               sx={{
-                color: "success.main",
+                color: "primary.contrastText",
                 ml: 1,
                 px: 1.5,
                 py: 0.5,
-                bgcolor: "success.light",
+                bgcolor: "primary.main",
                 borderRadius: `${brand.borderRadius}px`,
                 fontWeight: 600,
               }}
