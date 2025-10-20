@@ -204,7 +204,13 @@ export function ImageEditOverlay({
 
   // Handle prompt optimization (standalone)
   const handleOptimizePrompt = async () => {
-    if (!scriptId || !versionId || !editPrompt.trim()) {
+    // ✅ UPDATED: Validate scriptId and prompt for all types
+    if (!scriptId || !editPrompt.trim()) {
+      return;
+    }
+
+    // ✅ UPDATED: For non-standalone types, versionId is required
+    if (type !== "standalone" && !versionId) {
       return;
     }
 
@@ -214,7 +220,7 @@ export function ImageEditOverlay({
 
       const optimizeParams: OptimizePromptParams = {
         scriptId,
-        versionId,
+        versionId: versionId || "", // ✅ UPDATED: Empty string for standalone
         type,
         textPrompt: editPrompt.trim(),
         sourceVersion: viewingVersion?.version,
@@ -247,6 +253,7 @@ export function ImageEditOverlay({
         optimizeParams.locationVersionId = locationVersionId;
         optimizeParams.promptType = promptType || "wideShotLocationSetPrompt";
       }
+      // ✅ standalone type needs no additional params
 
       const result = await optimizePromptAsync(optimizeParams);
 
@@ -263,7 +270,13 @@ export function ImageEditOverlay({
 
   // Handle edit submission with automatic optimization
   const handleEditSubmit = async () => {
-    if (!scriptId || !versionId || !editPrompt.trim()) {
+    // ✅ UPDATED: Validate scriptId and prompt for all types
+    if (!scriptId || !editPrompt.trim()) {
+      return;
+    }
+
+    // ✅ UPDATED: For non-standalone types, versionId is required
+    if (type !== "standalone" && !versionId) {
       return;
     }
 
@@ -273,7 +286,7 @@ export function ImageEditOverlay({
 
       const editParams: EditImageParams = {
         scriptId,
-        versionId,
+        versionId: versionId || "", // ✅ UPDATED: Empty string for standalone
         type,
         sourceVersion: viewingVersion?.version,
         prompt: editPrompt.trim(),
@@ -310,6 +323,7 @@ export function ImageEditOverlay({
         editParams.locationVersionId = locationVersionId;
         editParams.promptType = promptType || "wideShotLocationSetPrompt";
       }
+      // ✅ standalone type needs no additional params
 
       const editResult = await optimisedEditImageAsync(editParams);
 

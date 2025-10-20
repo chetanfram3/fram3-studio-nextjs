@@ -18,7 +18,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
  */
 export interface GetCompleteImageDataParams {
     scriptId: string;
-    versionId: string;
+    versionId?: string;
     type: ImageType;
     // Type-specific parameters
     sceneId?: number;
@@ -104,11 +104,21 @@ export async function getCompleteImageData(
         // Build query parameters
         const queryParams = new URLSearchParams({
             scriptId: params.scriptId,
-            versionId: params.versionId,
             type: params.type,
         });
 
-        // Add type-specific parameters
+        // CHANGED: Only add versionId if not standalone
+        if (params.type !== "standalone") {
+            if (!params.versionId) {
+                throw new ImageServiceError(
+                    "versionId is required for non-standalone image types",
+                    "MISSING_VERSION_ID"
+                );
+            }
+            queryParams.append("versionId", params.versionId);
+        }
+
+        // Add type-specific parameters (NOT for standalone)
         if (params.type === "shots") {
             if (params.sceneId !== undefined) {
                 queryParams.append("sceneId", params.sceneId.toString());
@@ -137,6 +147,7 @@ export async function getCompleteImageData(
                 queryParams.append("promptType", params.promptType);
             }
         }
+        // standalone type needs no additional params
 
         // Make API request
         const url = `${API_BASE_URL}/images/v1/complete-data?${queryParams.toString()}`;
@@ -145,7 +156,7 @@ export async function getCompleteImageData(
             url,
             type: params.type,
             scriptId: params.scriptId,
-            versionId: params.versionId,
+            versionId: params.versionId || "N/A (standalone)",
         });
 
         const response = await fetch(url, {
@@ -233,10 +244,15 @@ export function buildImageQueryParams(
 ): URLSearchParams {
     const queryParams = new URLSearchParams({
         scriptId: params.scriptId,
-        versionId: params.versionId,
         type: params.type,
     });
 
+    // CHANGED: Only add versionId if not standalone
+    if (params.type !== "standalone" && params.versionId) {
+        queryParams.append("versionId", params.versionId);
+    }
+
+    // Add type-specific parameters (NOT for standalone)
     if (params.type === "shots") {
         if (params.sceneId !== undefined) {
             queryParams.append("sceneId", params.sceneId.toString());
@@ -262,6 +278,7 @@ export function buildImageQueryParams(
             queryParams.append("promptType", params.promptType);
         }
     }
+    // standalone type needs no additional params
 
     return queryParams;
 }
@@ -293,42 +310,42 @@ export function buildImageQueryParams(
  * ```
  */
 export async function manualAddImage(
-  request: ManualAddImageRequest,
-  token: string
+    request: ManualAddImageRequest,
+    token: string
 ): Promise<ManualAddImageResponse> {
-  try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/images/v1/manual-add`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(request),
-      }
-    );
+    try {
+        const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/images/v1/manual-add`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(request),
+            }
+        );
 
-    const data: ManualAddImageResponse = await response.json();
+        const data: ManualAddImageResponse = await response.json();
 
-    // Handle non-200 status codes
-    if (!response.ok) {
-      if ('error' in data) {
+        // Handle non-200 status codes
+        if (!response.ok) {
+            if ('error' in data) {
+                return data;
+            }
+            return {
+                success: false,
+                error: `HTTP ${response.status}: ${response.statusText}`,
+            };
+        }
+
         return data;
-      }
-      return {
-        success: false,
-        error: `HTTP ${response.status}: ${response.statusText}`,
-      };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to add image',
+        };
     }
-
-    return data;
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to add image',
-    };
-  }
 }
 
 /**

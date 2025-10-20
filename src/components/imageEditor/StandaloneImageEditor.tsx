@@ -150,6 +150,9 @@ export function StandaloneImageEditor({
         locationVersionId: config.locationVersionId,
         promptType: config.promptType || "wideShotLocationSetPrompt",
       };
+    } else if (config.type === "standalone") {
+      // ✅ NEW: Standalone needs no additional params
+      return baseParams;
     }
     return baseParams;
   }, [config]);
@@ -323,12 +326,23 @@ export function StandaloneImageEditor({
       setActiveMode(null);
       setOverlayIsGenerating(false);
       setImageLoaded(false);
+
+      // ✅ ONLY call onImageUpdate in standalone init mode (no config)
+      // This allows parent to handle navigation to the newly created asset
+      if (!config && onImageUpdate) {
+        onImageUpdate(result);
+      }
+
+      // For existing assets (with config), just refetch versions
       if (config) {
         refetchVersions();
       }
-      if (onDataRefresh) onDataRefresh();
+
+      if (onDataRefresh) {
+        onDataRefresh();
+      }
     },
-    [config, refetchVersions, onDataRefresh]
+    [config, refetchVersions, onDataRefresh, onImageUpdate]
   );
 
   const handleUpscaleComplete = useCallback(
@@ -769,7 +783,7 @@ export function StandaloneImageEditor({
           <ImageGenerationOverlay
             scriptId={config?.scriptId || ""}
             versionId={config?.versionId || ""}
-            type={config?.type || "shots"}
+            type={config?.type || "standalone"}
             viewingVersion={viewingVersion}
             sceneId={config?.sceneId}
             shotId={config?.shotId}
@@ -778,11 +792,13 @@ export function StandaloneImageEditor({
             locationId={config?.locationId}
             locationVersionId={config?.locationVersionId}
             promptType={config?.promptType}
+            isStandaloneInitMode={!config}
             onGenerateComplete={handleGenerateComplete}
             onCancel={() => {
               setActiveMode(null);
               if (config) resetGenerateMutation();
             }}
+            onDataRefresh={onDataRefresh}
             onGeneratingStateChange={setOverlayIsGenerating}
             disabled={isProcessing && !overlayIsGenerating}
           />

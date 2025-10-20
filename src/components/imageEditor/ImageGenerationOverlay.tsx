@@ -1,6 +1,6 @@
 "use client";
 
-// ImageGenerationOverlay.tsx - Fully theme-compliant with manual upload integration
+// ImageGenerationOverlay.tsx - Fully theme-compliant with manual upload integration + standalone init support
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
@@ -56,6 +56,7 @@ import { manualAddImage } from "@/services/imageService";
 import type {
   ManualAddImageRequest,
   ManualAddAspectRatio,
+  ImageType,
 } from "@/types/image/types";
 import { auth } from "@/lib/firebase";
 import logger from "@/utils/logger";
@@ -63,7 +64,7 @@ import logger from "@/utils/logger";
 interface ImageGenerationOverlayProps {
   scriptId: string;
   versionId: string;
-  type: "shots" | "keyVisual" | "actor" | "location";
+  type: ImageType;
   viewingVersion?: ImageVersion;
 
   // Shot-specific props
@@ -78,6 +79,9 @@ interface ImageGenerationOverlayProps {
   locationId?: number;
   locationVersionId?: number;
   promptType?: string;
+
+  // ✅ NEW: Standalone initialization mode flag
+  isStandaloneInitMode?: boolean;
 
   // Callbacks
   onGenerateComplete: (result: unknown) => void;
@@ -118,6 +122,7 @@ export function ImageGenerationOverlay({
   locationId,
   locationVersionId,
   promptType,
+  isStandaloneInitMode = false, // ✅ NEW: Default to false
   onGenerateComplete,
   onCancel,
   onDataRefresh,
@@ -149,6 +154,12 @@ export function ImageGenerationOverlay({
   const [isUploadPanelOpen, setIsUploadPanelOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  // ✅ NEW: Standalone initialization data state
+  const [initTitle, setInitTitle] = useState("");
+  const [initDescription, setInitDescription] = useState("");
+  const [initCategory, setInitCategory] = useState("");
+  const [initProjectName, setInitProjectName] = useState("");
+
   // Model tier state
   const { modelTier, setModelTier, getSelectedOption } = useModelTier(
     MODEL_TIERS.ULTRA
@@ -173,6 +184,8 @@ export function ImageGenerationOverlay({
         locationVersionId,
         promptType: promptType || "wideShotLocationSetPrompt",
       };
+    } else if (type === "standalone") {
+      return baseParams;
     }
     return baseParams;
   }, [
@@ -214,7 +227,7 @@ export function ImageGenerationOverlay({
     isValidSeed,
   } = useImageGenerationSettings();
 
-  // Fetch current version's prompt
+  // Fetch current version's prompt (skip for standalone init mode)
   const promptsParams = useMemo(
     () => ({
       scriptId,
@@ -244,7 +257,7 @@ export function ImageGenerationOverlay({
     data: promptsData,
     isLoading: isLoadingPrompts,
     error: promptsError,
-  } = useImagePrompts(promptsParams, true);
+  } = useImagePrompts(promptsParams, !isStandaloneInitMode); // ✅ Skip fetch in init mode
 
   // Memoized selected tier option
   const selectedTierOption = useMemo(
@@ -265,9 +278,14 @@ export function ImageGenerationOverlay({
     }
   }, [isGenerating, isUploading, onGeneratingStateChange]);
 
-  // Load current version's prompt on component mount
+  // Load current version's prompt on component mount (skip for standalone init)
   useEffect(() => {
-    if (!disabled && promptsData && !isLoadingPrompts) {
+    if (
+      !disabled &&
+      !isStandaloneInitMode &&
+      promptsData &&
+      !isLoadingPrompts
+    ) {
       setLoadingCurrentPrompt(true);
 
       try {
@@ -317,6 +335,7 @@ export function ImageGenerationOverlay({
     promptsData,
     isLoadingPrompts,
     disabled,
+    isStandaloneInitMode,
     viewingVersion?.version,
     setPrompt,
     setAspectRatio,
@@ -437,10 +456,63 @@ export function ImageGenerationOverlay({
       }
       const token = await user.getIdToken();
 
-      // Build request based on type
+      // ✅ NEW: Handle standalone initialization
+      if (type === "standalone" && isStandaloneInitMode) {
+        // Validate title for init mode
+        if (!initTitle.trim()) {
+          logger.error("Title is required for standalone initialization");
+          return;
+        }
+
+        // Standalone INIT mode - include initData, NO scriptId/versionId
+        const request = {
+          type: "standalone" as const,
+          prompt: uploadPrompt.trim(),
+          imageUrl: uploadedFileUrl,
+          aspectRatio: detectedAspectRatio,
+          initData: {
+            title: initTitle.trim(),
+            ...(initDescription.trim() && {
+              description: initDescription.trim(),
+            }),
+            ...(initCategory.trim() && { imageCategory: initCategory.trim() }),
+            ...(initProjectName.trim() && {
+              projectName: initProjectName.trim(),
+            }),
+          },
+        };
+
+        logger.info("Submitting standalone init manual upload", request);
+
+        const result = await manualAddImage(request as any, token);
+
+        if (result.success) {
+          onGenerateComplete(result.data);
+          if (onDataRefresh) {
+            onDataRefresh();
+          }
+          handleCancel();
+        } else {
+          throw new Error(result.error);
+        }
+
+        return; // Exit early
+      }
+
+      // ✅ EXISTING: Build request for other types (including existing standalone)
       let request: ManualAddImageRequest;
 
-      if (type === "shots") {
+      if (type === "standalone") {
+        // Standalone EDIT mode - use scriptId (assetId), NO versionId, NO initData
+        request = {
+          scriptId,
+          versionId: "",
+          type: "standalone",
+          prompt: uploadPrompt.trim(),
+          imageUrl: uploadedFileUrl,
+          aspectRatio: detectedAspectRatio,
+        } as any;
+      } else if (type === "shots") {
         request = {
           scriptId,
           versionId,
@@ -511,6 +583,11 @@ export function ImageGenerationOverlay({
     scriptId,
     versionId,
     type,
+    isStandaloneInitMode,
+    initTitle,
+    initDescription,
+    initCategory,
+    initProjectName,
     sceneId,
     shotId,
     actorId,
@@ -524,22 +601,88 @@ export function ImageGenerationOverlay({
 
   // Handle generation submission
   const handleGenerateSubmit = async () => {
-    if (
-      !scriptId ||
-      !versionId ||
-      !prompt.trim() ||
-      !isValidPrompt ||
-      !isValidSeed
-    ) {
-      return;
+    // ✅ UPDATED: Proper validation for all modes
+    if (isStandaloneInitMode) {
+      // Standalone init validation
+      if (
+        !prompt.trim() ||
+        !isValidPrompt ||
+        !isValidSeed ||
+        !initTitle.trim()
+      ) {
+        logger.error("Missing required fields for standalone initialization");
+        return;
+      }
+    } else {
+      // Regular mode validation (including existing standalone)
+      // ✅ For standalone edit mode, versionId is not required
+      if (type === "standalone") {
+        if (!scriptId || !prompt.trim() || !isValidPrompt || !isValidSeed) {
+          return;
+        }
+      } else {
+        // For other types, versionId is required
+        if (
+          !scriptId ||
+          !versionId ||
+          !prompt.trim() ||
+          !isValidPrompt ||
+          !isValidSeed
+        ) {
+          return;
+        }
+      }
     }
 
     try {
       resetGenerateMutation();
 
+      // ✅ NEW: Handle standalone initialization
+      if (type === "standalone" && isStandaloneInitMode) {
+        // Standalone INIT mode - include initData, NO scriptId/versionId
+        const generateParams = {
+          type: "standalone" as const,
+          prompt: prompt.trim(),
+          aspectRatio,
+          modelTier: modelTier,
+          ...(fineTuneId && { fineTuneId }),
+          ...(seed !== undefined && { seed }),
+          initData: {
+            title: initTitle.trim(),
+            ...(initDescription.trim() && {
+              description: initDescription.trim(),
+            }),
+            ...(initCategory.trim() && { imageCategory: initCategory.trim() }),
+            ...(initProjectName.trim() && {
+              projectName: initProjectName.trim(),
+            }),
+          },
+        };
+
+        logger.info("Submitting standalone init generation", generateParams);
+
+        const generateResult = await generateImageAsync(generateParams as any);
+
+        onGenerateComplete(generateResult);
+
+        resetToDefaults();
+        setOriginalPrompt("");
+        setOptimizationData(null);
+        setShowOptimizationInsights(false);
+        setShowAdvancedSettings(false);
+        setModelTier(MODEL_TIERS.ULTRA);
+
+        if (onDataRefresh) {
+          onDataRefresh();
+        }
+
+        return; // Exit early
+      }
+
+      // ✅ EXISTING: Regular generation (including existing standalone)
       const generateParams: GenerateImageParams = {
-        scriptId,
-        versionId,
+        scriptId: scriptId || "",
+        versionId: versionId || "", // ✅ Empty for standalone edit mode
         type,
         prompt: prompt.trim(),
         aspectRatio,
@@ -573,6 +716,7 @@ export function ImageGenerationOverlay({
         generateParams.locationVersionId = locationVersionId;
         generateParams.promptType = promptType || "wideShotLocationSetPrompt";
       }
+      // ✅ standalone with existing assetId needs no additional params
 
       const generateResult = await generateImageAsync(generateParams);
 
@@ -610,6 +754,12 @@ export function ImageGenerationOverlay({
     setDetectedAspectRatio(null);
     setIsUploadPanelOpen(false);
     setGenerationMode("generate");
+
+    // ✅ NEW: Reset init data
+    setInitTitle("");
+    setInitDescription("");
+    setInitCategory("");
+    setInitProjectName("");
 
     onCancel();
   };
@@ -664,10 +814,13 @@ export function ImageGenerationOverlay({
               component="span"
               sx={{ fontFamily: brand.fonts.body }}
             >
-              {generationMode === "generate"
-                ? "Generate New Version"
-                : "Upload Image"}
-              {viewingVersion?.version && (
+              {/* ✅ UPDATED: Show different text for standalone init */}
+              {isStandaloneInitMode
+                ? "Create New Standalone Asset"
+                : generationMode === "generate"
+                  ? "Generate New Version"
+                  : "Upload Image"}
+              {!isStandaloneInitMode && viewingVersion?.version && (
                 <Chip
                   label={`from v${viewingVersion.version}`}
                   size="small"
@@ -737,7 +890,6 @@ export function ImageGenerationOverlay({
           disabled={isProcessing}
           size="small"
           sx={{
-            // Remove fullWidth, add left alignment
             display: "inline-flex",
             gap: 1,
             "& .MuiToggleButtonGroup-grouped": {
@@ -751,7 +903,6 @@ export function ImageGenerationOverlay({
               },
             },
             "& .MuiToggleButton-root": {
-              // Theme-aware styling
               bgcolor: theme.palette.action.selected,
               color: "text.secondary",
               border: `1px solid ${theme.palette.divider}`,
@@ -799,6 +950,96 @@ export function ImageGenerationOverlay({
 
         <Divider />
 
+        {/* ✅ NEW: Standalone Init Data Fields */}
+        {type === "standalone" && isStandaloneInitMode && (
+          <Box
+            sx={{
+              p: 2,
+              bgcolor: alpha(theme.palette.info.main, 0.08),
+              borderRadius: `${brand.borderRadius}px`,
+              border: `1px solid ${theme.palette.info.main}`,
+            }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{ mb: 1.5, fontWeight: 600, color: "info.main" }}
+            >
+              Asset Information
+            </Typography>
+
+            <Stack spacing={1.5}>
+              <TextField
+                fullWidth
+                label="Asset Title *"
+                value={initTitle}
+                onChange={(e) => setInitTitle(e.target.value)}
+                placeholder="e.g., Hero Character Concept"
+                required
+                size="small"
+                error={!initTitle.trim() && initTitle.length > 0}
+                helperText={
+                  !initTitle.trim() && initTitle.length > 0
+                    ? "Title is required"
+                    : ""
+                }
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: theme.palette.background.paper,
+                    fontFamily: brand.fonts.body,
+                  },
+                }}
+              />
+
+              <TextField
+                fullWidth
+                label="Description"
+                value={initDescription}
+                onChange={(e) => setInitDescription(e.target.value)}
+                placeholder="Optional description of the asset"
+                multiline
+                rows={2}
+                size="small"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: theme.palette.background.paper,
+                    fontFamily: brand.fonts.body,
+                  },
+                }}
+              />
+
+              <TextField
+                fullWidth
+                label="Category"
+                value={initCategory}
+                onChange={(e) => setInitCategory(e.target.value)}
+                placeholder="e.g., character, environment, prop"
+                size="small"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: theme.palette.background.paper,
+                    fontFamily: brand.fonts.body,
+                  },
+                }}
+              />
+
+              <TextField
+                fullWidth
+                label="Project Name"
+                value={initProjectName}
+                onChange={(e) => setInitProjectName(e.target.value)}
+                placeholder="e.g., Game Project Alpha"
+                size="small"
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: theme.palette.background.paper,
+                    fontFamily: brand.fonts.body,
+                  },
+                }}
+              />
+            </Stack>
+          </Box>
+        )}
+
         {/* Error Alerts */}
         {generateError && (
           <Alert
@@ -814,7 +1055,7 @@ export function ImageGenerationOverlay({
           </Alert>
         )}
 
-        {promptsError && (
+        {promptsError && !isStandaloneInitMode && (
           <Alert
             severity="warning"
             sx={{
@@ -851,7 +1092,7 @@ export function ImageGenerationOverlay({
                   : `${prompt.length}/5000 characters`
               }
               InputProps={{
-                endAdornment: prompt.trim() && (
+                endAdornment: prompt.trim() && !isStandaloneInitMode && (
                   <Stack direction="row" spacing={0.5} sx={{ mr: 1 }}>
                     <Tooltip title="Reload current version's prompt">
                       <IconButton
@@ -1254,11 +1495,18 @@ export function ImageGenerationOverlay({
                 color="primary"
                 onClick={handleGenerateSubmit}
                 disabled={
-                  !isValidPrompt ||
-                  !isValidSeed ||
-                  isProcessing ||
-                  disabled ||
-                  loadingCurrentPrompt
+                  // ✅ UPDATED: Different validation for standalone init
+                  isStandaloneInitMode
+                    ? !isValidPrompt ||
+                      !isValidSeed ||
+                      !initTitle.trim() ||
+                      isProcessing ||
+                      disabled
+                    : !isValidPrompt ||
+                      !isValidSeed ||
+                      isProcessing ||
+                      disabled ||
+                      loadingCurrentPrompt
                 }
                 size="small"
                 startIcon={selectedTierOption?.icon || <OptimizeIcon />}
@@ -1301,7 +1549,6 @@ export function ImageGenerationOverlay({
           </Stack>
         )}
 
-        {/* Upload Mode */}
         {/* Upload Mode */}
         {generationMode === "upload" && (
           <Stack spacing={2}>
@@ -1464,6 +1711,8 @@ export function ImageGenerationOverlay({
                   !uploadedFileUrl ||
                   !uploadPrompt.trim() ||
                   uploadPrompt.length > 5000 ||
+                  // ✅ UPDATED: Check title for standalone init
+                  (isStandaloneInitMode && !initTitle.trim()) ||
                   isProcessing
                 }
                 size="small"

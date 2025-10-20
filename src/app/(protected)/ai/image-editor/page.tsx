@@ -1,7 +1,7 @@
-// src/app/(protected)/image-editor/page.tsx
+// src/app/(protected)/ai/image-editor/page.tsx
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Box,
@@ -50,21 +50,27 @@ function ImageEditorContent() {
 
   // State
   const [hasParams, setHasParams] = useState(false);
+  const [isStandaloneInitMode, setIsStandaloneInitMode] = useState(false);
   const [config, setConfig] = useState<ImageViewerConfig | undefined>();
 
   // Check if we have params on mount
   useEffect(() => {
-    const hasRequiredParams = !!scriptId && !!versionId && !!type;
+    const hasAnyParams = searchParams.toString().length > 0;
+    const hasRequiredParams = !!scriptId && !!type;
+
+    setIsStandaloneInitMode(!hasAnyParams);
     setHasParams(hasRequiredParams);
 
-    if (hasRequiredParams) {
+    if (!hasAnyParams) {
+      logger.info("Image Editor: Standalone initialization mode");
+      setConfig(undefined);
+    } else if (hasRequiredParams) {
       const newConfig: ImageViewerConfig = {
         scriptId: scriptId!,
-        versionId: versionId!,
+        versionId: type === "standalone" ? undefined : versionId!,
         type: type!,
       };
 
-      // Add type-specific params
       if (type === "shots" && sceneId && shotId) {
         newConfig.sceneId = Number(sceneId);
         newConfig.shotId = Number(shotId);
@@ -78,12 +84,14 @@ function ImageEditorContent() {
         newConfig.locationVersionId = locationVersionId
           ? Number(locationVersionId)
           : undefined;
-        newConfig.promptType = promptType || "wideShotLocationSetPrompt";
+        newConfig.promptType = promptType || undefined;
       }
 
       setConfig(newConfig);
+      logger.info("Image Editor: Config set", { config: newConfig });
     }
   }, [
+    searchParams,
     scriptId,
     versionId,
     type,
@@ -96,170 +104,115 @@ function ImageEditorContent() {
     promptType,
   ]);
 
-  // Fetch image data if params provided
   const {
     data: completeImageData,
     isLoading,
+    isError,
     error,
-    refetch,
+    refetch: refetchImageData,
   } = useQuery({
-    queryKey: [
-      "imageEditor",
-      scriptId,
-      versionId,
-      type,
-      sceneId,
-      shotId,
-      actorId,
-      locationId,
-    ],
+    queryKey: ["completeImageData", config],
     queryFn: async () => {
+      if (!config) return null;
+
       const params: GetCompleteImageDataParams = {
-        scriptId: scriptId!,
-        versionId: versionId!,
-        type: type!,
+        scriptId: config.scriptId,
+        versionId: config.versionId,
+        type: config.type,
       };
 
-      // Add type-specific parameters
-      if (type === "shots" && sceneId && shotId) {
-        params.sceneId = Number(sceneId);
-        params.shotId = Number(shotId);
-      } else if (type === "actor" && actorId) {
-        params.actorId = Number(actorId);
-        params.actorVersionId = actorVersionId
-          ? Number(actorVersionId)
-          : undefined;
-      } else if (type === "location" && locationId) {
-        params.locationId = Number(locationId);
-        params.locationVersionId = locationVersionId
-          ? Number(locationVersionId)
-          : undefined;
-        params.promptType = promptType || "wideShotLocationSetPrompt";
+      if (config.type === "shots") {
+        params.sceneId = config.sceneId;
+        params.shotId = config.shotId;
+      } else if (config.type === "actor") {
+        params.actorId = config.actorId;
+        params.actorVersionId = config.actorVersionId;
+      } else if (config.type === "location") {
+        params.locationId = config.locationId;
+        params.locationVersionId = config.locationVersionId;
+        params.promptType = config.promptType;
       }
 
+      logger.info("Fetching complete image data", { params });
       const data = await getCompleteImageData(params);
       return transformToLegacyImageData(data);
     },
-    enabled: hasParams,
-    staleTime: 30000, // 30 seconds
+    enabled: hasParams && !!config && !isStandaloneInitMode,
+    staleTime: 1000 * 60 * 5,
     retry: 2,
   });
 
-  // Get story tab number based on type
-  const getStoryTabNumber = (imageType: ImageType | null): number => {
-    if (!imageType) return 0;
-    switch (imageType) {
-      case "location":
-      case "actor":
-        return 0;
-      case "shots":
-        return 2;
-      case "keyVisual":
-        return 1;
-      default:
-        return 0;
-    }
-  };
-
-  // Handler for back button
   const handleBack = () => {
     router.back();
   };
 
-  // Handler for story button
   const handleGoToStory = () => {
     if (scriptId && versionId) {
-      const tabNum = getStoryTabNumber(type);
-      router.push(`/story/${scriptId}/version/${versionId}/${tabNum}`);
+      router.push(`/story/${scriptId}/${versionId}`);
     }
   };
 
-  // Handler for image updates
-  const handleImageUpdate = (updatedData: unknown) => {
-    logger.info("Image updated", updatedData);
-    refetch();
-  };
+  // ✅ Handle standalone asset creation response
+  const handleImageUpdate = useCallback(
+    (updatedImageData: any) => {
+      logger.info("Image updated", { updatedImageData });
 
-  // Handler for data refresh
-  const handleDataRefresh = () => {
-    refetch();
-  };
+      // Check if this is a standalone asset creation response
+      if (
+        isStandaloneInitMode &&
+        updatedImageData?.assetId &&
+        updatedImageData?.type === "standalone"
+      ) {
+        logger.info("Standalone asset created, navigating to asset", {
+          assetId: updatedImageData.assetId,
+        });
 
-  // Loading state
+        // Navigate to the newly created standalone asset
+        const newUrl = `/ai/image-editor?scriptId=${updatedImageData.assetId}&type=standalone`;
+        logger.info("Navigating to:", newUrl);
+        router.push(newUrl);
+      }
+    },
+    [isStandaloneInitMode, router]
+  );
+
+  // ✅ Handle data refresh
+  const handleDataRefresh = useCallback(() => {
+    logger.info("Data refresh requested");
+    if (refetchImageData) {
+      refetchImageData();
+    }
+  }, [refetchImageData]);
+
   if (hasParams && isLoading) {
-    return <LoadingAnimation message="Image Editor is loading..." />;
-  }
-
-  // Error state
-  if (hasParams && error) {
     return (
       <Box
         sx={{
           height: "100vh",
           display: "flex",
-          flexDirection: "column",
-          bgcolor: "background.default",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        {/* Header */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            borderBottom: 1,
-            borderColor: "divider",
-            bgcolor: "background.paper",
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Stack direction="row" spacing={1}>
-              <Tooltip title="Back">
-                <IconButton onClick={handleBack} color="primary" size="small">
-                  <BackIcon />
-                </IconButton>
-              </Tooltip>
-              {scriptId && versionId && (
-                <Tooltip title="Go to Story">
-                  <IconButton
-                    onClick={handleGoToStory}
-                    color="primary"
-                    size="small"
-                  >
-                    <AutoStoriesIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Stack>
-            <Typography variant="h5" sx={{ fontFamily: brand.fonts.heading }}>
-              Image Editor
-            </Typography>
-          </Box>
-        </Paper>
+        <LoadingAnimation message="Loading image data..." />
+      </Box>
+    );
+  }
 
-        {/* Error Content */}
-        <Box
-          sx={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            p: 3,
-          }}
-        >
-          <Alert
-            severity="error"
-            sx={{ maxWidth: 500 }}
-            action={
-              <IconButton
-                color="inherit"
-                size="small"
-                onClick={() => refetch()}
-              >
-                Retry
-              </IconButton>
-            }
-          >
-            <Typography variant="subtitle2" gutterBottom>
+  if (hasParams && isError) {
+    return (
+      <Box
+        sx={{
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          p: 3,
+        }}
+      >
+        <Box sx={{ maxWidth: 600, width: "100%" }}>
+          <Alert severity="error">
+            <Typography variant="h6" gutterBottom>
               Failed to Load Image
             </Typography>
             <Typography variant="body2">
@@ -316,19 +269,35 @@ function ImageEditorContent() {
           <Typography variant="h5" sx={{ fontFamily: brand.fonts.heading }}>
             Image Editor
           </Typography>
-          {!hasParams && (
+          {isStandaloneInitMode && (
             <Typography
               variant="body2"
               sx={{
-                color: "text.secondary",
+                color: "success.main",
                 ml: 1,
                 px: 1.5,
                 py: 0.5,
-                bgcolor: "action.hover",
+                bgcolor: "success.light",
+                borderRadius: `${brand.borderRadius}px`,
+                fontWeight: 600,
+              }}
+            >
+              Standalone - Create New Asset
+            </Typography>
+          )}
+          {hasParams && type === "standalone" && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: "info.main",
+                ml: 1,
+                px: 1.5,
+                py: 0.5,
+                bgcolor: "info.light",
                 borderRadius: `${brand.borderRadius}px`,
               }}
             >
-              Generate Mode
+              Standalone - Editing Asset
             </Typography>
           )}
         </Box>
@@ -348,28 +317,9 @@ function ImageEditorContent() {
   );
 }
 
-/**
- * Image Editor Page
- *
- * URL Parameters (all optional):
- * - scriptId: Script ID
- * - versionId: Version ID
- * - type: Image type (shots, keyVisual, actor, location)
- * - sceneId: Scene ID (for shots)
- * - shotId: Shot ID (for shots)
- * - actorId: Actor ID (for actors)
- * - locationId: Location ID (for locations)
- *
- * Examples:
- * - /image-editor (Generate mode - no params)
- * - /image-editor?scriptId=123&versionId=456&type=shots&sceneId=1&shotId=2
- * - /image-editor?scriptId=123&versionId=456&type=actor&actorId=5
- */
 export default function ImageEditorPage() {
   return (
-    <Suspense
-      fallback={<LoadingAnimation message="Loading..." />}
-    >
+    <Suspense fallback={<LoadingAnimation message="Loading..." />}>
       <ImageEditorContent />
     </Suspense>
   );

@@ -211,7 +211,13 @@ export function ImageUpscaleOverlay({
   };
 
   const handleUpscaleSubmit = async () => {
-    if (!scriptId || !versionId) {
+    // ✅ UPDATED: For standalone, versionId is not required
+    if (!scriptId) {
+      return;
+    }
+
+    // ✅ UPDATED: For non-standalone types, versionId is required
+    if (type !== "standalone" && !versionId) {
       return;
     }
 
@@ -225,6 +231,7 @@ export function ImageUpscaleOverlay({
     if (type === "location" && (!locationId || !locationVersionId)) {
       return;
     }
+    // ✅ standalone needs no additional validation
 
     // Check 8K limit
     if (wouldExceed8K(selectedUpscaleFactor)) {
@@ -237,7 +244,7 @@ export function ImageUpscaleOverlay({
 
       const upscaleParams: UpscaleImageParams = {
         scriptId,
-        versionId,
+        versionId: versionId || "", // ✅ UPDATED: Empty string for standalone
         type,
         sourceVersion: viewingVersion?.version,
         upscaleFactor: selectedUpscaleFactor,
@@ -255,6 +262,7 @@ export function ImageUpscaleOverlay({
         upscaleParams.locationVersionId = locationVersionId;
         upscaleParams.promptType = promptType || "wideShotLocationSetPrompt";
       }
+      // ✅ standalone needs no additional params
 
       const upscaleResult = await upscaleImageAsync(upscaleParams);
       onUpscaleComplete(upscaleResult);
