@@ -152,6 +152,10 @@ function ImageEditorContent() {
     }
   };
 
+  const handleGoToLibrary = () => {
+    router.push(`/ai/library/images`);
+  };
+
   // ✅ Handle standalone asset creation response
   const handleImageUpdate = useCallback(
     (updatedImageData: any) => {
@@ -269,37 +273,18 @@ function ImageEditorContent() {
           <Typography variant="h5" sx={{ fontFamily: brand.fonts.heading }}>
             Image Editor
           </Typography>
-          {isStandaloneInitMode && (
-            <Typography
-              variant="body2"
-              sx={{
-                color: "primary.contrastText",
-                ml: 1,
-                px: 1.5,
-                py: 0.5,
-                bgcolor: "primary.main",
-                borderRadius: `${brand.borderRadius}px`,
-                fontWeight: 600,
-              }}
-            >
-              Standalone - Create New Asset
-            </Typography>
-          )}
-          {hasParams && type === "standalone" && (
-            <Typography
-              variant="body2"
-              sx={{
-                color: "primary.contrastText",
-                ml: 1,
-                px: 1.5,
-                py: 0.5,
-                bgcolor: "primary.main",
-                borderRadius: `${brand.borderRadius}px`,
-              }}
-            >
-              Standalone - Editing Asset
-            </Typography>
-          )}
+          {isStandaloneInitMode ||
+            (hasParams && type === "standalone" && (
+              <Tooltip title="Go to Image Library">
+                <IconButton
+                  onClick={handleGoToLibrary}
+                  color="primary"
+                  size="small"
+                >
+                  <AutoStoriesIcon />
+                </IconButton>
+              </Tooltip>
+            ))}
         </Box>
       </Paper>
 
