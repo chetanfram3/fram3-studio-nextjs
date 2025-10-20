@@ -123,10 +123,10 @@ export const StandaloneImagesGridView: React.FC<
       },
     });
   };
-  
+
   const handleAssetClick = (asset: StandaloneImageAsset) => {
     // Navigate to image detail view
-    router.push(`/ai/image-editor?scriptId=${asset.assetId}&type=standalone`);
+    router.push(`/standalone/${asset.assetId}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -157,7 +157,7 @@ export const StandaloneImagesGridView: React.FC<
   if (loading) {
     return (
       <Box>
-        <Grid container gap={3}>
+        <Grid container spacing={3}>
           {[...Array(rowsPerPage)].map((_, index) => (
             <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={index}>
               <Skeleton
@@ -176,7 +176,7 @@ export const StandaloneImagesGridView: React.FC<
 
   return (
     <Box>
-      <Grid container gap={3}>
+      <Grid container spacing={3}>
         {assets.map((asset) => {
           const isEditing = editingAsset?.assetId === asset.assetId;
 
