@@ -8,6 +8,11 @@ import type {
     ImageType,
     ManualAddImageRequest,
     ManualAddImageResponse,
+    ListStandaloneImagesParams,
+    ListStandaloneImagesResponse,
+    UpdateStandaloneMetadataRequest,
+    UpdateStandaloneMetadataResponse,
+    MetadataUpdateError
 } from "@/types/image/types";
 import { isSuccessResponse } from "@/types/image/types";
 
@@ -377,5 +382,349 @@ export function transformToLegacyImageData(data: CompleteImageData) {
             totalEdits: data.imageStatus.totalEdits,
             editHistory: data.editHistory,
         },
+    };
+}
+
+// Helper function to build query parameters (add to your file if not present)
+const buildQueryParams = (params: Record<string, any>): string => {
+    const queryParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            queryParams.append(key, String(value));
+        }
+    });
+
+    return queryParams.toString();
+};
+
+/**
+ * Fetches a paginated list of standalone image assets with optional filters
+ * 
+ * @param params - Query parameters for filtering and pagination
+ * @param token - Authorization bearer token
+ * @returns Promise with the list response including assets, pagination, and statistics
+ * 
+ * @example
+ * ```typescript
+ * const result = await listStandaloneImages({
+ *   page: 1,
+ *   limit: 20,
+ *   imageCategory: 'character',
+ *   hasImage: true,
+ *   sortField: 'createdAt',
+ *   sortOrder: 'desc'
+ * }, userToken);
+ * ```
+ */
+export async function listStandaloneImages(
+    params: ListStandaloneImagesParams = {},
+    token: string
+): Promise<ListStandaloneImagesResponse> {
+    try {
+        const queryString = buildQueryParams(params);
+        const url = `${API_BASE_URL}/images/v1/list-standalone-images${queryString ? `?${queryString}` : ''}`;
+
+        logger.info('Fetching standalone images list', { params });
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            logger.error('Failed to fetch standalone images', {
+                status: response.status,
+                error: errorData.error,
+            });
+            throw new ImageServiceError(
+                errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+                `HTTP_${response.status}`,
+                errorData
+            );
+        }
+
+        const data: ListStandaloneImagesResponse = await response.json();
+
+        logger.info('Successfully fetched standalone images', {
+            totalAssets: data.data.statistics.totalAssets,
+            currentPage: data.data.pagination.currentPage,
+            totalPages: data.data.pagination.totalPages,
+        });
+
+        return data;
+    } catch (error) {
+        if (error instanceof ImageServiceError) {
+            throw error;
+        }
+        logger.error('Unexpected error fetching standalone images', { error, params });
+        throw new ImageServiceError(
+            error instanceof Error ? error.message : 'Failed to fetch standalone images',
+            'UNKNOWN_ERROR',
+            error
+        );
+    }
+}
+
+/**
+ * Fetches standalone images with default parameters (first page, 20 items)
+ * 
+ * @param token - Authorization bearer token
+ * @returns Promise with the list response
+ */
+export async function getStandaloneImagesFirstPage(
+    token: string
+): Promise<ListStandaloneImagesResponse> {
+    return listStandaloneImages({ page: 1, limit: 20 }, token);
+}
+
+/**
+ * Fetches standalone images filtered by category
+ * 
+ * @param category - Image category to filter by
+ * @param token - Authorization bearer token
+ * @param additionalParams - Additional query parameters
+ * @returns Promise with the list response
+ */
+export async function getStandaloneImagesByCategory(
+    category: ListStandaloneImagesParams['imageCategory'],
+    token: string,
+    additionalParams: Omit<ListStandaloneImagesParams, 'imageCategory'> = {}
+): Promise<ListStandaloneImagesResponse> {
+    return listStandaloneImages({ ...additionalParams, imageCategory: category }, token);
+}
+
+/**
+ * Fetches standalone images filtered by project
+ * 
+ * @param projectName - Project name to filter by
+ * @param token - Authorization bearer token
+ * @param additionalParams - Additional query parameters
+ * @returns Promise with the list response
+ */
+export async function getStandaloneImagesByProject(
+    projectName: string,
+    token: string,
+    additionalParams: Omit<ListStandaloneImagesParams, 'projectName'> = {}
+): Promise<ListStandaloneImagesResponse> {
+    return listStandaloneImages({ ...additionalParams, projectName }, token);
+}
+
+/**
+ * Fetches only standalone images that have uploaded files
+ * 
+ * @param token - Authorization bearer token
+ * @param additionalParams - Additional query parameters
+ * @returns Promise with the list response
+ */
+export async function getStandaloneImagesWithFiles(
+    token: string,
+    additionalParams: Omit<ListStandaloneImagesParams, 'hasImage'> = {}
+): Promise<ListStandaloneImagesResponse> {
+    return listStandaloneImages({ ...additionalParams, hasImage: true }, token);
+}
+
+/**
+ * Updates metadata fields for a standalone image asset
+ * 
+ * @param data - Update request containing assetId and fields to update
+ * @param token - Authorization bearer token
+ * @returns Promise with the update response including updated fields
+ * @throws {ImageServiceError} If validation fails or update is unsuccessful
+ * 
+ * @example
+ * ```typescript
+ * const result = await updateStandaloneImageMetadata({
+ *   assetId: 'abc123xyz',
+ *   title: 'Updated Hero Character',
+ *   tags: ['hero', 'main', 'final'],
+ *   projectName: 'Film2025'
+ * }, userToken);
+ * ```
+ */
+export async function updateStandaloneImageMetadata(
+    data: UpdateStandaloneMetadataRequest,
+    token: string
+): Promise<UpdateStandaloneMetadataResponse> {
+    try {
+        const url = `${API_BASE_URL}/images/v1/standalone-image/metadata`;
+
+        logger.info('Updating standalone image metadata', { assetId: data.assetId });
+
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData: MetadataUpdateError = await response.json().catch(() => ({
+                success: false,
+                error: `HTTP ${response.status}: ${response.statusText}`,
+            }));
+            logger.error('Failed to update standalone image metadata', {
+                status: response.status,
+                error: errorData.error,
+                assetId: data.assetId,
+            });
+            throw new ImageServiceError(
+                errorData.error,
+                `HTTP_${response.status}`,
+                errorData
+            );
+        }
+
+        const result: UpdateStandaloneMetadataResponse = await response.json();
+
+        logger.info('Successfully updated standalone image metadata', {
+            assetId: result.data.assetId,
+            updatedFields: result.data.updatedFields,
+        });
+
+        return result;
+    } catch (error) {
+        if (error instanceof ImageServiceError) {
+            throw error;
+        }
+        logger.error('Unexpected error updating standalone image metadata', { error, data });
+        throw new ImageServiceError(
+            error instanceof Error ? error.message : 'Failed to update metadata',
+            'UNKNOWN_ERROR',
+            error
+        );
+    }
+}
+
+/**
+ * Updates only the title of a standalone image
+ * 
+ * @param assetId - Asset identifier
+ * @param title - New title (max 200 characters)
+ * @param token - Authorization bearer token
+ * @returns Promise with the update response
+ */
+export async function updateStandaloneImageTitle(
+    assetId: string,
+    title: string,
+    token: string
+): Promise<UpdateStandaloneMetadataResponse> {
+    return updateStandaloneImageMetadata({ assetId, title }, token);
+}
+
+/**
+ * Updates tags for a standalone image
+ * 
+ * @param assetId - Asset identifier
+ * @param tags - Array of tags (max 20 tags, each max 50 characters)
+ * @param token - Authorization bearer token
+ * @returns Promise with the update response
+ */
+export async function updateStandaloneImageTags(
+    assetId: string,
+    tags: string[],
+    token: string
+): Promise<UpdateStandaloneMetadataResponse> {
+    return updateStandaloneImageMetadata({ assetId, tags }, token);
+}
+
+/**
+ * Clears optional fields from a standalone image
+ * 
+ * @param assetId - Asset identifier
+ * @param fieldsToClear - Array of field names to clear
+ * @param token - Authorization bearer token
+ * @returns Promise with the update response
+ * 
+ * @example
+ * ```typescript
+ * await clearStandaloneImageFields('abc123', ['description', 'notes'], token);
+ * ```
+ */
+export async function clearStandaloneImageFields(
+    assetId: string,
+    fieldsToClear: Array<'description' | 'notes' | 'projectName' | 'imageCategory'>,
+    token: string
+): Promise<UpdateStandaloneMetadataResponse> {
+    const updates: UpdateStandaloneMetadataRequest = { assetId };
+
+    fieldsToClear.forEach(field => {
+        updates[field] = null;
+    });
+
+    return updateStandaloneImageMetadata(updates, token);
+}
+
+/**
+ * Validates metadata update request before sending to API
+ * Useful for client-side validation
+ * 
+ * @param data - Update request to validate
+ * @returns Validation result with any error messages
+ */
+export function validateMetadataUpdate(
+    data: UpdateStandaloneMetadataRequest
+): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+
+    // Check if at least one field besides assetId is provided
+    const updateFields = Object.keys(data).filter(key => key !== 'assetId');
+    if (updateFields.length === 0) {
+        errors.push('At least one field besides assetId must be provided');
+    }
+
+    // Validate title length
+    if (data.title !== undefined) {
+        if (data.title.length === 0) {
+            errors.push('Title cannot be empty');
+        } else if (data.title.length > 200) {
+            errors.push('Title must be 200 characters or less');
+        }
+    }
+
+    // Validate description length
+    if (data.description !== undefined && data.description !== null) {
+        if (data.description.length > 2000) {
+            errors.push('Description must be 2000 characters or less');
+        }
+    }
+
+    // Validate tags
+    if (data.tags !== undefined) {
+        if (data.tags.length > 20) {
+            errors.push('Maximum 20 tags allowed');
+        }
+        data.tags.forEach((tag, index) => {
+            if (typeof tag !== 'string') {
+                errors.push(`Tag at index ${index} must be a string`);
+            } else if (tag.length > 50) {
+                errors.push(`Tag "${tag}" exceeds 50 characters`);
+            }
+        });
+    }
+
+    // Validate projectName length
+    if (data.projectName !== undefined && data.projectName !== null) {
+        if (data.projectName.length > 100) {
+            errors.push('Project name must be 100 characters or less');
+        }
+    }
+
+    // Validate notes length
+    if (data.notes !== undefined && data.notes !== null) {
+        if (data.notes.length > 5000) {
+            errors.push('Notes must be 5000 characters or less');
+        }
+    }
+
+    return {
+        valid: errors.length === 0,
+        errors,
     };
 }

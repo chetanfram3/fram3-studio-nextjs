@@ -555,3 +555,168 @@ export interface ManualAddImageErrorResponse {
 export type ManualAddImageResponse =
     | ManualAddImageSuccessResponse
     | ManualAddImageErrorResponse;
+
+export type ImageCategory =
+    | 'character'
+    | 'environment'
+    | 'prop'
+    | 'concept'
+    | 'background'
+    | 'vehicle'
+    | 'effect'
+    | 'ui'
+    | 'weapon'
+    | 'costume'
+    | 'creature'
+    | 'architecture'
+    | 'other';
+
+// ============================================================
+// NEW TYPES FOR STANDALONE IMAGES LIST/UPDATE ENDPOINTS
+// ============================================================
+// Note: ImageCategory already exists in your types.ts
+// Note: GenerationType already exists but may need 'text_to_image' | 'manual_upload' | 'image_edit' added
+// Note: ManualAddAspectRatio already exists as '16:9' | '9:16' | '1:1' - reuse it as AspectRatio
+
+export type AssetStatus = 'Initialized' | 'Completed' | 'Unknown';
+
+// ModelTier is a number in your system, not the enum strings from the API docs
+// The API may return these as numbers, so we'll use number type
+
+export type SortField = 'createdAt' | 'lastModifiedAt' | 'title';
+
+export type SortOrder = 'asc' | 'desc';
+
+// Reuse existing type
+export type AspectRatio = ManualAddAspectRatio;
+
+// Update existing GenerationType to include these if not present:
+// 'text_to_image' | 'manual_upload' | 'image_edit'
+
+// ============================================================
+// LIST STANDALONE IMAGES
+// ============================================================
+
+export interface ListStandaloneImagesParams {
+    page?: number;
+    limit?: number;
+    sortField?: SortField;
+    sortOrder?: SortOrder;
+    imageCategory?: ImageCategory;
+    projectName?: string;
+    hasImage?: boolean;
+    tags?: string;
+    status?: 'Initialized' | 'Completed';
+}
+
+export interface StandaloneImageAsset {
+    assetId: string;
+    title: string;
+    description: string | null;
+    imageCategory: ImageCategory | null;
+    tags: string[];
+    projectName: string | null;
+    notes: string | null;
+    status: AssetStatus;
+    hasImage: boolean;
+    currentVersion: number;
+    totalVersions: number;
+    totalEdits: number;
+    createdAt: string;
+    lastModifiedAt: string;
+    lastEditedAt: string | null;
+    lastAnalyzedAt: string | null;
+    thumbnailPath: string | null;
+    aspectRatio: AspectRatio | null;
+    generationType: GenerationType | null;
+    modelTier: number | null;
+}
+
+export interface PaginationMetadata {
+    totalCount: number;
+    totalPages: number;
+    currentPage: number;
+    pageSize: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    nextPage: number | null;
+    previousPage: number | null;
+    sortField: string;
+    sortOrder: string;
+    appliedFilters: {
+        imageCategory: string | null;
+        projectName: string | null;
+        hasImage: boolean | null;
+        tags: string[] | null;
+        status: string | null;
+    };
+}
+
+export interface AssetStatistics {
+    totalAssets: number;
+    assetsWithImages: number;
+    assetsWithoutImages: number;
+    categoryCounts: Record<string, number>;
+    projectCounts: Record<string, number>;
+    statusCounts: Record<string, number>;
+}
+
+export interface ListStandaloneImagesResponse {
+    success: boolean;
+    message: string;
+    data: {
+        assets: StandaloneImageAsset[];
+        pagination: PaginationMetadata;
+        statistics: AssetStatistics;
+    };
+}
+
+// ============================================================
+// UPDATE STANDALONE IMAGE METADATA
+// ============================================================
+
+export interface UpdateStandaloneMetadataRequest {
+    assetId: string;
+    title?: string;
+    description?: string | null;
+    imageCategory?: ImageCategory | null;
+    tags?: string[];
+    projectName?: string | null;
+    notes?: string | null;
+}
+
+export interface UpdateStandaloneMetadataResponse {
+    success: boolean;
+    message: string;
+    data: {
+        assetId: string;
+        updatedFields: string[];
+    };
+}
+
+export interface MetadataUpdateError {
+    success: false;
+    error: string;
+    field?: string;
+    providedValue?: any;
+    providedLength?: number;
+    maxLength?: number;
+    providedCount?: number;
+    maxCount?: number;
+    allowedFields?: string[];
+    invalidTags?: any[];
+}
+
+// ============================================================
+// UTILITY TYPES
+// ============================================================
+
+export type ApiResponse<T> =
+    | { success: true; data: T }
+    | { success: false; error: string };
+
+export interface ApiError {
+    success: false;
+    error: string;
+    message?: string;
+}
