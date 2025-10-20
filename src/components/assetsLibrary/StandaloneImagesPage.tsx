@@ -29,6 +29,7 @@ import type {
   ListStandaloneImagesParams,
 } from "@/types/image/types";
 import { useRouter } from "next/navigation";
+import EmptyStateAnimation from "../common/EmptyStateAnimation";
 
 const IMAGE_CATEGORIES: ImageCategory[] = [
   "character",
@@ -178,7 +179,7 @@ export const StandaloneImagesPage: React.FC = () => {
                   mb: 0.5,
                 }}
               >
-                Standalone Images
+                Image Collection
               </Typography>
               {statistics && (
                 <Typography variant="body2" color="text.secondary">
@@ -325,23 +326,30 @@ export const StandaloneImagesPage: React.FC = () => {
           )}
         </Stack>
 
-        {/* Grid View */}
-        <StandaloneImagesGridView
-          assets={assets}
-          loading={isLoading}
-          currentPage={pagination?.currentPage || 1}
-          totalPages={pagination?.totalPages || 1}
-          onPageChange={handlePageChange}
-          rowsPerPage={pagination?.pageSize || 20}
-          totalRows={pagination?.totalCount || 0}
-          onPageSizeChange={handlePageSizeChange}
-          sortField={sortField}
-          sortOrder={sortOrder}
-          onSortChange={handleSortChange}
-          isFavourite={isFavourite}
-          onFavouriteChange={setIsFavourite}
-          onAssetUpdated={handleAssetUpdated}
-        />
+        {/* Grid View or Empty State */}
+        {assets.length === 0 && !isLoading ? (
+          <EmptyStateAnimation
+            assetType="image"
+            navigationPath="/ai/image-editor"
+          />
+        ) : (
+          <StandaloneImagesGridView
+            assets={assets}
+            loading={isLoading}
+            currentPage={pagination?.currentPage || 1}
+            totalPages={pagination?.totalPages || 1}
+            onPageChange={handlePageChange}
+            rowsPerPage={pagination?.pageSize || 20}
+            totalRows={pagination?.totalCount || 0}
+            onPageSizeChange={handlePageSizeChange}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
+            isFavourite={isFavourite}
+            onFavouriteChange={setIsFavourite}
+            onAssetUpdated={handleAssetUpdated}
+          />
+        )}
 
         {/* Snackbar */}
         <Snackbar

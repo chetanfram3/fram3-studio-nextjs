@@ -219,10 +219,11 @@ export const StandaloneImagesGridView: React.FC<
                   {asset.hasImage && asset.thumbnailPath ? (
                     <Image
                       src={asset.thumbnailPath}
-                      alt={asset.title}
+                      alt={asset.title || "Standalone image asset"}
                       fill
                       style={{ objectFit: "cover" }}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      priority={false}
                     />
                   ) : (
                     <Box
