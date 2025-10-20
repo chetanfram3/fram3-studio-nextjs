@@ -12,6 +12,7 @@ import {
   EditOutlined as EditIcon,
   AutoModeOutlined as AutoMode,
   MmsOutlined as MMSIcon,
+  CollectionsOutlined as ImageLibraryIcon,
 } from "@mui/icons-material";
 import type { APIINFO } from "@/types/profile";
 import { fetchInfo } from "@/services/profileService";
@@ -84,6 +85,11 @@ export function useNavigationItems() {
         label: "Ai Script Library",
         path: "/ai-script-library",
         Icon: AutoMode,
+      },
+      {
+        label: "Image Library",
+        path: "/ai/library/images",
+        Icon: ImageLibraryIcon,
       },
       {
         label: "Script Generator",
