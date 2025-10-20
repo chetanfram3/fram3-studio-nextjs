@@ -59,6 +59,7 @@ interface EditingAsset {
   title: string;
   description: string;
   tags: string[];
+  tagsInput: string; // Add raw input string
   projectName: string;
 }
 
@@ -98,6 +99,7 @@ export const StandaloneImagesGridView: React.FC<
       title: asset.title,
       description: asset.description || "",
       tags: asset.tags,
+      tagsInput: asset.tags.join(", "), // Store as formatted string
       projectName: asset.projectName || "",
     });
   };
@@ -109,11 +111,17 @@ export const StandaloneImagesGridView: React.FC<
   const handleSaveEdit = async () => {
     if (!editingAsset) return;
 
+    // Parse tags from the input string only on save
+    const parsedTags = editingAsset.tagsInput
+      .split(",")
+      .map((t) => t.trim())
+      .filter((t) => t);
+
     const updates: UpdateStandaloneMetadataRequest = {
       assetId: editingAsset.assetId,
       title: editingAsset.title,
       description: editingAsset.description || null,
-      tags: editingAsset.tags,
+      tags: parsedTags,
       projectName: editingAsset.projectName || null,
     };
 
@@ -334,17 +342,15 @@ export const StandaloneImagesGridView: React.FC<
                       <TextField
                         size="small"
                         label="Tags (comma-separated)"
-                        value={editingAsset.tags.join(", ")}
+                        value={editingAsset.tagsInput}
                         onChange={(e) =>
                           setEditingAsset({
                             ...editingAsset,
-                            tags: e.target.value
-                              .split(",")
-                              .map((t) => t.trim())
-                              .filter((t) => t),
+                            tagsInput: e.target.value, // Store raw input
                           })
                         }
                         fullWidth
+                        helperText="Separate tags with commas"
                       />
                       <TextField
                         size="small"
