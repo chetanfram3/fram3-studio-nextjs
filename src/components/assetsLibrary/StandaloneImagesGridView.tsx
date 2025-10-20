@@ -123,10 +123,10 @@ export const StandaloneImagesGridView: React.FC<
       },
     });
   };
-
+  
   const handleAssetClick = (asset: StandaloneImageAsset) => {
     // Navigate to image detail view
-    router.push(`/standalone/${asset.assetId}`);
+    router.push(`/ai/image-editor?scriptId=${asset.assetId}&type=standalone`);
   };
 
   const getStatusColor = (status: string) => {
