@@ -17,16 +17,18 @@ import {
   Paper,
   Alert,
   Snackbar,
+  Button,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
-import { Search, FilterList } from "@mui/icons-material";
+import { Search, FilterList, Add } from "@mui/icons-material";
 import { useStandaloneImages } from "@/hooks/images/useStandaloneImages";
 import StandaloneImagesGridView from "./StandaloneImagesGridView";
 import type {
   ImageCategory,
   ListStandaloneImagesParams,
 } from "@/types/image/types";
+import { useRouter } from "next/navigation";
 
 const IMAGE_CATEGORIES: ImageCategory[] = [
   "character",
@@ -47,6 +49,7 @@ const IMAGE_CATEGORIES: ImageCategory[] = [
 export const StandaloneImagesPage: React.FC = () => {
   const theme = useTheme();
   const brand = getCurrentBrand();
+  const router = useRouter();
 
   // Local filter state
   const [searchQuery, setSearchQuery] = useState("");
@@ -185,14 +188,31 @@ export const StandaloneImagesPage: React.FC = () => {
               )}
             </Box>
 
-            {activeFilterCount > 0 && (
-              <Chip
-                label={`${activeFilterCount} filter${activeFilterCount > 1 ? "s" : ""} active`}
-                onDelete={clearFilters}
-                color="primary"
-                variant="outlined"
-              />
-            )}
+            <Stack direction="row" spacing={2} alignItems="center">
+              {activeFilterCount > 0 && (
+                <Chip
+                  label={`${activeFilterCount} filter${activeFilterCount > 1 ? "s" : ""} active`}
+                  onDelete={clearFilters}
+                  color="primary"
+                  variant="outlined"
+                />
+              )}
+
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => router.push("/ai/image-editor")}
+                sx={{
+                  fontFamily: brand.fonts.body,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1,
+                }}
+              >
+                Add Image Collection
+              </Button>
+            </Stack>
           </Stack>
 
           {/* Filters */}
