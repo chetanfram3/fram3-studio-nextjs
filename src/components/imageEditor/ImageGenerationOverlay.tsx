@@ -52,6 +52,8 @@ import {
   MODEL_TIERS,
 } from "@/components/common/ModelTierSelector";
 import GenericFileUpload from "@/components/common/GenericFileUpload";
+import { ProjectMetadata } from "./ProjectMetadata";
+import type { ProjectMetadataType } from "./ProjectMetadata";
 import { manualAddImage } from "@/services/imageService";
 import type {
   ManualAddImageRequest,
@@ -155,10 +157,14 @@ export function ImageGenerationOverlay({
   const [isUploading, setIsUploading] = useState(false);
 
   // ✅ NEW: Standalone initialization data state
-  const [initTitle, setInitTitle] = useState("");
-  const [initDescription, setInitDescription] = useState("");
-  const [initCategory, setInitCategory] = useState("");
-  const [initProjectName, setInitProjectName] = useState("");
+  const [metadata, setMetadata] = useState<ProjectMetadataType>({
+    title: "",
+    description: "",
+    imageCategory: "",
+    tags: [],
+    projectName: "",
+    notes: "",
+  });
 
   // Model tier state
   const { modelTier, setModelTier, getSelectedOption } = useModelTier(
@@ -459,7 +465,7 @@ export function ImageGenerationOverlay({
       // ✅ NEW: Handle standalone initialization
       if (type === "standalone" && isStandaloneInitMode) {
         // Validate title for init mode
-        if (!initTitle.trim()) {
+        if (!metadata.title.trim()) {
           logger.error("Title is required for standalone initialization");
           return;
         }
@@ -471,14 +477,12 @@ export function ImageGenerationOverlay({
           imageUrl: uploadedFileUrl,
           aspectRatio: detectedAspectRatio,
           initData: {
-            title: initTitle.trim(),
-            ...(initDescription.trim() && {
-              description: initDescription.trim(),
-            }),
-            ...(initCategory.trim() && { imageCategory: initCategory.trim() }),
-            ...(initProjectName.trim() && {
-              projectName: initProjectName.trim(),
-            }),
+            title: metadata.title.trim(),
+            description: metadata.description?.trim() || null,
+            imageCategory: metadata.imageCategory?.trim() || null,
+            tags: metadata.tags,
+            projectName: metadata.projectName?.trim() || null,
+            notes: metadata.notes?.trim() || null,
           },
         };
 
@@ -584,10 +588,7 @@ export function ImageGenerationOverlay({
     versionId,
     type,
     isStandaloneInitMode,
-    initTitle,
-    initDescription,
-    initCategory,
-    initProjectName,
+    metadata,
     sceneId,
     shotId,
     actorId,
@@ -608,7 +609,7 @@ export function ImageGenerationOverlay({
         !prompt.trim() ||
         !isValidPrompt ||
         !isValidSeed ||
-        !initTitle.trim()
+        !metadata.title.trim()
       ) {
         logger.error("Missing required fields for standalone initialization");
         return;
@@ -648,14 +649,12 @@ export function ImageGenerationOverlay({
           ...(fineTuneId && { fineTuneId }),
           ...(seed !== undefined && { seed }),
           initData: {
-            title: initTitle.trim(),
-            ...(initDescription.trim() && {
-              description: initDescription.trim(),
-            }),
-            ...(initCategory.trim() && { imageCategory: initCategory.trim() }),
-            ...(initProjectName.trim() && {
-              projectName: initProjectName.trim(),
-            }),
+            title: metadata.title.trim(),
+            description: metadata.description?.trim() || null,
+            imageCategory: metadata.imageCategory?.trim() || null,
+            tags: metadata.tags,
+            projectName: metadata.projectName?.trim() || null,
+            notes: metadata.notes?.trim() || null,
           },
         };
 
@@ -756,10 +755,14 @@ export function ImageGenerationOverlay({
     setGenerationMode("generate");
 
     // ✅ NEW: Reset init data
-    setInitTitle("");
-    setInitDescription("");
-    setInitCategory("");
-    setInitProjectName("");
+    setMetadata({
+      title: "",
+      description: "",
+      imageCategory: "",
+      tags: [],
+      projectName: "",
+      notes: "",
+    });
 
     onCancel();
   };
@@ -951,93 +954,12 @@ export function ImageGenerationOverlay({
         <Divider />
 
         {/* ✅ NEW: Standalone Init Data Fields */}
-        {type === "standalone" && isStandaloneInitMode && (
-          <Box
-            sx={{
-              p: 2,
-              bgcolor: alpha(theme.palette.info.main, 0.08),
-              borderRadius: `${brand.borderRadius}px`,
-              border: `1px solid ${theme.palette.info.main}`,
-            }}
-          >
-            <Typography
-              variant="subtitle2"
-              sx={{ mb: 1.5, fontWeight: 600, color: "info.main" }}
-            >
-              Asset Information
-            </Typography>
-
-            <Stack spacing={1.5}>
-              <TextField
-                fullWidth
-                label="Asset Title *"
-                value={initTitle}
-                onChange={(e) => setInitTitle(e.target.value)}
-                placeholder="e.g., Hero Character Concept"
-                required
-                size="small"
-                error={!initTitle.trim() && initTitle.length > 0}
-                helperText={
-                  !initTitle.trim() && initTitle.length > 0
-                    ? "Title is required"
-                    : ""
-                }
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    bgcolor: theme.palette.background.paper,
-                    fontFamily: brand.fonts.body,
-                  },
-                }}
-              />
-
-              <TextField
-                fullWidth
-                label="Description"
-                value={initDescription}
-                onChange={(e) => setInitDescription(e.target.value)}
-                placeholder="Optional description of the asset"
-                multiline
-                rows={2}
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    bgcolor: theme.palette.background.paper,
-                    fontFamily: brand.fonts.body,
-                  },
-                }}
-              />
-
-              <TextField
-                fullWidth
-                label="Category"
-                value={initCategory}
-                onChange={(e) => setInitCategory(e.target.value)}
-                placeholder="e.g., character, environment, prop"
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    bgcolor: theme.palette.background.paper,
-                    fontFamily: brand.fonts.body,
-                  },
-                }}
-              />
-
-              <TextField
-                fullWidth
-                label="Project Name"
-                value={initProjectName}
-                onChange={(e) => setInitProjectName(e.target.value)}
-                placeholder="e.g., Game Project Alpha"
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    bgcolor: theme.palette.background.paper,
-                    fontFamily: brand.fonts.body,
-                  },
-                }}
-              />
-            </Stack>
-          </Box>
+        {isStandaloneInitMode && (
+          <ProjectMetadata
+            value={metadata}
+            onChange={setMetadata}
+            compact={true}
+          />
         )}
 
         {/* Error Alerts */}
@@ -1499,7 +1421,7 @@ export function ImageGenerationOverlay({
                   isStandaloneInitMode
                     ? !isValidPrompt ||
                       !isValidSeed ||
-                      !initTitle.trim() ||
+                      !metadata.title.trim() ||
                       isProcessing ||
                       disabled
                     : !isValidPrompt ||
@@ -1712,7 +1634,7 @@ export function ImageGenerationOverlay({
                   !uploadPrompt.trim() ||
                   uploadPrompt.length > 5000 ||
                   // ✅ UPDATED: Check title for standalone init
-                  (isStandaloneInitMode && !initTitle.trim()) ||
+                  (isStandaloneInitMode && !metadata.title.trim()) ||
                   isProcessing
                 }
                 size="small"
