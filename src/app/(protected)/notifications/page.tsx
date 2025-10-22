@@ -299,7 +299,7 @@ export default function NotificationsPage() {
                 No notifications
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                You're all caught up! Check back later for updates.
+                You are all caught up! Check back later for updates.
               </Typography>
             </CardContent>
           </Card>
