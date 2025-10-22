@@ -790,891 +790,898 @@ export function ImageGenerationOverlay({
   const isProcessing = isGenerating || isOptimizing || isUploading;
 
   return (
-    <Box
-      sx={{
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        background: `linear-gradient(to top, ${theme.palette.background.paper}f2 0%, ${theme.palette.background.paper}cc 70%, transparent 100%)`,
-        p: 3,
-        pb: 7,
-        zIndex: 10,
-      }}
-    >
-      <Stack spacing={2.5}>
-        {/* Header */}
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-        >
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Typography
-              variant="body2"
-              color="text.primary"
-              fontWeight="medium"
-              component="span"
-              sx={{ fontFamily: brand.fonts.body }}
-            >
-              {/* ✅ UPDATED: Show different text for standalone init */}
-              {isStandaloneInitMode
-                ? "Create New Standalone Asset"
-                : generationMode === "generate"
-                  ? "Generate New Version"
-                  : "Upload Image"}
-              {!isStandaloneInitMode && viewingVersion?.version && (
-                <Chip
-                  label={`from v${viewingVersion.version}`}
-                  size="small"
-                  color="primary"
-                  sx={{
-                    ml: 1,
-                    height: 20,
-                    fontSize: "0.75rem",
-                    fontFamily: brand.fonts.body,
-                  }}
-                />
-              )}
-              {generationMode === "generate" && selectedTierOption && (
-                <Chip
-                  label={selectedTierOption.label}
-                  size="small"
-                  sx={{
-                    ml: 1,
-                    height: 20,
-                    fontSize: "0.75rem",
-                    bgcolor: selectedTierOption.color,
-                    color: theme.palette.getContrastText(
-                      selectedTierOption.color
-                    ),
-                    fontFamily: brand.fonts.body,
-                  }}
-                />
-              )}
-            </Typography>
-            {/* Loading indicator */}
-            {(loadingCurrentPrompt || isLoadingPrompts) && (
-              <Box
-                sx={{
-                  width: 16,
-                  height: 16,
-                  border: `2px solid ${theme.palette.divider}`,
-                  borderTop: `2px solid ${theme.palette.primary.main}`,
-                  borderRadius: "50%",
-                  animation: "spin 1s linear infinite",
-                  "@keyframes spin": {
-                    "0%": { transform: "rotate(0deg)" },
-                    "100%": { transform: "rotate(360deg)" },
-                  },
-                }}
-              />
-            )}
-          </Stack>
-          <IconButton
-            onClick={handleCancel}
-            disabled={isProcessing}
-            color="primary"
-            sx={{ p: 0.5 }}
+    <>
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: `linear-gradient(to top, ${theme.palette.background.paper}f2 0%, ${theme.palette.background.paper}cc 70%, transparent 100%)`,
+          p: 3,
+          pb: 7,
+          zIndex: 10,
+        }}
+      >
+        <Stack spacing={2.5}>
+          {/* Header */}
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
           >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </Stack>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Typography
+                variant="body2"
+                color="text.primary"
+                fontWeight="medium"
+                component="span"
+                sx={{ fontFamily: brand.fonts.body }}
+              >
+                {/* ✅ UPDATED: Show different text for standalone init */}
+                {isStandaloneInitMode
+                  ? "Create New Standalone Asset"
+                  : generationMode === "generate"
+                    ? "Generate New Version"
+                    : "Upload Image"}
+                {!isStandaloneInitMode && viewingVersion?.version && (
+                  <Chip
+                    label={`from v${viewingVersion.version}`}
+                    size="small"
+                    color="primary"
+                    sx={{
+                      ml: 1,
+                      height: 20,
+                      fontSize: "0.75rem",
+                      fontFamily: brand.fonts.body,
+                    }}
+                  />
+                )}
+                {generationMode === "generate" && selectedTierOption && (
+                  <Chip
+                    label={selectedTierOption.label}
+                    size="small"
+                    sx={{
+                      ml: 1,
+                      height: 20,
+                      fontSize: "0.75rem",
+                      bgcolor: selectedTierOption.color,
+                      color: theme.palette.getContrastText(
+                        selectedTierOption.color
+                      ),
+                      fontFamily: brand.fonts.body,
+                    }}
+                  />
+                )}
+              </Typography>
+              {/* Loading indicator */}
+              {(loadingCurrentPrompt || isLoadingPrompts) && (
+                <Box
+                  sx={{
+                    width: 16,
+                    height: 16,
+                    border: `2px solid ${theme.palette.divider}`,
+                    borderTop: `2px solid ${theme.palette.primary.main}`,
+                    borderRadius: "50%",
+                    animation: "spin 1s linear infinite",
+                    "@keyframes spin": {
+                      "0%": { transform: "rotate(0deg)" },
+                      "100%": { transform: "rotate(360deg)" },
+                    },
+                  }}
+                />
+              )}
+            </Stack>
+            <IconButton
+              onClick={handleCancel}
+              disabled={isProcessing}
+              color="primary"
+              sx={{ p: 0.5 }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Stack>
 
-        {/* Mode Toggle */}
-        <ToggleButtonGroup
-          value={generationMode}
-          exclusive
-          onChange={(_, newMode) => {
-            if (newMode !== null) {
-              setGenerationMode(newMode);
-            }
-          }}
-          disabled={isProcessing}
-          size="small"
-          sx={{
-            display: "inline-flex",
-            gap: 1,
-            "& .MuiToggleButtonGroup-grouped": {
-              border: 0,
-              "&:not(:first-of-type)": {
-                borderRadius: `${brand.borderRadius}px`,
-                marginLeft: 0,
-              },
-              "&:first-of-type": {
-                borderRadius: `${brand.borderRadius}px`,
-              },
-            },
-            "& .MuiToggleButton-root": {
-              bgcolor: theme.palette.action.selected,
-              color: "text.secondary",
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: `${brand.borderRadius}px`,
-              fontFamily: brand.fonts.body,
-              textTransform: "none",
-              px: 2,
-              py: 1,
-              transition: "all 0.2s ease",
-              "&:hover": {
-                bgcolor: theme.palette.action.hover,
-                borderColor: "primary.main",
-              },
-              "&.Mui-selected": {
-                bgcolor: alpha(theme.palette.primary.main, 0.15),
-                color: "primary.main",
-                borderColor: "primary.main",
-                "&:hover": {
-                  bgcolor: alpha(theme.palette.primary.main, 0.25),
+          {/* Mode Toggle */}
+          <ToggleButtonGroup
+            value={generationMode}
+            exclusive
+            onChange={(_, newMode) => {
+              if (newMode !== null) {
+                setGenerationMode(newMode);
+              }
+            }}
+            disabled={isProcessing}
+            size="small"
+            sx={{
+              display: "inline-flex",
+              gap: 1,
+              "& .MuiToggleButtonGroup-grouped": {
+                border: 0,
+                "&:not(:first-of-type)": {
+                  borderRadius: `${brand.borderRadius}px`,
+                  marginLeft: 0,
+                },
+                "&:first-of-type": {
+                  borderRadius: `${brand.borderRadius}px`,
                 },
               },
-              "&.Mui-disabled": {
-                opacity: 0.5,
-              },
-            },
-          }}
-        >
-          <ToggleButton value="generate">
-            <Stack direction="row" spacing={1} alignItems="center">
-              <GenerateIcon fontSize="small" />
-              <Typography variant="body2" sx={{ fontFamily: brand.fonts.body }}>
-                AI Generate
-              </Typography>
-            </Stack>
-          </ToggleButton>
-          <ToggleButton value="upload">
-            <Stack direction="row" spacing={1} alignItems="center">
-              <UploadIcon fontSize="small" />
-              <Typography variant="body2" sx={{ fontFamily: brand.fonts.body }}>
-                Upload Image
-              </Typography>
-            </Stack>
-          </ToggleButton>
-        </ToggleButtonGroup>
-
-        <Divider />
-
-        {/* ✅ NEW: Standalone Init Data Fields */}
-        {isStandaloneInitMode && (
-          <ProjectMetadata
-            value={metadata}
-            onChange={setMetadata}
-            compact={true}
-          />
-        )}
-
-        {/* Error Alerts */}
-        {generateError && (
-          <Alert
-            severity="error"
-            sx={{
-              borderRadius: `${brand.borderRadius}px`,
-              "& .MuiAlert-message": {
+              "& .MuiToggleButton-root": {
+                bgcolor: theme.palette.action.selected,
+                color: "text.secondary",
+                border: `1px solid ${theme.palette.divider}`,
+                borderRadius: `${brand.borderRadius}px`,
                 fontFamily: brand.fonts.body,
+                textTransform: "none",
+                px: 2,
+                py: 1,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  bgcolor: theme.palette.action.hover,
+                  borderColor: "primary.main",
+                },
+                "&.Mui-selected": {
+                  bgcolor: alpha(theme.palette.primary.main, 0.15),
+                  color: "primary.main",
+                  borderColor: "primary.main",
+                  "&:hover": {
+                    bgcolor: alpha(theme.palette.primary.main, 0.25),
+                  },
+                },
+                "&.Mui-disabled": {
+                  opacity: 0.5,
+                },
               },
             }}
           >
-            {generateError.message}
-          </Alert>
-        )}
+            <ToggleButton value="generate">
+              <Stack direction="row" spacing={1} alignItems="center">
+                <GenerateIcon fontSize="small" />
+                <Typography
+                  variant="body2"
+                  sx={{ fontFamily: brand.fonts.body }}
+                >
+                  AI Generate
+                </Typography>
+              </Stack>
+            </ToggleButton>
+            <ToggleButton value="upload">
+              <Stack direction="row" spacing={1} alignItems="center">
+                <UploadIcon fontSize="small" />
+                <Typography
+                  variant="body2"
+                  sx={{ fontFamily: brand.fonts.body }}
+                >
+                  Upload Image
+                </Typography>
+              </Stack>
+            </ToggleButton>
+          </ToggleButtonGroup>
 
-        {promptsError && !isStandaloneInitMode && (
-          <Alert
-            severity="warning"
-            sx={{
-              borderRadius: `${brand.borderRadius}px`,
-              "& .MuiAlert-message": {
-                fontFamily: brand.fonts.body,
-              },
-            }}
-          >
-            Could not load current prompt: {promptsError.message}
-          </Alert>
-        )}
+          <Divider />
 
-        {/* AI Generation Mode */}
-        {generationMode === "generate" && (
-          <Stack spacing={2}>
-            {/* Prompt Input */}
-            <TextField
-              multiline
-              minRows={3}
-              maxRows={8}
-              fullWidth
-              label="Generation Prompt"
-              placeholder="Describe the image you want to generate..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              variant="outlined"
-              size="small"
-              disabled={isProcessing || disabled || loadingCurrentPrompt}
-              error={!isValidPrompt && prompt.length > 0}
-              helperText={
-                !isValidPrompt && prompt.length > 0
-                  ? "Prompt must be between 1-5000 characters"
-                  : `${prompt.length}/5000 characters`
-              }
-              InputProps={{
-                endAdornment: prompt.trim() && !isStandaloneInitMode && (
-                  <Stack direction="row" spacing={0.5} sx={{ mr: 1 }}>
-                    <Tooltip title="Reload current version's prompt">
-                      <IconButton
-                        size="small"
-                        onClick={handleRefreshPrompt}
-                        disabled={
-                          disabled || loadingCurrentPrompt || isLoadingPrompts
-                        }
-                        color="primary"
-                        sx={{
-                          opacity: 0.8,
-                          "&:hover": { opacity: 1 },
-                        }}
-                      >
-                        <RefreshIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+          {/* ✅ NEW: Standalone Init Data Fields */}
+          {isStandaloneInitMode && (
+            <ProjectMetadata
+              value={metadata}
+              onChange={setMetadata}
+              compact={true}
+            />
+          )}
 
-                    {optimizationData && (
-                      <Tooltip title="View optimization insights">
+          {/* Error Alerts */}
+          {generateError && (
+            <Alert
+              severity="error"
+              sx={{
+                borderRadius: `${brand.borderRadius}px`,
+                "& .MuiAlert-message": {
+                  fontFamily: brand.fonts.body,
+                },
+              }}
+            >
+              {generateError.message}
+            </Alert>
+          )}
+
+          {promptsError && !isStandaloneInitMode && (
+            <Alert
+              severity="warning"
+              sx={{
+                borderRadius: `${brand.borderRadius}px`,
+                "& .MuiAlert-message": {
+                  fontFamily: brand.fonts.body,
+                },
+              }}
+            >
+              Could not load current prompt: {promptsError.message}
+            </Alert>
+          )}
+
+          {/* AI Generation Mode */}
+          {generationMode === "generate" && (
+            <Stack spacing={2}>
+              {/* Prompt Input */}
+              <TextField
+                multiline
+                minRows={3}
+                maxRows={8}
+                fullWidth
+                label="Generation Prompt"
+                placeholder="Describe the image you want to generate..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                variant="outlined"
+                size="small"
+                disabled={isProcessing || disabled || loadingCurrentPrompt}
+                error={!isValidPrompt && prompt.length > 0}
+                helperText={
+                  !isValidPrompt && prompt.length > 0
+                    ? "Prompt must be between 1-5000 characters"
+                    : `${prompt.length}/5000 characters`
+                }
+                InputProps={{
+                  endAdornment: prompt.trim() && !isStandaloneInitMode && (
+                    <Stack direction="row" spacing={0.5} sx={{ mr: 1 }}>
+                      <Tooltip title="Reload current version's prompt">
                         <IconButton
                           size="small"
-                          onClick={() =>
-                            setShowOptimizationInsights(
-                              !showOptimizationInsights
-                            )
+                          onClick={handleRefreshPrompt}
+                          disabled={
+                            disabled || loadingCurrentPrompt || isLoadingPrompts
                           }
-                          disabled={disabled}
                           color="primary"
                           sx={{
                             opacity: 0.8,
                             "&:hover": { opacity: 1 },
                           }}
                         >
-                          <InfoIcon fontSize="small" />
+                          <RefreshIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    )}
-                  </Stack>
-                ),
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: isProcessing
-                    ? theme.palette.action.hover
-                    : theme.palette.action.selected,
-                  backdropFilter: "blur(10px)",
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderRadius: `${brand.borderRadius}px`,
-                  fontFamily: brand.fonts.body,
-                  "& fieldset": {
-                    border: "none",
-                  },
-                  "&:hover fieldset": {
-                    border: "none",
-                  },
-                  "&.Mui-focused": {
-                    borderColor: "primary.main",
-                  },
-                  "& input, & textarea": {
-                    color: "text.primary",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
+
+                      {optimizationData && (
+                        <Tooltip title="View optimization insights">
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              setShowOptimizationInsights(
+                                !showOptimizationInsights
+                              )
+                            }
+                            disabled={disabled}
+                            color="primary"
+                            sx={{
+                              opacity: 0.8,
+                              "&:hover": { opacity: 1 },
+                            }}
+                          >
+                            <InfoIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: isProcessing
+                      ? theme.palette.action.hover
+                      : theme.palette.action.selected,
+                    backdropFilter: "blur(10px)",
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: `${brand.borderRadius}px`,
                     fontFamily: brand.fonts.body,
-                    "&::placeholder": {
-                      color: "text.secondary",
-                      opacity: 0.7,
+                    "& fieldset": {
+                      border: "none",
+                    },
+                    "&:hover fieldset": {
+                      border: "none",
+                    },
+                    "&.Mui-focused": {
+                      borderColor: "primary.main",
+                    },
+                    "& input, & textarea": {
+                      color: "text.primary",
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                      fontFamily: brand.fonts.body,
+                      "&::placeholder": {
+                        color: "text.secondary",
+                        opacity: 0.7,
+                      },
                     },
                   },
-                },
-                "& .MuiInputLabel-root": {
-                  color: "text.secondary",
-                  fontFamily: brand.fonts.body,
-                  "&.Mui-focused": {
-                    color: "primary.main",
-                  },
-                },
-                "& .MuiFormHelperText-root": {
-                  color: "text.secondary",
-                  fontFamily: brand.fonts.body,
-                  "&.Mui-error": {
-                    color: "error.main",
-                  },
-                },
-              }}
-            />
-
-            {/* Quick Settings Row */}
-            <Stack direction="row" spacing={2} alignItems="center">
-              {/* Aspect Ratio */}
-              <FormControl size="small" sx={{ minWidth: 140 }}>
-                <InputLabel
-                  sx={{
+                  "& .MuiInputLabel-root": {
                     color: "text.secondary",
                     fontFamily: brand.fonts.body,
                     "&.Mui-focused": {
                       color: "primary.main",
                     },
-                  }}
-                >
-                  Aspect Ratio
-                </InputLabel>
-                <Select
-                  value={aspectRatio}
-                  onChange={(e) => setAspectRatio(e.target.value)}
-                  label="Aspect Ratio"
+                  },
+                  "& .MuiFormHelperText-root": {
+                    color: "text.secondary",
+                    fontFamily: brand.fonts.body,
+                    "&.Mui-error": {
+                      color: "error.main",
+                    },
+                  },
+                }}
+              />
+
+              {/* Quick Settings Row */}
+              <Stack direction="row" spacing={2} alignItems="center">
+                {/* Aspect Ratio */}
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel
+                    sx={{
+                      color: "text.secondary",
+                      fontFamily: brand.fonts.body,
+                      "&.Mui-focused": {
+                        color: "primary.main",
+                      },
+                    }}
+                  >
+                    Aspect Ratio
+                  </InputLabel>
+                  <Select
+                    value={aspectRatio}
+                    onChange={(e) => setAspectRatio(e.target.value)}
+                    label="Aspect Ratio"
+                    disabled={disabled}
+                    sx={{
+                      bgcolor: theme.palette.action.selected,
+                      color: "text.primary",
+                      fontFamily: brand.fonts.body,
+                      borderRadius: `${brand.borderRadius}px`,
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "divider",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "primary.main",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "primary.main",
+                      },
+                      "& .MuiSvgIcon-root": {
+                        color: "text.primary",
+                      },
+                    }}
+                  >
+                    {ASPECT_RATIOS.map((ratio) => (
+                      <MenuItem
+                        key={ratio.value}
+                        value={ratio.value}
+                        sx={{ fontFamily: brand.fonts.body }}
+                      >
+                        {ratio.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Advanced Settings Toggle */}
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
                   disabled={disabled}
                   sx={{
-                    bgcolor: theme.palette.action.selected,
-                    color: "text.primary",
-                    fontFamily: brand.fonts.body,
                     borderRadius: `${brand.borderRadius}px`,
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "divider",
-                    },
-                    "&:hover .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "primary.main",
-                    },
-                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "primary.main",
-                    },
-                    "& .MuiSvgIcon-root": {
-                      color: "text.primary",
+                    fontFamily: brand.fonts.body,
+                  }}
+                >
+                  Advanced {showAdvancedSettings ? "▲" : "▼"}
+                </Button>
+
+                {/* Model Tier Selector */}
+                <ModelTierSelector
+                  value={modelTier}
+                  onChange={setModelTier}
+                  disabled={isProcessing || disabled}
+                  showDescription={true}
+                  compact={true}
+                />
+              </Stack>
+
+              {/* Advanced Settings */}
+              <Collapse in={showAdvancedSettings}>
+                <Stack spacing={2}>
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      label="Fine-tune Model ID (Optional)"
+                      value={fineTuneId}
+                      onChange={(e) => setFineTuneId(e.target.value)}
+                      size="small"
+                      disabled={disabled}
+                      placeholder="ft-model-123abc"
+                      sx={{
+                        flex: 1,
+                        "& .MuiOutlinedInput-root": {
+                          bgcolor: theme.palette.action.selected,
+                          color: "text.primary",
+                          fontFamily: brand.fonts.body,
+                          borderRadius: `${brand.borderRadius}px`,
+                          "& fieldset": {
+                            borderColor: "divider",
+                          },
+                          "&:hover fieldset": {
+                            borderColor: "primary.main",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "primary.main",
+                          },
+                        },
+                        "& .MuiInputLabel-root": {
+                          color: "text.secondary",
+                          fontFamily: brand.fonts.body,
+                          "&.Mui-focused": {
+                            color: "primary.main",
+                          },
+                        },
+                      }}
+                    />
+
+                    <TextField
+                      label="Seed (Optional)"
+                      type="number"
+                      value={seed || ""}
+                      onChange={(e) =>
+                        setSeed(
+                          e.target.value ? parseInt(e.target.value) : undefined
+                        )
+                      }
+                      size="small"
+                      disabled={disabled}
+                      error={!isValidSeed}
+                      helperText={!isValidSeed ? "Must be 0-2147483647" : ""}
+                      InputProps={{
+                        endAdornment: (
+                          <Tooltip title="Generate random seed">
+                            <IconButton
+                              size="small"
+                              onClick={generateRandomSeed}
+                              disabled={disabled}
+                              color="primary"
+                            >
+                              <RandomIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ),
+                      }}
+                      sx={{
+                        flex: 1,
+                        "& .MuiOutlinedInput-root": {
+                          bgcolor: theme.palette.action.selected,
+                          color: "text.primary",
+                          fontFamily: brand.fonts.body,
+                          borderRadius: `${brand.borderRadius}px`,
+                          "& fieldset": {
+                            borderColor: "divider",
+                          },
+                          "&:hover fieldset": {
+                            borderColor: "primary.main",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "primary.main",
+                          },
+                        },
+                        "& .MuiInputLabel-root": {
+                          color: "text.secondary",
+                          fontFamily: brand.fonts.body,
+                          "&.Mui-focused": {
+                            color: "primary.main",
+                          },
+                        },
+                        "& .MuiFormHelperText-root": {
+                          color: "text.secondary",
+                          fontFamily: brand.fonts.body,
+                          "&.Mui-error": {
+                            color: "error.main",
+                          },
+                        },
+                      }}
+                    />
+                  </Stack>
+                </Stack>
+              </Collapse>
+
+              {/* Optimization Insights Panel */}
+              {optimizationData && showOptimizationInsights && (
+                <Collapse in={showOptimizationInsights}>
+                  <Box
+                    sx={{
+                      mt: 2,
+                      p: 2,
+                      bgcolor: theme.palette.action.hover,
+                      backdropFilter: "blur(10px)",
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderRadius: `${brand.borderRadius}px`,
+                    }}
+                  >
+                    <Stack spacing={1.5}>
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.primary"
+                          fontWeight="medium"
+                          sx={{ fontFamily: brand.fonts.body }}
+                        >
+                          Optimization Insights
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() => setShowOptimizationInsights(false)}
+                          color="primary"
+                          sx={{ p: 0.5 }}
+                        >
+                          <CollapseIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
+
+                      {optimizationInsights && (
+                        <Stack spacing={1}>
+                          {optimizationInsights.strategy && (
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontFamily: brand.fonts.body,
+                                }}
+                              >
+                                Strategy:
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.primary"
+                                sx={{ ml: 1, fontFamily: brand.fonts.body }}
+                              >
+                                {optimizationInsights.strategy}
+                              </Typography>
+                            </Box>
+                          )}
+
+                          {optimizationInsights.confidence !== undefined && (
+                            <Box>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "text.secondary",
+                                  fontFamily: brand.fonts.body,
+                                }}
+                              >
+                                Confidence:
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.primary"
+                                sx={{ ml: 1, fontFamily: brand.fonts.body }}
+                              >
+                                {Math.round(
+                                  optimizationInsights.confidence * 100
+                                )}
+                                %
+                              </Typography>
+                            </Box>
+                          )}
+
+                          {originalPrompt && originalPrompt !== prompt && (
+                            <Box>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="primary"
+                                onClick={() => {
+                                  setPrompt(originalPrompt);
+                                  setOptimizationData(null);
+                                  setShowOptimizationInsights(false);
+                                }}
+                                disabled={disabled}
+                                sx={{
+                                  fontSize: "0.7rem",
+                                  py: 0.5,
+                                  borderRadius: `${brand.borderRadius}px`,
+                                  fontFamily: brand.fonts.body,
+                                }}
+                              >
+                                Revert to Original
+                              </Button>
+                            </Box>
+                          )}
+                        </Stack>
+                      )}
+                    </Stack>
+                  </Box>
+                </Collapse>
+              )}
+
+              {/* Optimization Error */}
+              {optimizeError && (
+                <Alert
+                  severity="error"
+                  sx={{
+                    mt: 1,
+                    borderRadius: `${brand.borderRadius}px`,
+                    "& .MuiAlert-message": {
+                      fontFamily: brand.fonts.body,
                     },
                   }}
                 >
-                  {ASPECT_RATIOS.map((ratio) => (
-                    <MenuItem
-                      key={ratio.value}
-                      value={ratio.value}
-                      sx={{ fontFamily: brand.fonts.body }}
-                    >
-                      {ratio.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  {optimizeError.message}
+                </Alert>
+              )}
 
-              {/* Advanced Settings Toggle */}
-              <Button
-                variant="outlined"
-                color="primary"
-                size="small"
-                onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-                disabled={disabled}
-                sx={{
-                  borderRadius: `${brand.borderRadius}px`,
-                  fontFamily: brand.fonts.body,
-                }}
-              >
-                Advanced {showAdvancedSettings ? "▲" : "▼"}
-              </Button>
-
-              {/* Model Tier Selector */}
-              <ModelTierSelector
-                value={modelTier}
-                onChange={setModelTier}
-                disabled={isProcessing || disabled}
-                showDescription={true}
-                compact={true}
-              />
-            </Stack>
-
-            {/* Advanced Settings */}
-            <Collapse in={showAdvancedSettings}>
-              <Stack spacing={2}>
-                <Stack direction="row" spacing={2}>
-                  <TextField
-                    label="Fine-tune Model ID (Optional)"
-                    value={fineTuneId}
-                    onChange={(e) => setFineTuneId(e.target.value)}
-                    size="small"
-                    disabled={disabled}
-                    placeholder="ft-model-123abc"
-                    sx={{
-                      flex: 1,
-                      "& .MuiOutlinedInput-root": {
-                        bgcolor: theme.palette.action.selected,
-                        color: "text.primary",
-                        fontFamily: brand.fonts.body,
-                        borderRadius: `${brand.borderRadius}px`,
-                        "& fieldset": {
-                          borderColor: "divider",
-                        },
-                        "&:hover fieldset": {
-                          borderColor: "primary.main",
-                        },
-                        "&.Mui-focused fieldset": {
-                          borderColor: "primary.main",
-                        },
-                      },
-                      "& .MuiInputLabel-root": {
-                        color: "text.secondary",
-                        fontFamily: brand.fonts.body,
-                        "&.Mui-focused": {
-                          color: "primary.main",
-                        },
-                      },
-                    }}
-                  />
-
-                  <TextField
-                    label="Seed (Optional)"
-                    type="number"
-                    value={seed || ""}
-                    onChange={(e) =>
-                      setSeed(
-                        e.target.value ? parseInt(e.target.value) : undefined
-                      )
-                    }
-                    size="small"
-                    disabled={disabled}
-                    error={!isValidSeed}
-                    helperText={!isValidSeed ? "Must be 0-2147483647" : ""}
-                    InputProps={{
-                      endAdornment: (
-                        <Tooltip title="Generate random seed">
-                          <IconButton
-                            size="small"
-                            onClick={generateRandomSeed}
-                            disabled={disabled}
-                            color="primary"
-                          >
-                            <RandomIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      ),
-                    }}
-                    sx={{
-                      flex: 1,
-                      "& .MuiOutlinedInput-root": {
-                        bgcolor: theme.palette.action.selected,
-                        color: "text.primary",
-                        fontFamily: brand.fonts.body,
-                        borderRadius: `${brand.borderRadius}px`,
-                        "& fieldset": {
-                          borderColor: "divider",
-                        },
-                        "&:hover fieldset": {
-                          borderColor: "primary.main",
-                        },
-                        "&.Mui-focused fieldset": {
-                          borderColor: "primary.main",
-                        },
-                      },
-                      "& .MuiInputLabel-root": {
-                        color: "text.secondary",
-                        fontFamily: brand.fonts.body,
-                        "&.Mui-focused": {
-                          color: "primary.main",
-                        },
-                      },
-                      "& .MuiFormHelperText-root": {
-                        color: "text.secondary",
-                        fontFamily: brand.fonts.body,
-                        "&.Mui-error": {
-                          color: "error.main",
-                        },
-                      },
-                    }}
-                  />
-                </Stack>
-              </Stack>
-            </Collapse>
-
-            {/* Optimization Insights Panel */}
-            {optimizationData && showOptimizationInsights && (
-              <Collapse in={showOptimizationInsights}>
-                <Box
+              {/* Action Buttons */}
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleGenerateSubmit}
+                  disabled={
+                    // ✅ UPDATED: Different validation for standalone init
+                    isStandaloneInitMode
+                      ? !isValidPrompt ||
+                        !isValidSeed ||
+                        !metadata.title.trim() ||
+                        isProcessing ||
+                        disabled
+                      : !isValidPrompt ||
+                        !isValidSeed ||
+                        isProcessing ||
+                        disabled ||
+                        loadingCurrentPrompt
+                  }
+                  size="small"
+                  startIcon={selectedTierOption?.icon || <OptimizeIcon />}
                   sx={{
-                    mt: 2,
-                    p: 2,
-                    bgcolor: theme.palette.action.hover,
+                    minWidth: 120,
+                    borderRadius: `${brand.borderRadius}px`,
+                    fontFamily: brand.fonts.body,
+                    ...(selectedTierOption && {
+                      bgcolor: selectedTierOption.color,
+                      color: theme.palette.getContrastText(
+                        selectedTierOption.color
+                      ),
+                      "&:hover": {
+                        bgcolor: `${selectedTierOption.color}dd`,
+                      },
+                    }),
+                  }}
+                >
+                  {isGenerating
+                    ? `Generating with ${selectedTierOption?.label || "AI"}...`
+                    : `Generate with ${selectedTierOption?.label || "AI"}`}
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={handleCancel}
+                  disabled={isProcessing}
+                  size="small"
+                  sx={{
+                    bgcolor: "transparent",
+                    backdropFilter: "blur(10px)",
+                    borderRadius: `${brand.borderRadius}px`,
+                    fontFamily: brand.fonts.body,
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Stack>
+            </Stack>
+          )}
+
+          {/* Upload Mode */}
+          {generationMode === "upload" && (
+            <Stack spacing={2}>
+              {/* Upload Description Field */}
+              <TextField
+                fullWidth
+                multiline
+                minRows={2}
+                maxRows={6}
+                value={uploadPrompt}
+                onChange={(e) => setUploadPrompt(e.target.value)}
+                placeholder="Describe the image you're uploading..."
+                disabled={disabled || isProcessing}
+                variant="outlined"
+                label="Image Description"
+                size="small"
+                error={uploadPrompt.length > 5000}
+                helperText={
+                  uploadPrompt.length > 5000
+                    ? "Description must be under 5000 characters"
+                    : `${uploadPrompt.length}/5000 characters`
+                }
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: isProcessing
+                      ? theme.palette.action.hover
+                      : theme.palette.action.selected,
                     backdropFilter: "blur(10px)",
                     border: `1px solid ${theme.palette.divider}`,
                     borderRadius: `${brand.borderRadius}px`,
-                  }}
-                >
-                  <Stack spacing={1.5}>
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      justifyContent="space-between"
-                    >
-                      <Typography
-                        variant="caption"
-                        color="text.primary"
-                        fontWeight="medium"
-                        sx={{ fontFamily: brand.fonts.body }}
-                      >
-                        Optimization Insights
-                      </Typography>
-                      <IconButton
-                        size="small"
-                        onClick={() => setShowOptimizationInsights(false)}
-                        color="primary"
-                        sx={{ p: 0.5 }}
-                      >
-                        <CollapseIcon fontSize="small" />
-                      </IconButton>
-                    </Stack>
-
-                    {optimizationInsights && (
-                      <Stack spacing={1}>
-                        {optimizationInsights.strategy && (
-                          <Box>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "text.secondary",
-                                fontFamily: brand.fonts.body,
-                              }}
-                            >
-                              Strategy:
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.primary"
-                              sx={{ ml: 1, fontFamily: brand.fonts.body }}
-                            >
-                              {optimizationInsights.strategy}
-                            </Typography>
-                          </Box>
-                        )}
-
-                        {optimizationInsights.confidence !== undefined && (
-                          <Box>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "text.secondary",
-                                fontFamily: brand.fonts.body,
-                              }}
-                            >
-                              Confidence:
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.primary"
-                              sx={{ ml: 1, fontFamily: brand.fonts.body }}
-                            >
-                              {Math.round(
-                                optimizationInsights.confidence * 100
-                              )}
-                              %
-                            </Typography>
-                          </Box>
-                        )}
-
-                        {originalPrompt && originalPrompt !== prompt && (
-                          <Box>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="primary"
-                              onClick={() => {
-                                setPrompt(originalPrompt);
-                                setOptimizationData(null);
-                                setShowOptimizationInsights(false);
-                              }}
-                              disabled={disabled}
-                              sx={{
-                                fontSize: "0.7rem",
-                                py: 0.5,
-                                borderRadius: `${brand.borderRadius}px`,
-                                fontFamily: brand.fonts.body,
-                              }}
-                            >
-                              Revert to Original
-                            </Button>
-                          </Box>
-                        )}
-                      </Stack>
-                    )}
-                  </Stack>
-                </Box>
-              </Collapse>
-            )}
-
-            {/* Optimization Error */}
-            {optimizeError && (
-              <Alert
-                severity="error"
-                sx={{
-                  mt: 1,
-                  borderRadius: `${brand.borderRadius}px`,
-                  "& .MuiAlert-message": {
                     fontFamily: brand.fonts.body,
-                  },
-                }}
-              >
-                {optimizeError.message}
-              </Alert>
-            )}
-
-            {/* Action Buttons */}
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleGenerateSubmit}
-                disabled={
-                  // ✅ UPDATED: Different validation for standalone init
-                  isStandaloneInitMode
-                    ? !isValidPrompt ||
-                      !isValidSeed ||
-                      !metadata.title.trim() ||
-                      isProcessing ||
-                      disabled
-                    : !isValidPrompt ||
-                      !isValidSeed ||
-                      isProcessing ||
-                      disabled ||
-                      loadingCurrentPrompt
-                }
-                size="small"
-                startIcon={selectedTierOption?.icon || <OptimizeIcon />}
-                sx={{
-                  minWidth: 120,
-                  borderRadius: `${brand.borderRadius}px`,
-                  fontFamily: brand.fonts.body,
-                  ...(selectedTierOption && {
-                    bgcolor: selectedTierOption.color,
-                    color: theme.palette.getContrastText(
-                      selectedTierOption.color
-                    ),
-                    "&:hover": {
-                      bgcolor: `${selectedTierOption.color}dd`,
+                    "& fieldset": {
+                      border: "none",
                     },
-                  }),
-                }}
-              >
-                {isGenerating
-                  ? `Generating with ${selectedTierOption?.label || "AI"}...`
-                  : `Generate with ${selectedTierOption?.label || "AI"}`}
-              </Button>
-
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={handleCancel}
-                disabled={isProcessing}
-                size="small"
-                sx={{
-                  bgcolor: "transparent",
-                  backdropFilter: "blur(10px)",
-                  borderRadius: `${brand.borderRadius}px`,
-                  fontFamily: brand.fonts.body,
-                }}
-              >
-                Cancel
-              </Button>
-            </Stack>
-          </Stack>
-        )}
-
-        {/* Upload Mode */}
-        {generationMode === "upload" && (
-          <Stack spacing={2}>
-            {/* Upload Description Field */}
-            <TextField
-              fullWidth
-              multiline
-              minRows={2}
-              maxRows={6}
-              value={uploadPrompt}
-              onChange={(e) => setUploadPrompt(e.target.value)}
-              placeholder="Describe the image you're uploading..."
-              disabled={disabled || isProcessing}
-              variant="outlined"
-              label="Image Description"
-              size="small"
-              error={uploadPrompt.length > 5000}
-              helperText={
-                uploadPrompt.length > 5000
-                  ? "Description must be under 5000 characters"
-                  : `${uploadPrompt.length}/5000 characters`
-              }
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  bgcolor: isProcessing
-                    ? theme.palette.action.hover
-                    : theme.palette.action.selected,
-                  backdropFilter: "blur(10px)",
-                  border: `1px solid ${theme.palette.divider}`,
-                  borderRadius: `${brand.borderRadius}px`,
-                  fontFamily: brand.fonts.body,
-                  "& fieldset": {
-                    border: "none",
-                  },
-                  "&:hover fieldset": {
-                    border: "none",
-                  },
-                  "&.Mui-focused": {
-                    borderColor: "primary.main",
-                  },
-                  "& textarea": {
-                    color: "text.primary",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    fontFamily: brand.fonts.body,
-                    "&::placeholder": {
-                      color: "text.secondary",
-                      opacity: 0.7,
+                    "&:hover fieldset": {
+                      border: "none",
+                    },
+                    "&.Mui-focused": {
+                      borderColor: "primary.main",
+                    },
+                    "& textarea": {
+                      color: "text.primary",
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                      fontFamily: brand.fonts.body,
+                      "&::placeholder": {
+                        color: "text.secondary",
+                        opacity: 0.7,
+                      },
                     },
                   },
-                },
-                "& .MuiInputLabel-root": {
-                  color: "text.secondary",
-                  fontFamily: brand.fonts.body,
-                  "&.Mui-focused": {
-                    color: "primary.main",
-                  },
-                },
-                "& .MuiFormHelperText-root": {
-                  color: "text.secondary",
-                  fontFamily: brand.fonts.body,
-                  "&.Mui-error": {
-                    color: "error.main",
-                  },
-                },
-              }}
-            />
-
-            {/* Action Buttons Row with Aspect Ratio Chip */}
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              {/* Select/Change Image Button */}
-              <Button
-                variant="outlined"
-                onClick={() => setIsUploadPanelOpen(!isUploadPanelOpen)}
-                disabled={isProcessing}
-                startIcon={<UploadIcon />}
-                size="small"
-                sx={{
-                  bgcolor: "transparent",
-                  backdropFilter: "blur(10px)",
-                  borderRadius: `${brand.borderRadius}px`,
-                  fontFamily: brand.fonts.body,
-                  textTransform: "none",
-                  minWidth: 140,
-                }}
-              >
-                {uploadedFileUrl ? "Change Image" : "Select Image"}
-              </Button>
-
-              {/* Detected Aspect Ratio Chip */}
-              {detectedAspectRatio && (
-                <Chip
-                  label={`${detectedAspectRatio}`}
-                  size="small"
-                  icon={<InfoIcon fontSize="small" />}
-                  sx={{
-                    bgcolor: alpha(theme.palette.primary.main, 0.15),
-                    color: "primary.main",
-                    borderColor: "primary.main",
-                    border: 1,
+                  "& .MuiInputLabel-root": {
+                    color: "text.secondary",
                     fontFamily: brand.fonts.body,
-                    fontSize: "0.75rem",
-                    height: 28,
-                    "& .MuiChip-icon": {
+                    "&.Mui-focused": {
                       color: "primary.main",
                     },
-                  }}
-                />
-              )}
-            </Stack>
-
-            {/* File Upload Component */}
-            <GenericFileUpload
-              isVisible={isUploadPanelOpen}
-              onToggle={() => setIsUploadPanelOpen(!isUploadPanelOpen)}
-              onClose={() => setIsUploadPanelOpen(false)}
-              onFilesUpdate={handleFilesUpdate}
-              disabled={isProcessing}
-              maxFiles={1}
-              maxSizeMB={10}
-              maxFileSizeMB={10}
-              title="Upload Image"
-              description="Upload an image to add to your project"
-              fileFilter="images"
-            />
-
-            {/* Upload Preview */}
-            {uploadedFileUrl && (
-              <Box
-                sx={{
-                  borderRadius: `${brand.borderRadius}px`,
-                  overflow: "hidden",
-                  border: 1,
-                  borderColor: "divider",
-                  bgcolor: theme.palette.action.hover,
+                  },
+                  "& .MuiFormHelperText-root": {
+                    color: "text.secondary",
+                    fontFamily: brand.fonts.body,
+                    "&.Mui-error": {
+                      color: "error.main",
+                    },
+                  },
                 }}
-              >
-                <Box
-                  component="img"
-                  src={uploadedFileUrl}
-                  alt="Upload preview"
+              />
+
+              {/* Action Buttons Row with Aspect Ratio Chip */}
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                {/* Select/Change Image Button */}
+                <Button
+                  variant="outlined"
+                  onClick={() => setIsUploadPanelOpen(!isUploadPanelOpen)}
+                  disabled={isProcessing}
+                  startIcon={<UploadIcon />}
+                  size="small"
                   sx={{
-                    width: "100%",
-                    height: "auto",
-                    maxHeight: 200,
-                    objectFit: "contain",
+                    bgcolor: "transparent",
+                    backdropFilter: "blur(10px)",
+                    borderRadius: `${brand.borderRadius}px`,
+                    fontFamily: brand.fonts.body,
+                    textTransform: "none",
+                    minWidth: 140,
                   }}
-                />
-              </Box>
-            )}
+                >
+                  {uploadedFileUrl ? "Change Image" : "Select Image"}
+                </Button>
 
-            {/* Submit Upload Button */}
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleManualUpload}
-                disabled={
-                  disabled ||
-                  !uploadedFileUrl ||
-                  !uploadPrompt.trim() ||
-                  uploadPrompt.length > 5000 ||
-                  // ✅ UPDATED: Check title for standalone init
-                  (isStandaloneInitMode && !metadata.title.trim()) ||
-                  isProcessing
-                }
-                size="small"
-                startIcon={
-                  isUploading ? (
-                    <CircularProgress size={16} color="inherit" />
-                  ) : (
-                    <UploadIcon />
-                  )
-                }
-                sx={{
-                  minWidth: 120,
-                  borderRadius: `${brand.borderRadius}px`,
-                  fontFamily: brand.fonts.body,
-                  textTransform: "none",
-                }}
-              >
-                {isUploading ? "Uploading..." : "Upload Image"}
-              </Button>
+                {/* Detected Aspect Ratio Chip */}
+                {detectedAspectRatio && (
+                  <Chip
+                    label={`${detectedAspectRatio}`}
+                    size="small"
+                    icon={<InfoIcon fontSize="small" />}
+                    sx={{
+                      bgcolor: alpha(theme.palette.primary.main, 0.15),
+                      color: "primary.main",
+                      borderColor: "primary.main",
+                      border: 1,
+                      fontFamily: brand.fonts.body,
+                      fontSize: "0.75rem",
+                      height: 28,
+                      "& .MuiChip-icon": {
+                        color: "primary.main",
+                      },
+                    }}
+                  />
+                )}
+              </Stack>
 
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={handleCancel}
-                disabled={isProcessing}
-                size="small"
-                sx={{
-                  bgcolor: "transparent",
-                  backdropFilter: "blur(10px)",
-                  borderRadius: `${brand.borderRadius}px`,
-                  fontFamily: brand.fonts.body,
-                  textTransform: "none",
-                }}
-              >
-                Cancel
-              </Button>
+              {/* Upload Preview */}
+              {uploadedFileUrl && (
+                <Box
+                  sx={{
+                    borderRadius: `${brand.borderRadius}px`,
+                    overflow: "hidden",
+                    border: 1,
+                    borderColor: "divider",
+                    bgcolor: theme.palette.action.hover,
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={uploadedFileUrl}
+                    alt="Upload preview"
+                    sx={{
+                      width: "100%",
+                      height: "auto",
+                      maxHeight: 200,
+                      objectFit: "contain",
+                    }}
+                  />
+                </Box>
+              )}
+
+              {/* Submit Upload Button */}
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleManualUpload}
+                  disabled={
+                    disabled ||
+                    !uploadedFileUrl ||
+                    !uploadPrompt.trim() ||
+                    uploadPrompt.length > 5000 ||
+                    // ✅ UPDATED: Check title for standalone init
+                    (isStandaloneInitMode && !metadata.title.trim()) ||
+                    isProcessing
+                  }
+                  size="small"
+                  startIcon={
+                    isUploading ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <UploadIcon />
+                    )
+                  }
+                  sx={{
+                    minWidth: 120,
+                    borderRadius: `${brand.borderRadius}px`,
+                    fontFamily: brand.fonts.body,
+                    textTransform: "none",
+                  }}
+                >
+                  {isUploading ? "Uploading..." : "Upload Image"}
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={handleCancel}
+                  disabled={isProcessing}
+                  size="small"
+                  sx={{
+                    bgcolor: "transparent",
+                    backdropFilter: "blur(10px)",
+                    borderRadius: `${brand.borderRadius}px`,
+                    fontFamily: brand.fonts.body,
+                    textTransform: "none",
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Stack>
             </Stack>
-          </Stack>
-        )}
-      </Stack>
-    </Box>
+          )}
+        </Stack>
+      </Box>
+      {/* File Upload Component */}
+      <GenericFileUpload
+        isVisible={isUploadPanelOpen}
+        onToggle={() => setIsUploadPanelOpen(!isUploadPanelOpen)}
+        onClose={() => setIsUploadPanelOpen(false)}
+        onFilesUpdate={handleFilesUpdate}
+        disabled={isProcessing}
+        maxFiles={1}
+        maxSizeMB={10}
+        maxFileSizeMB={10}
+        title="Upload Image"
+        description="Upload an image to add to your project"
+        fileFilter="images"
+      />
+    </>
   );
 }
