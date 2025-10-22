@@ -1,15 +1,14 @@
 "use client";
 
-import { Box, IconButton, Tooltip, Zoom, Container } from "@mui/material";
+import { Box, IconButton, Tooltip, Zoom } from "@mui/material";
 import { Expand, Minimize2 } from "lucide-react";
 import { useTheme, alpha } from "@mui/material/styles";
-import { getCurrentBrand } from "@/config/brandConfig";
 import { useLayoutStore } from "@/store/layoutStore";
 import type { ReactNode } from "react";
 
 interface ContainerWidthControlProps {
   children: ReactNode;
-  showToggle?: boolean; // Option to hide toggle button
+  showToggle?: boolean;
   position?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
 }
 
@@ -21,6 +20,7 @@ interface ContainerWidthControlProps {
  * - Persists preference to localStorage via Zustand
  * - Floating toggle button (theme-aware)
  * - Smooth transitions
+ * - Preserves child component state during width changes
  *
  * Usage:
  * ```tsx
@@ -35,7 +35,6 @@ export default function ContainerWidthControl({
   position = "top-right",
 }: ContainerWidthControlProps) {
   const theme = useTheme();
-  const brand = getCurrentBrand();
   const { containerWidth, toggleContainerWidth } = useLayoutStore();
 
   const isFullWidth = containerWidth === "full";
@@ -112,32 +111,25 @@ export default function ContainerWidthControl({
         </Zoom>
       )}
 
-      {/* Content Wrapper */}
-      {isFullWidth ? (
-        // Full Width - No Container
-        <Box
-          sx={{
-            width: "100%",
-            transition: theme.transitions.create("padding", {
+      {/* Single Content Wrapper - Preserves State */}
+      <Box
+        sx={{
+          width: "100%",
+          maxWidth: isFullWidth ? "100%" : "xl", // Toggle maxWidth instead of component
+          marginLeft: "auto",
+          marginRight: "auto",
+          paddingLeft: isFullWidth ? 0 : 2,
+          paddingRight: isFullWidth ? 0 : 2,
+          transition: theme.transitions.create(
+            ["max-width", "padding-left", "padding-right"],
+            {
               duration: theme.transitions.duration.standard,
-            }),
-          }}
-        >
-          {children}
-        </Box>
-      ) : (
-        // Contained Width - Use MUI Container
-        <Container
-          maxWidth="xl"
-          sx={{
-            transition: theme.transitions.create("max-width", {
-              duration: theme.transitions.duration.standard,
-            }),
-          }}
-        >
-          {children}
-        </Container>
-      )}
+            }
+          ),
+        }}
+      >
+        {children}
+      </Box>
     </Box>
   );
 }
