@@ -852,22 +852,27 @@ export function ImageGenerationOverlay({
                     }}
                   />
                 )}
-                {generationMode === "generate" && selectedTierOption && (
+                <Box
+                  sx={{
+                    display: generationMode === "generate" ? "block" : "none",
+                  }}
+                >
                   <Chip
-                    label={selectedTierOption.label}
+                    label={selectedTierOption?.label || "AI"}
                     size="small"
                     sx={{
                       ml: 1,
                       height: 20,
                       fontSize: "0.75rem",
-                      bgcolor: selectedTierOption.color,
+                      bgcolor:
+                        selectedTierOption?.color || theme.palette.primary.main,
                       color: theme.palette.getContrastText(
-                        selectedTierOption.color
+                        selectedTierOption?.color || theme.palette.primary.main
                       ),
                       fontFamily: brand.fonts.body,
                     }}
                   />
-                )}
+                </Box>
               </Typography>
               {/* Loading indicator */}
               {(loadingCurrentPrompt || isLoadingPrompts) && (
@@ -1494,7 +1499,7 @@ export function ImageGenerationOverlay({
           )}
 
           {/* Upload Mode */}
-          {generationMode === "upload" && (
+          <Box sx={{ display: generationMode === "upload" ? "block" : "none" }}>
             <Stack spacing={2}>
               {/* Upload Description Field */}
               <TextField
@@ -1620,7 +1625,7 @@ export function ImageGenerationOverlay({
                 </Button>
               </Stack>
             </Stack>
-          )}
+          </Box>
         </Stack>
       </Box>
       {/* File Upload Component */}
