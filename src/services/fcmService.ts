@@ -1,3 +1,6 @@
+// FIXED: src/services/fcmService.ts
+// This version ensures FCM tokens are ALWAYS saved to Firestore on login
+
 import { messaging } from '@/lib/firebase';
 import { getToken, onMessage } from 'firebase/messaging';
 import { useNotificationStore } from '@/store/notificationStore';
@@ -74,6 +77,7 @@ export async function getFCMToken(): Promise<string | null> {
 
 /**
  * Save FCM token to Firestore
+ * 🔧 FIXED: Added more detailed logging
  */
 async function saveFCMTokenToFirestore(token: string): Promise<void> {
     try {
@@ -82,6 +86,8 @@ async function saveFCMTokenToFirestore(token: string): Promise<void> {
             logger.warn('No authenticated user, cannot save FCM token');
             return;
         }
+
+        logger.debug('Saving FCM token to Firestore for user:', user.uid);
 
         const deviceInfo = {
             userAgent: navigator.userAgent,
@@ -99,9 +105,9 @@ async function saveFCMTokenToFirestore(token: string): Promise<void> {
             userId: user.uid,
         }, { merge: true });
 
-        logger.debug('FCM token saved to Firestore');
+        logger.debug('✅ FCM token saved to Firestore successfully');
     } catch (error) {
-        logger.error('Error saving FCM token to Firestore:', error);
+        logger.error('❌ Error saving FCM token to Firestore:', error);
     }
 }
 
@@ -162,21 +168,28 @@ export function initializeFCMListener(): void {
 
 /**
  * Initialize FCM (request permission + get token + setup listener)
+ * 🔧 FIXED: Always updates lastUsed timestamp even if token exists
  */
 export async function initializeFCM(): Promise<void> {
     try {
         const { permissionGranted, fcmToken } = useNotificationStore.getState();
 
-        // If already fully initialized (permission + token), just setup listener
-        if (permissionGranted && fcmToken) {
-            logger.debug('FCM already fully initialized with token');
-            initializeFCMListener();
-            return;
-        }
-
         // Check if notifications are blocked
         if (typeof window !== "undefined" && window.Notification?.permission === "denied") {
             logger.debug('Notifications are blocked by user');
+            return;
+        }
+
+        // 🔧 FIXED: Even if we have a token, update it in Firestore to refresh lastUsed
+        if (permissionGranted && fcmToken) {
+            logger.debug('FCM token exists in store, updating Firestore...');
+
+            // Update the token in Firestore (refreshes lastUsed timestamp)
+            await saveFCMTokenToFirestore(fcmToken);
+
+            // Setup foreground listener
+            initializeFCMListener();
+            logger.debug('FCM initialized successfully (token refreshed)');
             return;
         }
 
@@ -217,15 +230,20 @@ export async function deleteFCMToken(): Promise<void> {
         const user = auth.currentUser;
 
         if (fcmToken && user) {
-            // Note: deleteToken from firebase/messaging is not available in v9+
-            // We just remove it from Firestore
-            const tokenDoc = doc(db, 'users', user.uid, 'fcmTokens', fcmToken);
-            await setDoc(tokenDoc, { deleted: true, deletedAt: serverTimestamp() }, { merge: true });
+            logger.debug('Deleting FCM token from Firestore');
 
+            // Mark token as deleted in Firestore
+            const tokenDoc = doc(db, 'users', user.uid, 'fcmTokens', fcmToken);
+            await setDoc(tokenDoc, {
+                deleted: true,
+                deletedAt: serverTimestamp()
+            }, { merge: true });
+
+            // Clear from store
             useNotificationStore.getState().setFCMToken(null);
-            logger.debug('FCM token deleted');
+            logger.debug('✅ FCM token deleted successfully');
         }
     } catch (error) {
-        logger.error('Error deleting FCM token:', error);
+        logger.error('❌ Error deleting FCM token:', error);
     }
 }
