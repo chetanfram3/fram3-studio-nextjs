@@ -62,6 +62,8 @@ import type {
 } from "@/types/image/types";
 import { auth } from "@/lib/firebase";
 import logger from "@/utils/logger";
+import InlineImageUploader from "@/components/common/InlineImageUploader";
+import type { UploadedImageData } from "@/components/common/InlineImageUploader";
 
 interface ImageGenerationOverlayProps {
   scriptId: string;
@@ -418,6 +420,19 @@ export function ImageGenerationOverlay({
     },
     [setAspectRatio]
   );
+
+  /**
+   * Handle image upload from InlineImageUploader
+   */
+  const handleImageUploaded = useCallback((data: UploadedImageData) => {
+    setUploadedFileUrl(data.url);
+    setDetectedAspectRatio(data.aspectRatio as ManualAddAspectRatio);
+    logger.info("Image uploaded and ready:", {
+      url: data.url,
+      aspectRatio: data.aspectRatio,
+      filename: data.file.name,
+    });
+  }, []);
 
   /**
    * Handle file upload
@@ -1546,75 +1561,16 @@ export function ImageGenerationOverlay({
                 }}
               />
 
-              {/* Action Buttons Row with Aspect Ratio Chip */}
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                {/* Select/Change Image Button */}
-                <Button
-                  variant="outlined"
-                  onClick={() => setIsUploadPanelOpen(!isUploadPanelOpen)}
-                  disabled={isProcessing}
-                  startIcon={<UploadIcon />}
-                  size="small"
-                  sx={{
-                    bgcolor: "transparent",
-                    backdropFilter: "blur(10px)",
-                    borderRadius: `${brand.borderRadius}px`,
-                    fontFamily: brand.fonts.body,
-                    textTransform: "none",
-                    minWidth: 140,
-                  }}
-                >
-                  {uploadedFileUrl ? "Change Image" : "Select Image"}
-                </Button>
+              {/* Inline Image Uploader */}
+              <InlineImageUploader
+                onImageUploaded={handleImageUploaded}
+                disabled={disabled || isProcessing}
+                maxSizeMB={10}
+                showAspectRatio={true}
+                allowedFormats={["jpg", "jpeg", "png", "webp", "gif"]}
+              />
 
-                {/* Detected Aspect Ratio Chip */}
-                {detectedAspectRatio && (
-                  <Chip
-                    label={`${detectedAspectRatio}`}
-                    size="small"
-                    icon={<InfoIcon fontSize="small" />}
-                    sx={{
-                      bgcolor: alpha(theme.palette.primary.main, 0.15),
-                      color: "primary.main",
-                      borderColor: "primary.main",
-                      border: 1,
-                      fontFamily: brand.fonts.body,
-                      fontSize: "0.75rem",
-                      height: 28,
-                      "& .MuiChip-icon": {
-                        color: "primary.main",
-                      },
-                    }}
-                  />
-                )}
-              </Stack>
-
-              {/* Upload Preview */}
-              {uploadedFileUrl && (
-                <Box
-                  sx={{
-                    borderRadius: `${brand.borderRadius}px`,
-                    overflow: "hidden",
-                    border: 1,
-                    borderColor: "divider",
-                    bgcolor: theme.palette.action.hover,
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={uploadedFileUrl}
-                    alt="Upload preview"
-                    sx={{
-                      width: "100%",
-                      height: "auto",
-                      maxHeight: 200,
-                      objectFit: "contain",
-                    }}
-                  />
-                </Box>
-              )}
-
-              {/* Submit Upload Button */}
+              {/* Submit and Cancel Buttons */}
               <Stack direction="row" spacing={1}>
                 <Button
                   variant="contained"
@@ -1625,7 +1581,6 @@ export function ImageGenerationOverlay({
                     !uploadedFileUrl ||
                     !uploadPrompt.trim() ||
                     uploadPrompt.length > 5000 ||
-                    // ✅ UPDATED: Check title for standalone init
                     (isStandaloneInitMode && !metadata.title.trim()) ||
                     isProcessing
                   }
@@ -1644,7 +1599,7 @@ export function ImageGenerationOverlay({
                     textTransform: "none",
                   }}
                 >
-                  {isUploading ? "Uploading..." : "Upload Image"}
+                  {isUploading ? "Submitting..." : "Submit"}
                 </Button>
 
                 <Button
@@ -1669,19 +1624,6 @@ export function ImageGenerationOverlay({
         </Stack>
       </Box>
       {/* File Upload Component */}
-      <GenericFileUpload
-        isVisible={isUploadPanelOpen}
-        onToggle={() => setIsUploadPanelOpen(!isUploadPanelOpen)}
-        onClose={() => setIsUploadPanelOpen(false)}
-        onFilesUpdate={handleFilesUpdate}
-        disabled={isProcessing}
-        maxFiles={1}
-        maxSizeMB={10}
-        maxFileSizeMB={10}
-        title="Upload Image"
-        description="Upload an image to add to your project"
-        fileFilter="images"
-      />
     </>
   );
 }
