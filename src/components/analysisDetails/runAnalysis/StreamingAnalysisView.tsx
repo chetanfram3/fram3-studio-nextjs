@@ -238,7 +238,7 @@ export default function StreamingAnalysisView() {
   ]);
 
   const handleBack = () => {
-    router.push(`/dashboard/scripts/${scriptId}/version/${versionId}`);
+    router.push(`/scripts/${scriptId}/version/${versionId}`);
   };
 
   const handleRetry = () => {

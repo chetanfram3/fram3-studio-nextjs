@@ -24,7 +24,11 @@ import { fetchAnalysisStatus } from "./api";
 import StatusChip from "./StatusChip";
 import SceneAccordion from "./SceneAccordion";
 import ProgressCalculator from "./SceneProgressCalculator";
-import type { AnalysisStatusResponse } from "@/types/analysisStatus";
+import type {
+  AnalysisStatusResponse,
+  StatusType,
+  ShotStatus,
+} from "@/types/analysisStatus";
 import {
   ANALYSIS_TITLES,
   ANALYSIS_DEPENDENCIES,
@@ -61,28 +65,29 @@ interface AnalysisStatusProps {
 }
 
 interface StatusData {
-  status: string;
+  status: StatusType;
   data?: unknown;
   creditInfo?: unknown;
   error?: string;
 }
 
 interface SceneData {
-  sceneId: number;
-  status: string;
+  sceneId?: number;
+  sceneID?: number;
+  status: StatusType;
   shots?: unknown[];
 }
 
 interface ActorImageData {
   actorId: string;
   actorVersionId: string;
-  status: string;
+  status: StatusType;
 }
 
 interface LocationImageData {
   locationId: string;
   promptType: string;
-  status: string;
+  status: StatusType;
 }
 
 export default function AnalysisStatus({
@@ -110,7 +115,7 @@ export default function AnalysisStatus({
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  const calculateProgress = (statuses: AnalysisStatusResponse["statuses"]) => {
+  const calculateProgress = (statuses: Record<string, StatusData>) => {
     const total = Object.keys(statuses).length;
     const completed = Object.values(statuses).filter(
       (status) => status.status === "Completed"
@@ -188,11 +193,12 @@ export default function AnalysisStatus({
     }
 
     if (type === "processActorImages" || type === "actorProcessedImages") {
+      const actorImages = status.data as ActorImageData[];
       return (
         <Box>
-          {(status.data as ActorImageData[]).map((item, index) => (
+          {actorImages.map((item, index) => (
             <Box
-              key={index}
+              key={`actor-${item.actorId}-${item.actorVersionId}-${index}`}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -218,11 +224,12 @@ export default function AnalysisStatus({
       type === "processLocationImages" ||
       type === "locationProcessedImages"
     ) {
+      const locationImages = status.data as LocationImageData[];
       return (
         <Box>
-          {(status.data as LocationImageData[]).map((item, index) => (
+          {locationImages.map((item, index) => (
             <Box
-              key={index}
+              key={`location-${item.locationId}-${item.promptType}-${index}`}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -249,11 +256,12 @@ export default function AnalysisStatus({
       type === "actorAnalysis" ||
       type === "locationMapper"
     ) {
+      const scenes = status.data as SceneData[];
       return (
         <Box>
-          {(status.data as SceneData[]).map((scene) => (
+          {scenes.map((scene, index) => (
             <Box
-              key={scene.sceneId}
+              key={`${scene.sceneId}-${index}`}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -275,103 +283,49 @@ export default function AnalysisStatus({
       );
     }
 
-    if (
-      Array.isArray(status.data) &&
-      status.data.length > 0 &&
-      (status.data[0] as SceneData).shots
-    ) {
-      return <SceneAccordion scenes={status.data as SceneData[]} />;
+    if (type === "promptGenerator" || type === "processScenesAndShots") {
+      const scenes = status.data as SceneData[];
+      // Map to SceneStatus format with proper ShotStatus type
+      const sceneStatuses = scenes.map((scene) => ({
+        sceneID: scene.sceneID ?? scene.sceneId ?? 0,
+        status: scene.status,
+        shots: (scene.shots ?? []) as ShotStatus[],
+      }));
+      return (
+        <Box>
+          <SceneAccordion scenes={sceneStatuses} />
+        </Box>
+      );
     }
 
     return (
-      <Typography color="text.secondary" sx={{ fontFamily: brand.fonts.body }}>
-        Data structure not recognized for display.
-      </Typography>
+      <Box>
+        <Typography variant="body2" color="text.secondary">
+          {JSON.stringify(status.data, null, 2)}
+        </Typography>
+      </Box>
     );
   };
 
   if (isLoading) {
-    logger.debug("Loading analysis status", {
-      scriptId,
-      versionId,
-      isRefreshData,
-    });
     return (
-      <Paper
-        elevation={2}
-        sx={{
-          p: 3,
-          bgcolor: "background.paper",
-          borderRadius: `${brand.borderRadius}px`,
-          border: 1,
-          borderColor: "divider",
-        }}
-      >
-        <Typography
-          variant="h6"
-          gutterBottom
-          sx={{
-            fontFamily: brand.fonts.heading,
-            color: "text.primary",
-            fontWeight: 600,
-          }}
-        >
-          Analysis Status
-        </Typography>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            mb: 2,
-            fontFamily: brand.fonts.body,
-          }}
-        >
-          Script: {scriptId} | Version: {versionId}
-        </Typography>
-        <LinearProgress
-          sx={{
-            borderRadius: `${brand.borderRadius}px`,
-            bgcolor: "background.default",
-            "& .MuiLinearProgress-bar": {
-              bgcolor: "primary.main",
-            },
-          }}
-        />
-      </Paper>
+      <Alert severity="info" sx={{ borderRadius: `${brand.borderRadius}px` }}>
+        Loading analysis status...
+      </Alert>
     );
   }
 
   if (error) {
     return (
-      <Alert
-        severity="error"
-        sx={{
-          bgcolor: "background.paper",
-          color: "text.primary",
-          borderRadius: `${brand.borderRadius}px`,
-          borderLeft: 4,
-          borderColor: "error.main",
-          fontFamily: brand.fonts.body,
-        }}
-      >
-        Failed to fetch analysis status. Please try again.
+      <Alert severity="error" sx={{ borderRadius: `${brand.borderRadius}px` }}>
+        Failed to load analysis status.
       </Alert>
     );
   }
 
   if (!data?.statuses) {
     return (
-      <Alert
-        severity="info"
-        sx={{
-          bgcolor: "background.paper",
-          color: "text.primary",
-          borderRadius: `${brand.borderRadius}px`,
-          borderLeft: 4,
-          borderColor: "primary.main",
-          fontFamily: brand.fonts.body,
-        }}
-      >
+      <Alert severity="info" sx={{ borderRadius: `${brand.borderRadius}px` }}>
         No analysis status information available.
       </Alert>
     );
@@ -537,6 +491,7 @@ export default function AnalysisStatus({
                   borderColor: "divider",
                 }}
               >
+                {/* ✅ FIXED: AccordionSummary - Only title, progress, and status chip */}
                 <AccordionSummary
                   expandIcon={
                     <ExpandMoreIcon sx={{ color: "text.secondary" }} />
@@ -554,68 +509,96 @@ export default function AnalysisStatus({
                       pr: 2,
                     }}
                   >
+                    {/* Title */}
                     <Typography
                       sx={{
                         fontFamily: brand.fonts.body,
                         color: "text.primary",
+                        flex: 1,
                       }}
                     >
                       {ANALYSIS_TITLES[type as keyof typeof ANALYSIS_TITLES] ||
                         type}
                     </Typography>
 
-                    {type === "promptGenerator" && status.data && (
-                      <>
-                        <ProgressCalculator
-                          scenes={status.data as SceneData[]}
-                          title=""
-                        />
-                        <Box sx={{ display: "flex", gap: 1 }}>
-                          <PromptGeneratorButton
-                            scriptId={scriptId}
-                            versionId={versionId}
-                            onStatusChange={(success) => {
-                              if (success) setIsRefreshData(true);
-                            }}
-                            disabled={
-                              !(
-                                status.status === "Incomplete" ||
-                                status.status === "NotStarted"
-                              ) || isAnalysisDisabled(type as AnalysisType)
-                            }
-                          />
-                        </Box>
-                      </>
-                    )}
+                    {/* Progress Calculator (only for prompt and image generators) */}
+                    {(type === "promptGenerator" ||
+                      type === "processScenesAndShots") &&
+                    status.data &&
+                    Array.isArray(status.data) ? (
+                      <ProgressCalculator
+                        scenes={(status.data as SceneData[]).map((scene) => ({
+                          sceneID: scene.sceneID ?? scene.sceneId ?? 0,
+                          status: scene.status,
+                          shots: (scene.shots ?? []) as ShotStatus[],
+                        }))}
+                        title=""
+                      />
+                    ) : null}
 
-                    {type === "processScenesAndShots" && status.data && (
-                      <>
-                        <ProgressCalculator
-                          scenes={status.data as SceneData[]}
-                          title=""
-                        />
-                        <Box sx={{ display: "flex", gap: 1 }}>
-                          <ImageGeneratorButton
-                            scriptId={scriptId}
-                            versionId={versionId}
-                            onStatusChange={(success) => {
-                              if (success) setIsRefreshData(true);
-                            }}
-                            disabled={
-                              !(
-                                status.status === "Incomplete" ||
-                                status.status === "NotStarted"
-                              ) || isAnalysisDisabled(type as AnalysisType)
-                            }
-                          />
-                        </Box>
-                      </>
-                    )}
-
+                    {/* Status Chip */}
                     <StatusChip status={status.status} />
                   </Box>
                 </AccordionSummary>
+
+                {/* ✅ FIXED: AccordionDetails - Generator buttons moved here */}
                 <AccordionDetails sx={{ bgcolor: "background.default" }}>
+                  {/* Generator Buttons - Now OUTSIDE the button element */}
+                  {type === "promptGenerator" &&
+                  status.data &&
+                  Array.isArray(status.data) ? (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        mb: 2,
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <PromptGeneratorButton
+                        scriptId={scriptId}
+                        versionId={versionId}
+                        onStatusChange={(success) => {
+                          if (success) setIsRefreshData(true);
+                        }}
+                        disabled={
+                          !(
+                            status.status === "Incomplete" ||
+                            status.status === "NotStarted"
+                          ) || isAnalysisDisabled(type as AnalysisType)
+                        }
+                      />
+                    </Box>
+                  ) : null}
+
+                  {type === "processScenesAndShots" &&
+                  status.data &&
+                  Array.isArray(status.data) ? (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        mb: 2,
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <ImageGeneratorButton
+                        scriptId={scriptId}
+                        versionId={versionId}
+                        onStatusChange={(success) => {
+                          if (success) setIsRefreshData(true);
+                        }}
+                        disabled={
+                          !(
+                            status.status === "Incomplete" ||
+                            status.status === "NotStarted"
+                          ) || isAnalysisDisabled(type as AnalysisType)
+                        }
+                      />
+                    </Box>
+                  ) : null}
+
+                  {/* Analysis Details */}
                   {renderAnalysisDetails(type, status)}
                 </AccordionDetails>
               </Accordion>
