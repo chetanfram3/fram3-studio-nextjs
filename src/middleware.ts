@@ -10,6 +10,7 @@ import type { NextRequest } from 'next/server';
  */
 
 const AUTH_ROUTES = [
+    '/',
     '/signin',
     '/register',
     '/forgot-password',
