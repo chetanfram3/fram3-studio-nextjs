@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Box,
@@ -12,7 +12,10 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import { ArrowBack as ArrowBackIcon } from "@mui/icons-material";
+import {
+  ArrowBack as ArrowBackIcon,
+  PlayArrow as PlayArrowIcon,
+} from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCurrentBrand } from "@/config/brandConfig";
@@ -28,23 +31,23 @@ import { API_BASE_URL } from "@/config/constants";
 import logger from "@/utils/logger";
 
 /**
- * StreamingAnalysisView - Displays real-time streaming analysis results
+ * StreamingAnalysisView - Manual-trigger streaming analysis component
+ *
+ * DEBUG COMPONENT - API is called ONLY when user clicks "Start Analysis" button
+ * - No automatic execution on mount
+ * - No automatic retries on failure
+ * - User has full manual control
+ * - Clean navigation history (no intermediate loading pages)
  *
  * Performance optimizations (React 19):
  * - No manual React.memo (compiler handles optimization)
  * - Uses refs to prevent unnecessary re-renders
- * - Implements exponential backoff for retries
- * - Debounces simultaneous requests
+ * - Single execution per button click
  *
  * Theme integration:
  * - Uses theme.palette for all colors
  * - Uses brand configuration for fonts and border radius
  * - Respects light/dark mode automatically
- * - No hardcoded colors or spacing
- *
- * Navigation:
- * - Uses Next.js 15 router for navigation
- * - Handles route params from Next.js App Router
  */
 
 // Helper function to extract text content from chunks
@@ -92,11 +95,11 @@ export default function StreamingAnalysisView() {
     useStreaming();
 
   const [isAnalysisComplete, setIsAnalysisComplete] = useState(false);
-  const retryCountRef = useRef(0);
+  const [hasStarted, setHasStarted] = useState(false);
   const [processingTime, setProcessingTime] = useState<number>(0);
-  const [startTime, setStartTime] = useState<number>(Date.now());
+  const [startTime, setStartTime] = useState<number>(0);
   const isRequestInProgressRef = useRef(false);
-  const hasStartedRef = useRef(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Function to check if chunks contain enough meaningful data
   const hasSignificantData = useCallback(() => {
@@ -108,45 +111,39 @@ export default function StreamingAnalysisView() {
     );
   }, [chunks]);
 
-  // Update timer during streaming
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-
-    if (isStreaming) {
-      timer = setInterval(() => {
-        setProcessingTime(Math.floor((Date.now() - startTime) / 1000));
-      }, 1000);
-    }
-
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [isStreaming, startTime]);
-
-  // Memoized function with stable dependencies
-  const fetchAnalysis = useCallback(async () => {
+  // Start the analysis when user clicks the button
+  const handleStartAnalysis = useCallback(async () => {
     if (!scriptId || !versionId || !analysisType) {
+      logger.warn("Missing required parameters for analysis");
       return;
     }
 
     // Prevent multiple simultaneous requests
     if (isRequestInProgressRef.current) {
-      return;
-    }
-
-    // Enforce maximum retry limit
-    if (retryCountRef.current >= 3) {
-      logger.error("Maximum retry attempts reached");
+      logger.info("Request already in progress, skipping");
       return;
     }
 
     isRequestInProgressRef.current = true;
+    setHasStarted(true);
 
     try {
+      logger.info("Starting analysis", { scriptId, versionId, analysisType });
+
       resetStream();
       setIsAnalysisComplete(false);
-      setStartTime(Date.now());
+      const now = Date.now();
+      setStartTime(now);
       setProcessingTime(0);
+
+      // Start the timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+
+      timerRef.current = setInterval(() => {
+        setProcessingTime(Math.floor((Date.now() - now) / 1000));
+      }, 1000);
 
       await startStreaming(
         `${API_BASE_URL}${UNIFIED_ANALYSIS_ENDPOINT}?stream=true`,
@@ -158,55 +155,47 @@ export default function StreamingAnalysisView() {
         }
       );
 
-      hasStartedRef.current = true;
-      retryCountRef.current = 0;
+      logger.info("Analysis completed successfully");
     } catch (err) {
       logger.error("Analysis error:", err);
 
-      const isRetryableError =
-        err instanceof Error &&
-        (err.message.includes("network") ||
-          err.message.includes("timeout") ||
-          err.message.includes("500") ||
-          err.message.includes("502") ||
-          err.message.includes("503") ||
-          err.message.includes("504"));
-
-      if (isRetryableError && retryCountRef.current < 2) {
-        retryCountRef.current += 1;
-        const backoffTime = 2000 * Math.pow(2, retryCountRef.current - 1);
-
-        setTimeout(() => {
-          isRequestInProgressRef.current = false;
-          fetchAnalysis();
-        }, backoffTime);
-      } else {
-        hasStartedRef.current = false;
-      }
+      // NO AUTOMATIC RETRY - User must manually retry via button
+      // This is a debug component, so we want explicit control
     } finally {
+      // Clear the timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
+      // Small delay to prevent rapid re-execution
       setTimeout(() => {
         isRequestInProgressRef.current = false;
       }, 1000);
     }
   }, [scriptId, versionId, analysisType, startStreaming, resetStream]);
 
-  // Initial effect with proper cleanup and single execution
-  useEffect(() => {
-    if (!hasStartedRef.current && scriptId && versionId && analysisType) {
-      fetchAnalysis();
-    }
+  // Handle retry - just calls the start function again
+  const handleRetry = useCallback(() => {
+    logger.info("Manual retry triggered by user");
+    handleStartAnalysis();
+  }, [handleStartAnalysis]);
 
-    return () => {
-      resetStream();
-      isRequestInProgressRef.current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Effect to handle streaming completion
-  useEffect(() => {
-    if (!isStreaming && hasSignificantData() && !isAnalysisComplete) {
+  // Check for completion when streaming stops
+  const checkCompletion = useCallback(() => {
+    if (
+      !isStreaming &&
+      hasSignificantData() &&
+      !isAnalysisComplete &&
+      hasStarted
+    ) {
       setIsAnalysisComplete(true);
+
+      // Clear the timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
 
       queryClient.invalidateQueries({
         queryKey: ["scriptDetails", scriptId, versionId],
@@ -216,19 +205,21 @@ export default function StreamingAnalysisView() {
       });
 
       if (chunks.length > 0) {
-        const timer = setTimeout(() => {
+        // Auto-redirect after successful completion
+        const redirectTimer = setTimeout(() => {
           router.push(
             `/scripts/${scriptId}/version/${versionId}/analysis/view/${analysisType}`
           );
-        }, 1500);
+        }, 2000);
 
-        return () => clearTimeout(timer);
+        return () => clearTimeout(redirectTimer);
       }
     }
   }, [
     isStreaming,
     hasSignificantData,
     isAnalysisComplete,
+    hasStarted,
     scriptId,
     versionId,
     analysisType,
@@ -237,16 +228,13 @@ export default function StreamingAnalysisView() {
     chunks.length,
   ]);
 
+  // Use effect only for checking completion, not for starting
+  useState(() => {
+    checkCompletion();
+  });
+
   const handleBack = () => {
     router.push(`/scripts/${scriptId}/version/${versionId}`);
-  };
-
-  const handleRetry = () => {
-    retryCountRef.current = 0;
-    hasStartedRef.current = false;
-    isRequestInProgressRef.current = false;
-    setIsAnalysisComplete(false);
-    fetchAnalysis();
   };
 
   const handleViewResults = () => {
@@ -301,7 +289,8 @@ export default function StreamingAnalysisView() {
           borderColor: "divider",
         }}
       >
-        {error ? (
+        {/* Error State */}
+        {error && (
           <Alert
             severity="error"
             sx={{
@@ -328,62 +317,173 @@ export default function StreamingAnalysisView() {
             }
           >
             {error}
-            {retryCountRef.current > 0 &&
-              ` (Attempt ${retryCountRef.current + 1}/3)`}
           </Alert>
-        ) : chunks.length === 0 && isStreaming ? (
+        )}
+
+        {/* Initial State - Show Start Button */}
+        {!hasStarted && !error && (
           <Box
             sx={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              py: 6,
+              gap: 4,
+              py: 8,
             }}
           >
-            <CircularProgress size={40} color="primary" sx={{ mb: 2 }} />
-            <Typography variant="h6" sx={{ fontFamily: brand.fonts.heading }}>
-              Starting analysis...
-            </Typography>
             <Typography
-              variant="body2"
-              color="text.secondary"
+              variant="h5"
               sx={{
-                mt: 1,
-                fontFamily: brand.fonts.body,
+                color: "text.primary",
+                fontFamily: brand.fonts.heading,
+                textAlign: "center",
               }}
             >
-              This may take a minute or two depending on the complexity of your
-              script.
+              Ready to Run Analysis
             </Typography>
-          </Box>
-        ) : (
-          <StreamContent
-            chunks={chunks}
-            isStreaming={isStreaming}
-            analysisType={analysisType}
-          />
-        )}
 
-        {isAnalysisComplete && chunks.length > 0 && (
-          <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: "text.secondary",
+                fontFamily: brand.fonts.body,
+                textAlign: "center",
+                maxWidth: 600,
+              }}
+            >
+              Click the button below to start the {analysisType} analysis for
+              this script version. This is a debug component - the analysis will
+              only run when you manually trigger it.
+            </Typography>
+
             <Button
               variant="contained"
-              color="primary"
-              onClick={handleViewResults}
+              size="large"
+              startIcon={<PlayArrowIcon />}
+              onClick={handleStartAnalysis}
+              disabled={isRequestInProgressRef.current}
               sx={{
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
                 fontFamily: brand.fonts.body,
-                borderRadius: `${brand.borderRadius}px`,
-                transition: theme.transitions.create(["transform"], {
-                  duration: theme.transitions.duration.shorter,
-                }),
+                fontSize: "1.1rem",
+                px: 4,
+                py: 1.5,
                 "&:hover": {
-                  transform: "translateY(-1px)",
+                  bgcolor: "primary.dark",
+                  transform: "scale(1.05)",
                 },
+                "&:disabled": {
+                  bgcolor: "action.disabledBackground",
+                  color: "action.disabled",
+                },
+                transition: theme.transitions.create(
+                  ["background-color", "transform"],
+                  { duration: theme.transitions.duration.short }
+                ),
               }}
             >
-              View Results
+              Start Analysis
             </Button>
+
+            <Box
+              sx={{
+                mt: 2,
+                p: 2,
+                bgcolor: "info.main",
+                color: "info.contrastText",
+                borderRadius: `${brand.borderRadius}px`,
+                maxWidth: 600,
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  fontFamily: brand.fonts.body,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <strong>Debug Mode:</strong> No automatic retries. You have full
+                control over when the analysis runs.
+              </Typography>
+            </Box>
           </Box>
+        )}
+
+        {/* Loading State - Initializing */}
+        {hasStarted && chunks.length === 0 && isStreaming && !error && (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+              py: 8,
+            }}
+          >
+            <CircularProgress size={60} color="primary" />
+            <Typography
+              variant="h6"
+              sx={{
+                color: "text.secondary",
+                fontFamily: brand.fonts.body,
+              }}
+            >
+              Initializing analysis...
+            </Typography>
+          </Box>
+        )}
+
+        {/* Streaming Content */}
+        {hasStarted && chunks.length > 0 && (
+          <>
+            <StreamContent
+              chunks={chunks}
+              isStreaming={isStreaming}
+              analysisType={analysisType}
+            />
+
+            {isAnalysisComplete && (
+              <Box
+                sx={{
+                  mt: 4,
+                  pt: 3,
+                  borderTop: 1,
+                  borderColor: "divider",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  sx={{
+                    color: "success.main",
+                    fontWeight: 500,
+                    fontFamily: brand.fonts.body,
+                  }}
+                >
+                  ✓ Analysis completed in {processingTime}s
+                </Typography>
+                <Button
+                  variant="contained"
+                  onClick={handleViewResults}
+                  sx={{
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    fontFamily: brand.fonts.body,
+                    "&:hover": {
+                      bgcolor: "primary.dark",
+                    },
+                  }}
+                >
+                  View Results
+                </Button>
+              </Box>
+            )}
+          </>
         )}
       </Paper>
     </Container>

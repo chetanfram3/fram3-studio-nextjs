@@ -21,17 +21,24 @@ interface ScriptHeaderProps {
  * - Uses theme.palette for all colors
  * - Uses brand configuration for fonts
  * - Respects light/dark mode automatically
+ *
+ * Navigation:
+ * - Home path correctly points to /story/{scriptId}/version/{versionId}
+ * - Back button uses browser history
  */
 export function ScriptHeader({ details }: ScriptHeaderProps) {
   const theme = useTheme();
   const brand = getCurrentBrand();
 
+  // Construct the correct home path for this script
+  const homePath = `/story/${details.scriptId}/version/${details.version.versionId}`;
+
   return (
     <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-      {/* Back Button */}
+      {/* Back Button with correct home path */}
       <BackButton
-        homePath="/dashboard"
-        showHomeButton={false}
+        homePath={homePath}
+        showHomeButton={true}
         sx={{
           color: "primary.main",
           borderColor: "primary.main",
