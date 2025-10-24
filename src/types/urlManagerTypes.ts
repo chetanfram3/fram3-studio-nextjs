@@ -40,6 +40,21 @@ export const URL_TYPE_LABELS: Record<UrlType, string> = {
     [UrlType.CUSTOM]: 'Custom Type',
 };
 
+export const URL_TYPE_DEFAULT_LABELS: Record<UrlType, string | null> = {
+    [UrlType.GENERIC]: 'General Reference',
+    [UrlType.PRODUCT]: 'Product Information',
+    [UrlType.BRAND]: 'Brand Guidelines',
+    [UrlType.LOGO]: 'Logo & Assets',
+    [UrlType.FINANCIALS]: 'Financial Data',
+    [UrlType.YOUTUBE]: 'Youtube Channel',
+    [UrlType.LINKEDIN]: 'Professional Profile',
+    [UrlType.TWITTER]: 'Social Media Profile',
+    [UrlType.FACEBOOK]: 'Facebook Page',
+    [UrlType.INSTAGRAM]: 'Instagram Profile',
+    [UrlType.COMPARATIVE]: 'Competitive Analysis & Research',
+    [UrlType.CUSTOM]: null, // Custom types don't get default labels
+};
+
 /**
  * Icon mapping for URL types (Material-UI icon names)
  */
@@ -184,7 +199,7 @@ export type UrlEntryInput = Omit<UrlEntry, 'id' | 'createdAt' | 'updatedAt'>;
  * Default configuration values
  */
 export const DEFAULT_CONFIG: Required<Omit<UrlManagerConfig, 'customValidator'>> = {
-    maxUrls: 8,
+    maxUrls: 12,
     allowCustomTypes: true,
     enforceHttps: true,
     showLabels: true,

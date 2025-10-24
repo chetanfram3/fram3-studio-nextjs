@@ -58,6 +58,7 @@ import {
   UrlManagerProps,
   URL_TYPE_LABELS,
   DEFAULT_CONFIG,
+  URL_TYPE_DEFAULT_LABELS,
 } from "@/types/urlManagerTypes";
 import {
   validateUrl,
@@ -445,6 +446,24 @@ export const UrlManager: React.FC<UrlManagerProps> = ({
     finalConfig.enforceHttps,
   ]);
 
+  const handleTypeChange = useCallback(
+    (newType: UrlType) => {
+      setTypeInput(newType);
+
+      // ✅ Auto-fill default label when type changes
+      // Only if label is empty or is a default label from another type
+      const isCurrentLabelDefault = Object.values(
+        URL_TYPE_DEFAULT_LABELS
+      ).includes(labelInput);
+
+      if (!labelInput.trim() || isCurrentLabelDefault) {
+        const defaultLabel = URL_TYPE_DEFAULT_LABELS[newType];
+        setLabelInput(defaultLabel || "");
+      }
+    },
+    [labelInput]
+  );
+
   // Handle URL input change with auto-detection
   const handleUrlInputChange = useCallback(
     (newUrl: string) => {
@@ -457,10 +476,15 @@ export const UrlManager: React.FC<UrlManagerProps> = ({
         const suggested = suggestUrlType(newUrl);
         if (suggested && typeInput === UrlType.GENERIC) {
           setTypeInput(suggested);
+          // ✅ ADD: Auto-fill default label when type is suggested
+          const defaultLabel = URL_TYPE_DEFAULT_LABELS[suggested];
+          if (defaultLabel && !labelInput.trim()) {
+            setLabelInput(defaultLabel);
+          }
         }
       }
     },
-    [typeInput]
+    [typeInput, labelInput] // Add labelInput to deps
   );
 
   // Check for warnings when URL or type changes (real-time feedback)
@@ -723,7 +747,7 @@ export const UrlManager: React.FC<UrlManagerProps> = ({
               <FormControl size="small" sx={{ minWidth: 180 }}>
                 <Select
                   value={typeInput}
-                  onChange={(e) => setTypeInput(e.target.value as UrlType)}
+                  onChange={(e) => handleTypeChange(e.target.value as UrlType)} // ✅ Use new handler
                   sx={{
                     borderRadius: `${brand.borderRadius / 2}px`,
                   }}
@@ -752,6 +776,12 @@ export const UrlManager: React.FC<UrlManagerProps> = ({
                   value={labelInput}
                   onChange={(e) => setLabelInput(e.target.value)}
                   placeholder={finalConfig.labelPlaceholder}
+                  helperText={
+                    labelInput &&
+                    URL_TYPE_DEFAULT_LABELS[typeInput] === labelInput
+                      ? "Default label - you can edit or clear this"
+                      : undefined
+                  }
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: `${brand.borderRadius / 2}px`,
