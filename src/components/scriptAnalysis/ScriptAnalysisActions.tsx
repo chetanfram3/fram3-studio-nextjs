@@ -1,17 +1,19 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  IconButton,
+  Tooltip,
+  Typography,
+  alpha,
+} from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
-import { ArticleOutlined as DetailsIcon } from "@mui/icons-material";
+import { ArticleOutlined as DetailsIcon, ArrowBack } from "@mui/icons-material";
 import { getTokenStatus } from "@/utils/tokenization";
 import { MAX_TOKENS, MIN_TOKENS } from "@/config/analysis";
-import ProcessingModeSelector, {
-  type ProcessingMode,
-  type AspectRatio,
-  type ModelTierConfig,
-} from "@/components/common/ProcessingModeSelector";
 
 interface TokenStatus {
   count: number;
@@ -22,17 +24,13 @@ interface TokenStatus {
 
 interface ScriptAnalysisActionsProps {
   activeStep: number;
+  totalSteps: number;
   isAnalyzing: boolean;
   isNextDisabled: boolean;
   script: string;
   onBack: () => void;
   onNext: () => void;
-  onAnalyze: (
-    processingMode?: ProcessingMode,
-    aspectRatio?: AspectRatio,
-    pauseBeforeSettings?: string[],
-    modelTiers?: ModelTierConfig
-  ) => void;
+  onAnalyze: () => void;
   onViewDetails: () => void;
   showDetailsButton: boolean;
 }
@@ -40,12 +38,20 @@ interface ScriptAnalysisActionsProps {
 /**
  * ScriptAnalysisActions
  *
- * Action buttons and controls for script analysis workflow.
- * Includes processing mode selector, token validation, and navigation.
- * Fully theme-aware and optimized with React 19 features.
+ * Enhanced action buttons for 3-step script analysis workflow:
+ * - Step 0: Back (disabled) + Next
+ * - Step 1: Back + Next
+ * - Step 2: Back + Analyze (replaces Next)
+ *
+ * Features:
+ * - Token validation on final step
+ * - Dynamic button visibility based on step
+ * - Theme-aware styling
+ * - View Details button after successful analysis
  */
 const ScriptAnalysisActions: React.FC<ScriptAnalysisActionsProps> = ({
   activeStep,
+  totalSteps,
   isAnalyzing,
   isNextDisabled,
   script,
@@ -58,17 +64,6 @@ const ScriptAnalysisActions: React.FC<ScriptAnalysisActionsProps> = ({
   const theme = useTheme();
   const brand = getCurrentBrand();
 
-  // Processing options state
-  const [processingMode, setProcessingMode] =
-    useState<ProcessingMode>("normal");
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
-  const [pauseBeforeSettings, setPauseBeforeSettings] = useState<string[]>([]);
-  const [modelTiers, setModelTiers] = useState<ModelTierConfig>({
-    image: 4,
-    audio: 4,
-    video: 4,
-  });
-
   // Validate props
   useEffect(() => {
     if (activeStep < 0) {
@@ -79,7 +74,7 @@ const ScriptAnalysisActions: React.FC<ScriptAnalysisActionsProps> = ({
     }
   }, [activeStep, script]);
 
-  // Token status calculation
+  // Token status calculation (only relevant for final step)
   const tokenStatus: TokenStatus = useMemo(
     () => getTokenStatus(script, MAX_TOKENS, MIN_TOKENS),
     [script]
@@ -104,168 +99,166 @@ const ScriptAnalysisActions: React.FC<ScriptAnalysisActionsProps> = ({
       return `Script is too short. Minimum ${MIN_TOKENS} tokens required.`;
     }
     if (isExceeded) {
-      return `Script exceeds the limit by ${Math.abs(tokenCount - MAX_TOKENS)} tokens.`;
+      return `Script exceeds maximum length. Remove ${Math.abs(remaining)} tokens.`;
     }
     return "";
-  }, [isBelowMinimum, isExceeded, tokenCount]);
+  }, [isBelowMinimum, isExceeded, remaining]);
 
-  // Handle processing options change
-  const handleProcessingOptionsChange = useCallback(
-    (
-      mode: ProcessingMode,
-      ratio: AspectRatio,
-      pauseBefore: string[],
-      newModelTiers: ModelTierConfig
-    ) => {
-      setProcessingMode(mode);
-      setAspectRatio(ratio);
-      setPauseBeforeSettings(pauseBefore);
-      setModelTiers(newModelTiers);
-    },
-    []
-  );
-
-  // Handle analyze with options
-  const handleAnalyzeWithOptions = useCallback(() => {
-    onAnalyze(processingMode, aspectRatio, pauseBeforeSettings, modelTiers);
-  }, [onAnalyze, processingMode, aspectRatio, pauseBeforeSettings, modelTiers]);
+  // Determine if we're on the last step
+  const isLastStep = activeStep === totalSteps - 1;
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        width: "100%",
-        gap: 2,
-      }}
-    >
-      {/* Back Button */}
-      {activeStep > 0 && !showDetailsButton && (
-        <Button
-          onClick={onBack}
-          disabled={isAnalyzing}
-          aria-label="Go back"
+    <Box>
+      {/* Token counter - only show on last step */}
+      {isLastStep && (
+        <Box
           sx={{
-            color: "text.primary",
+            mb: 2,
+            p: 2,
+            borderRadius: `${brand.borderRadius}px`,
+            bgcolor:
+              theme.palette.mode === "light"
+                ? "rgba(0, 0, 0, 0.02)"
+                : "rgba(255, 255, 255, 0.02)",
+            border: `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography
+              variant="body2"
+              color={
+                isExceeded || isBelowMinimum ? "error.main" : "text.secondary"
+              }
+            >
+              Tokens: {tokenCount.toLocaleString()} /{" "}
+              {MAX_TOKENS.toLocaleString()}
+            </Typography>
+            {(isExceeded || isBelowMinimum) && (
+              <Typography variant="caption" color="error.main">
+                {getTokenWarningMessage()}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Action buttons */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          pt: 2,
+        }}
+      >
+        {/* Back button */}
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<ArrowBack />}
+          onClick={onBack}
+          disabled={activeStep === 0 || isAnalyzing}
+          sx={{
+            fontFamily: brand.fonts.body,
+            textTransform: "none",
+            minWidth: "100px",
+            borderColor: "primary.main",
             "&:hover": {
-              bgcolor: "action.hover",
+              borderColor: "primary.dark",
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
+            },
+            "&.Mui-disabled": {
+              borderColor: "action.disabled",
+              color: "action.disabled",
             },
           }}
         >
           Back
         </Button>
-      )}
 
-      {/* Action Buttons */}
-      {showDetailsButton ? (
-        <Tooltip title="View Script Details">
-          <span>
-            <IconButton
-              onClick={onViewDetails}
-              color="primary"
-              size="large"
-              aria-label="View script details"
+        {/* Right side actions */}
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          {/* View Details button - only after successful analysis */}
+          {showDetailsButton && (
+            <Tooltip title="View analysis details">
+              <IconButton
+                onClick={onViewDetails}
+                color="primary"
+                sx={{
+                  border: `1px solid ${theme.palette.primary.main}`,
+                  "&:hover": {
+                    bgcolor: theme.palette.primary.main,
+                    color: theme.palette.primary.contrastText,
+                  },
+                }}
+              >
+                <DetailsIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {/* Next or Analyze button */}
+          {isLastStep ? (
+            // Analyze button on last step
+            <Button
+              variant="contained"
+              onClick={onAnalyze}
+              disabled={isAnalyzeDisabled}
               sx={{
-                border: 2,
-                borderColor: "primary.main",
-                transition: theme.transitions.create(
-                  ["background-color", "color"],
-                  {
-                    duration: theme.transitions.duration.short,
-                  }
-                ),
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                fontFamily: brand.fonts.body,
+                textTransform: "none",
+                minWidth: "120px",
+                px: 3,
+                py: 1,
+                borderRadius: `${brand.borderRadius}px`,
                 "&:hover": {
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
+                  bgcolor: "primary.dark",
+                },
+                "&.Mui-disabled": {
+                  bgcolor: "action.disabledBackground",
+                  color: "action.disabled",
                 },
               }}
             >
-              <DetailsIcon />
-            </IconButton>
-          </span>
-        </Tooltip>
-      ) : activeStep === 0 ? (
-        <>
-          {/* Processing Mode Selector */}
-          <Box sx={{ width: "100%", mb: 3, maxWidth: 600, mx: "auto" }}>
-            <ProcessingModeSelector
-              onChange={handleProcessingOptionsChange}
-              initialMode="normal"
-              initialGenerateImages={true}
-              initialGenerateAudio={true}
-              initialGenerateVideo={true}
-            />
-          </Box>
-
-          {/* Analyze Button */}
-          <Button
-            variant="contained"
-            onClick={handleAnalyzeWithOptions}
-            disabled={isAnalyzeDisabled}
-            aria-label={isAnalyzing ? "Analyzing script" : "Analyze script"}
-            color="primary"
-            sx={{
-              textTransform: "none",
-              px: 4,
-              py: 1.5,
-              minWidth: 200,
-              fontFamily: brand.fonts.body,
-              fontWeight: 600,
-              transition: theme.transitions.create(
-                ["transform", "box-shadow"],
-                {
-                  duration: theme.transitions.duration.short,
-                }
-              ),
-              "&:hover": {
-                transform: "translateY(-2px)",
-                boxShadow: theme.shadows[8],
-              },
-              "&:active": {
-                transform: "translateY(0)",
-              },
-            }}
-          >
-            {isAnalyzing ? "Analyzing..." : "Analyze Script"}
-          </Button>
-
-          {/* Token Warning */}
-          {getTokenWarningMessage() && (
-            <Typography
-              variant="body2"
-              color={
-                isBelowMinimum || isExceeded ? "error.main" : "text.secondary"
-              }
-              role="alert"
-              aria-live="polite"
+              {isAnalyzing ? "Analyzing..." : "Analyze Script"}
+            </Button>
+          ) : (
+            // Next button on other steps
+            <Button
+              variant="contained"
+              onClick={onNext}
+              disabled={isNextDisabled || isAnalyzing}
               sx={{
-                textAlign: "center",
-                maxWidth: 400,
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                fontFamily: brand.fonts.body,
+                textTransform: "none",
+                minWidth: "100px",
+                px: 3,
+                py: 1,
+                borderRadius: `${brand.borderRadius}px`,
+                "&:hover": {
+                  bgcolor: "primary.dark",
+                },
+                "&.Mui-disabled": {
+                  bgcolor: "action.disabledBackground",
+                  color: "action.disabled",
+                },
               }}
             >
-              {getTokenWarningMessage()}
-            </Typography>
+              Next
+            </Button>
           )}
-        </>
-      ) : (
-        <Button
-          variant="contained"
-          onClick={onNext}
-          disabled={isNextDisabled}
-          aria-label="Next step"
-          color="primary"
-          sx={{
-            textTransform: "none",
-            px: 4,
-            py: 1.5,
-            minWidth: 200,
-            fontFamily: brand.fonts.body,
-          }}
-        >
-          Next
-        </Button>
-      )}
+        </Box>
+      </Box>
     </Box>
   );
 };
