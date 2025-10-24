@@ -79,8 +79,8 @@ export default function StoredAnalysisView() {
     if (
       !analysisData?.analyses ||
       (Array.isArray(analysisData.analyses) &&
-        !analysisData.analyses[0]?.data) ||
-      (!Array.isArray(analysisData.analyses) && !analysisData.analyses?.data)
+        analysisData.analyses.length === 0) ||
+      (Array.isArray(analysisData.analyses) && !analysisData.analyses[0]?.data)
     ) {
       return (
         <Alert
