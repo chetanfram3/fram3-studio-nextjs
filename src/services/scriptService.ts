@@ -435,6 +435,12 @@ export interface AnalyzeGeneratedScriptParams {
   pauseBefore?: string[];
   forceNewScript?: boolean;
   modelTier?: ModelTierConfig;
+  urls?: Array<{
+    type: string;
+    url: string;
+    label?: string;
+    customTypeLabel?: string;
+  }>;
 }
 
 export interface FetchScriptsParams {

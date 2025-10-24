@@ -21,6 +21,12 @@ export interface AnalysisOptions {
   scriptContent: string;
   title?: string;
   description?: string;
+  urls?: Array<{
+    type: string;
+    url: string;
+    label?: string;
+    customTypeLabel?: string;
+  }>;
 }
 
 // Match your existing AnalysisError interface
@@ -137,7 +143,8 @@ export const useScriptAnalysisCore = () => {
       currentVersionNumber,
       scriptContent,
       title = "PlaceHolder Title",
-      description = "PlaceHolder Description"
+      description = "PlaceHolder Description",
+      urls = []
     } = options;
 
     const {
@@ -176,7 +183,8 @@ export const useScriptAnalysisCore = () => {
           processingMode,
           aspectRatio,
           pauseBefore: pauseBeforeSettings,
-          modelTier: modelTiers // ✅ NEW: Pass model tiers for generated scripts
+          modelTier: modelTiers,
+          urls
         });
 
         // Store the core result directly - no type conversion needed
@@ -196,7 +204,8 @@ export const useScriptAnalysisCore = () => {
           processingMode,
           aspectRatio,
           pauseBefore: pauseBeforeSettings,
-          modelTier: modelTiers, // ✅ NEW: Pass model tiers for regular scripts
+          modelTier: modelTiers,
+          urls
         });
 
         setAnalysisResults(result);

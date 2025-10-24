@@ -75,6 +75,12 @@ export interface ScriptUploadParams {
   aspectRatio?: AspectRatio;
   pauseBefore?: string[];
   modelTier?: ModelTierConfig;
+  urls?: Array<{
+    type: string;
+    url: string;
+    label?: string;
+    customTypeLabel?: string;
+  }>;
 }
 
 export interface ScriptsData {

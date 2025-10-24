@@ -25,6 +25,9 @@ import type {
   AspectRatio,
   ModelTierConfig,
 } from "@/components/common/ProcessingModeSelector";
+import { UrlManager } from "@/components/common/UrlManager";
+import { UrlEntry } from "@/types/urlManagerTypes";
+import { convertToPayload } from "@/utils/urlValidationUtils";
 
 // Constants
 const STEPS: ReadonlyArray<string> = ["Enter Script", "View Analysis"];
@@ -87,6 +90,7 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
   const [title, setTitle] = useState("PlaceHolder Title");
   const [description, setDescription] = useState("PlaceHolder Description");
   const [script, setScript] = useState("");
+  const [referenceUrls, setReferenceUrls] = useState<UrlEntry[]>([]);
 
   // Store params for retry
   const [lastAnalysisParams, setLastAnalysisParams] = useState<{
@@ -144,6 +148,7 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
         scriptContent: script,
         title: title || "PlaceHolder Title",
         description: description || "PlaceHolder Description",
+        urls: convertToPayload(referenceUrls),
       };
 
       const params: AnalysisParams = {
@@ -242,7 +247,21 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
     (step: number): React.ReactNode => {
       switch (step) {
         case 0:
-          return <ScriptInput value={script} onChange={setScript} />;
+          return (
+            <>
+              <ScriptInput value={script} onChange={setScript} />
+
+              <Box sx={{ mt: 3 }}>
+                <UrlManager
+                  value={referenceUrls}
+                  onChange={setReferenceUrls}
+                  label="Reference URLs"
+                  helperText="Add URLs for additional context or resources"
+                  config={{ maxUrls: 8 }}
+                />
+              </Box>
+            </>
+          );
         case 1:
           return isAnalyzing ? (
             <AnalysisInProgress message="FRAM3 AI is analysing....." />
@@ -251,7 +270,7 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
           return null;
       }
     },
-    [script, isAnalyzing]
+    [script, isAnalyzing, referenceUrls]
   );
 
   return (
