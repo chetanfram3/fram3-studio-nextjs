@@ -5,7 +5,7 @@ import { StreamingProvider } from "@/providers/StreamingProvider";
 export default function RunAnalalysis() {
   return (
     <StreamingProvider>
-      <RunAnalalysisPage />;
+      <RunAnalalysisPage />
     </StreamingProvider>
   );
 }
