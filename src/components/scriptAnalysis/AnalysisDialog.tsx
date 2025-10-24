@@ -190,7 +190,7 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
   const handleCreditRetry = useCallback(() => {
     if (creditError?.scriptId && creditError?.versionId) {
       router.push(
-        `/scripts/${creditError.scriptId}/version/${creditError.versionId}`
+        `/story/${creditError.scriptId}/version/${creditError.versionId}/3`
       );
     }
   }, [creditError, router]);
@@ -204,7 +204,7 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
     if (analysisResults) {
       const navigate = () => {
         router.push(
-          `/scripts/${analysisResults.scriptId}/version/${analysisResults.versionId}`
+          `/story/${analysisResults.scriptId}/version/${analysisResults.versionId}`
         );
       };
 
@@ -221,7 +221,7 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
     if (analysisResults && activeStep === 2 && !isAnalyzing) {
       const navigate = () => {
         router.push(
-          `/scripts/${analysisResults.scriptId}/version/${analysisResults.versionId}`
+          `/story/${analysisResults.scriptId}/version/${analysisResults.versionId}/3`
         );
         resetState();
         if (onClose) {
@@ -307,8 +307,8 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
                 value={referenceUrls}
                 onChange={setReferenceUrls}
                 label="Reference URLs"
-                helperText="Add up to 8 URLs for additional context (optional)"
-                config={{ maxUrls: 8 }}
+                helperText="Add up to 12 URLs for additional context (optional)"
+                config={{ maxUrls: 12 }}
               />
             </Box>
           );
