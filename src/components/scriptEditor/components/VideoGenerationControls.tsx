@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { Box, Button, Paper, alpha, useMediaQuery } from "@mui/material";
+import { Box, Button, Paper, useMediaQuery, Divider } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { VideoCameraFrontOutlined as VideoIcon } from "@mui/icons-material";
 import { getCurrentBrand } from "@/config/brandConfig";
@@ -11,18 +11,22 @@ import ProcessingModeSelector, {
   AspectRatio,
   ModelTierConfig,
 } from "@/components/common/ProcessingModeSelector";
+import { UrlManager } from "@/components/common/UrlManager";
+import { UrlEntry } from "@/types/urlManagerTypes";
 
 interface VideoGenerationControlsProps {
   processingMode: ProcessingMode;
   aspectRatio: AspectRatio;
   pauseBeforeSettings: string[];
   modelTiers: ModelTierConfig;
+  urls: UrlEntry[];
   onProcessingOptionsChange: (
     mode: ProcessingMode,
     ratio: AspectRatio,
     pauseBefore: string[],
     modelTiers: ModelTierConfig
   ) => void;
+  onUrlsChange: (urls: UrlEntry[]) => void;
   onGenerateVideo: () => void;
   isSaving: boolean;
 }
@@ -50,13 +54,16 @@ interface VideoGenerationControlsProps {
  * - Used brand border radius
  * - Made Paper component theme-aware
  * - Proper button styling with primary color
+ * - Added UrlManager integration for reference URLs
  */
 export function VideoGenerationControls({
   processingMode,
   aspectRatio,
   pauseBeforeSettings,
   modelTiers,
+  urls,
   onProcessingOptionsChange,
+  onUrlsChange,
   onGenerateVideo,
   isSaving,
 }: VideoGenerationControlsProps) {
@@ -138,72 +145,105 @@ export function VideoGenerationControls({
           sx={{
             p: { xs: 2, sm: 2.5, md: 3 },
             display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            alignItems: { xs: "stretch", md: "flex-start" },
-            gap: { xs: 2, sm: 2, md: 3 },
+            flexDirection: "column",
+            gap: 3,
             maxWidth: "100%",
           }}
         >
-          {/* Processing Mode Selector */}
+          {/* Top Row: Processing Mode Selector + Generate Button */}
           <Box
             sx={{
-              flex: { xs: "1 1 auto", md: "1 1 70%" },
-              minWidth: 0, // Prevents flex item from overflowing
-            }}
-          >
-            <ProcessingModeSelector
-              onChange={onProcessingOptionsChange}
-              initialMode={processingMode}
-              initialAspectRatio={aspectRatio}
-              initialModelTiers={modelTiers}
-              initialGenerateImages={true}
-              initialGenerateAudio={true}
-              initialGenerateVideo={true}
-            />
-          </Box>
-
-          {/* Generate Video Button */}
-          <Box
-            sx={{
-              flex: { xs: "0 0 auto", md: "0 0 auto" },
               display: "flex",
-              justifyContent: { xs: "stretch", md: "flex-end" },
-              alignItems: "flex-start",
-              minWidth: { xs: "100%", md: "200px" },
+              flexDirection: { xs: "column", md: "row" },
+              alignItems: { xs: "stretch", md: "flex-start" },
+              gap: { xs: 2, sm: 2, md: 3 },
             }}
           >
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={onGenerateVideo}
-              disabled={isSaving}
-              startIcon={<VideoIcon />}
-              fullWidth={isMobile || isTablet}
+            {/* Processing Mode Selector */}
+            <Box
               sx={{
-                py: { xs: 1.5, sm: 1.25 },
-                px: { xs: 2, sm: 3 },
-                fontSize: { xs: "0.875rem", sm: "1rem" },
-                fontWeight: 600,
-                fontFamily: brand.fonts.heading,
-                whiteSpace: "nowrap",
-                boxShadow: 2,
-                "&:hover": {
-                  boxShadow: 4,
-                },
-                "&:disabled": {
-                  bgcolor: "action.disabledBackground",
-                  color: "action.disabled",
-                },
-                transition: theme.transitions.create(
-                  ["background-color", "box-shadow", "transform"],
-                  {
-                    duration: theme.transitions.duration.short,
-                  }
-                ),
+                flex: { xs: "1 1 auto", md: "1 1 70%" },
+                minWidth: 0, // Prevents flex item from overflowing
               }}
             >
-              Generate Video
-            </Button>
+              <ProcessingModeSelector
+                onChange={onProcessingOptionsChange}
+                initialMode={processingMode}
+                initialAspectRatio={aspectRatio}
+                initialModelTiers={modelTiers}
+                initialGenerateImages={true}
+                initialGenerateAudio={true}
+                initialGenerateVideo={true}
+              />
+            </Box>
+
+            {/* Generate Video Button */}
+            <Box
+              sx={{
+                flex: { xs: "0 0 auto", md: "0 0 auto" },
+                display: "flex",
+                justifyContent: { xs: "stretch", md: "flex-end" },
+                alignItems: "flex-start",
+                minWidth: { xs: "100%", md: "200px" },
+              }}
+            >
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={onGenerateVideo}
+                disabled={isSaving}
+                startIcon={<VideoIcon />}
+                fullWidth={isMobile || isTablet}
+                sx={{
+                  py: { xs: 1.5, sm: 1.25 },
+                  px: { xs: 2, sm: 3 },
+                  fontSize: { xs: "0.875rem", sm: "1rem" },
+                  fontWeight: 600,
+                  fontFamily: brand.fonts.heading,
+                  whiteSpace: "nowrap",
+                  boxShadow: 2,
+                  "&:hover": {
+                    boxShadow: 4,
+                  },
+                  "&:disabled": {
+                    bgcolor: "action.disabledBackground",
+                    color: "action.disabled",
+                  },
+                  transition: theme.transitions.create(
+                    ["background-color", "box-shadow", "transform"],
+                    {
+                      duration: theme.transitions.duration.short,
+                    }
+                  ),
+                }}
+              >
+                Generate Video
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Divider */}
+          <Divider
+            sx={{
+              borderColor: "divider",
+            }}
+          />
+
+          {/* URL Manager Section */}
+          <Box>
+            <UrlManager
+              value={urls}
+              onChange={onUrlsChange}
+              label="Reference URLs"
+              helperText="Add URLs for products, brands, social media, or other references to enhance AI analysis"
+              config={{
+                maxUrls: 12,
+                allowCustomTypes: true,
+                enforceHttps: true,
+                showLabels: true,
+              }}
+              disabled={isSaving}
+            />
           </Box>
         </Box>
       </Paper>

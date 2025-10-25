@@ -38,6 +38,8 @@ import type {
 } from "@/components/common/ProcessingModeSelector";
 import { processorSteps } from "@/config/constants";
 import logger from "@/utils/logger";
+import { UrlEntry } from "@/types/urlManagerTypes";
+import { convertToPayload } from "@/utils/urlValidationUtils";
 
 // Custom node definitions for Tiptap
 const SceneHeading = Node.create({
@@ -199,6 +201,7 @@ export default function ScriptEditor({
     audio: 4,
     video: 4,
   });
+  const [urls, setUrls] = useState<UrlEntry[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -319,6 +322,10 @@ export default function ScriptEditor({
     () => propVersions?.find((v) => v.versionNumber === scriptVersion),
     [propVersions, scriptVersion]
   );
+
+  const handleUrlsChange = useCallback((newUrls: UrlEntry[]) => {
+    setUrls(newUrls);
+  }, []);
 
   const handleProcessingOptionsChange = useCallback(
     (
@@ -1344,7 +1351,9 @@ export default function ScriptEditor({
         aspectRatio={aspectRatio}
         pauseBeforeSettings={pauseBeforeSettings}
         modelTiers={modelTiers}
+        urls={urls}
         onProcessingOptionsChange={handleProcessingOptionsChange}
+        onUrlsChange={handleUrlsChange}
         onGenerateVideo={handleGenerateVideo}
         isSaving={isSaving}
       />
@@ -1401,6 +1410,7 @@ export default function ScriptEditor({
         aspectRatio={aspectRatio}
         pauseBeforeSettings={pauseBeforeSettings}
         modelTiers={modelTiers}
+        urls={urls}
         genScriptId={genScriptId}
         currentVersionNumber={currentVersionNumber}
       />
