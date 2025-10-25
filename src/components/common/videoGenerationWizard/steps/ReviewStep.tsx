@@ -276,8 +276,8 @@ export function ReviewStep({
             fontFamily: brand.fonts.body,
           }}
         >
-          Everything looks good! Click "Start Generation" to begin creating
-          your video.
+          Everything looks good! Click "Start Generation" to begin creating your
+          video.
         </Typography>
       </Paper>
 

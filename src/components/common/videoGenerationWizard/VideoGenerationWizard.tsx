@@ -1,4 +1,4 @@
-// src/components/videoGeneration/VideoGenerationWizard.tsx
+// src/components/common/videoGenerationWizard/VideoGenerationWizard.tsx
 "use client";
 
 import React, { useState, useCallback, useMemo } from "react";

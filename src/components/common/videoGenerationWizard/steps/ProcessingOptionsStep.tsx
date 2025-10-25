@@ -1,13 +1,14 @@
 // src/components/videoGeneration/steps/ProcessingOptionsStep.tsx
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
 import ProcessingModeSelector from "@/components/common/ProcessingModeSelector";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { processorSteps } from "@/config/constants";
 import type { ProcessingOptionsStepProps } from "../types";
 
 /**
@@ -17,6 +18,7 @@ import type { ProcessingOptionsStepProps } from "../types";
  * - Reuses existing ProcessingModeSelector component
  * - Supports back navigation
  * - Theme-aware styling
+ * - Converts pauseBeforeSettings to boolean flags
  *
  * Theme integration:
  * - Uses theme.palette for all colors
@@ -36,6 +38,30 @@ export function ProcessingOptionsStep({
 }: ProcessingOptionsStepProps) {
   const theme = useTheme();
   const brand = getCurrentBrand();
+
+  // Convert pauseBeforeSettings array to boolean flags
+  // ProcessingModeSelector expects boolean flags, not string arrays
+  const { generateImages, generateAudio, generateVideo } = useMemo(() => {
+    // If a step is in pauseBeforeSettings, it means we DON'T generate it
+    const hasImagePause = processorSteps.images.some((step) =>
+      pauseBeforeSettings.includes(step)
+    );
+    const hasScenePause = processorSteps.scenes.some((step) =>
+      pauseBeforeSettings.includes(step)
+    );
+    const hasAudioPause = processorSteps.audio.some((step) =>
+      pauseBeforeSettings.includes(step)
+    );
+    const hasVideoPause = processorSteps.video.some((step) =>
+      pauseBeforeSettings.includes(step)
+    );
+
+    return {
+      generateImages: !hasImagePause && !hasScenePause,
+      generateAudio: !hasAudioPause,
+      generateVideo: !hasVideoPause,
+    };
+  }, [pauseBeforeSettings]);
 
   return (
     <Box
@@ -64,8 +90,8 @@ export function ProcessingOptionsStep({
             fontFamily: brand.fonts.body,
           }}
         >
-          Choose your processing mode, aspect ratio, and quality settings.
-          These options control how your video will be generated.
+          Choose your processing mode, aspect ratio, and quality settings. These
+          options control how your video will be generated.
         </Typography>
       </Box>
 
@@ -74,7 +100,9 @@ export function ProcessingOptionsStep({
         onChange={onProcessingOptionsChange}
         initialMode={processingMode}
         initialAspectRatio={aspectRatio}
-        initialPauseBefore={pauseBeforeSettings}
+        initialGenerateImages={generateImages}
+        initialGenerateAudio={generateAudio}
+        initialGenerateVideo={generateVideo}
         initialModelTiers={modelTiers}
       />
 

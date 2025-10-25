@@ -59,8 +59,8 @@ export function UrlConfigurationStep({
           }}
         >
           Include links to products, brands, social media profiles, or other
-          references that will help the AI understand your content better.
-          This step is optional.
+          references that will help the AI understand your content better. This
+          step is optional.
         </Typography>
       </Box>
 
