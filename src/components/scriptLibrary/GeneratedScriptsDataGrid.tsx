@@ -29,13 +29,8 @@ import {
 import { Layers } from "lucide-react";
 import Image from "next/image";
 import { useGenScriptsDataGrid } from "@/hooks/scripts/useGenScriptList";
-import AnalysisSettingsModal from "@/components/common/AnalysisSettingsModal";
+import { VideoGenerationWizard } from "@/components/common/videoGenerationWizard";
 import { useRouter } from "next/navigation";
-import {
-  AspectRatio,
-  ProcessingMode,
-  ModelTierConfig,
-} from "@/components/common/ProcessingModeSelector";
 
 // Constants for localStorage keys - Table specific
 const TABLE_STORAGE_KEYS = {
@@ -80,8 +75,12 @@ export const GeneratedScriptsDataGrid: React.FC<
   const [initialPage] = useState<number>(() => {
     return savedTablePage ? parseInt(savedTablePage, 10) : 0;
   });
-  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
-  const [selectedScript, setSelectedScript] = useState<unknown>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [selectedScript, setSelectedScript] = useState<{
+    id: string;
+    currentVersion: number;
+    scriptTitle?: string;
+  } | null>(null);
 
   const {
     // Data Grid props
@@ -672,38 +671,21 @@ export const GeneratedScriptsDataGrid: React.FC<
 
   // Handlers
   const handleAnalyze = useCallback((row: unknown) => {
-    setSelectedScript(row);
-    setAnalysisModalOpen(true);
+    setSelectedScript(
+      row as { id: string; currentVersion: number; scriptTitle?: string }
+    );
+    setWizardOpen(true); // Changed from setAnalysisModalOpen
   }, []);
 
-  // Handle modal confirmation
-  const handleAnalysisConfirm = useCallback(
-    (settings: {
-      processingMode: ProcessingMode;
-      aspectRatio: AspectRatio;
-      pauseBefore: string[];
-      modelTiers: ModelTierConfig;
-    }) => {
-      if (
-        selectedScript &&
-        typeof selectedScript === "object" &&
-        selectedScript !== null
-      ) {
-        const script = selectedScript as { id: string; currentVersion: number };
-        analyzeScript({
-          genScriptId: script.id,
-          versionNumber: script.currentVersion,
-          processingMode: settings.processingMode,
-          aspectRatio: settings.aspectRatio,
-          pauseBefore: settings.pauseBefore,
-          modelTier: settings.modelTiers,
-        });
-        setAnalysisModalOpen(false);
-        setSelectedScript(null);
-      }
-    },
-    [selectedScript, analyzeScript]
-  );
+  const handleWizardComplete = useCallback(() => {
+    setWizardOpen(false);
+    setSelectedScript(null);
+  }, []);
+
+  const handleWizardCancel = useCallback(() => {
+    setWizardOpen(false);
+    setSelectedScript(null);
+  }, []);
 
   return (
     <Box sx={{ width: "100%", height: "100%" }}>
@@ -883,23 +865,17 @@ export const GeneratedScriptsDataGrid: React.FC<
         />
       </Box>
 
-      {/* Analysis Settings Modal */}
-      <AnalysisSettingsModal
-        open={analysisModalOpen}
-        onClose={() => {
-          setAnalysisModalOpen(false);
-          setSelectedScript(null);
-        }}
-        onConfirm={handleAnalysisConfirm}
-        scriptTitle={
-          selectedScript &&
-          typeof selectedScript === "object" &&
-          selectedScript !== null
-            ? (selectedScript as { scriptTitle?: string }).scriptTitle
-            : undefined
-        }
-        isAnalyzing={isAnalyzingScript}
-      />
+      {selectedScript && (
+        <VideoGenerationWizard
+          open={wizardOpen}
+          mode="versioned"
+          scriptId={selectedScript.id}
+          versionId={selectedScript.currentVersion.toString()}
+          onComplete={handleWizardComplete}
+          onCancel={handleWizardCancel}
+          redirectOnSuccess={true}
+        />
+      )}
     </Box>
   );
 };

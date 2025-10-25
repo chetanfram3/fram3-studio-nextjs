@@ -1,7 +1,7 @@
 // components/GeneratedScriptsGridView.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Box,
   Typography,
@@ -34,12 +34,8 @@ import { Layers, Sparkles, Clock } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { GridNavigation } from "@/components/analysisLibrary/GridNavigation";
-import AnalysisSettingsModal from "@/components/common/AnalysisSettingsModal";
-import {
-  AspectRatio,
-  ProcessingMode,
-  ModelTierConfig,
-} from "@/components/common/ProcessingModeSelector";
+import { VideoGenerationWizard } from "@/components/common/videoGenerationWizard";
+import type { ModelTierConfig } from "@/components/common/ProcessingModeSelector";
 
 interface GeneratedScriptsGridViewProps {
   rows: Array<{
@@ -110,10 +106,12 @@ export const GeneratedScriptsGridView: React.FC<
   const theme = useTheme();
   const brand = getCurrentBrand();
   const router = useRouter();
-  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
-  const [selectedScript, setSelectedScript] = useState<(typeof rows)[0] | null>(
-    null
-  );
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [selectedScript, setSelectedScript] = useState<{
+    id: string;
+    currentVersion: number;
+    scriptTitle?: string;
+  } | null>(null);
 
   const getStatusConfig = (status: string) => {
     const configs = {
@@ -150,29 +148,23 @@ export const GeneratedScriptsGridView: React.FC<
   };
 
   const handleAnalyze = (row: (typeof rows)[0]) => {
-    setSelectedScript(row);
-    setAnalysisModalOpen(true);
+    setSelectedScript({
+      id: row.id,
+      currentVersion: row.currentVersion,
+      scriptTitle: row.scriptTitle,
+    });
+    setWizardOpen(true); // Changed from setAnalysisModalOpen
   };
 
-  const handleAnalysisConfirm = (settings: {
-    processingMode: ProcessingMode;
-    aspectRatio: AspectRatio;
-    pauseBefore: string[];
-    modelTiers: ModelTierConfig;
-  }) => {
-    if (selectedScript) {
-      analyzeScript({
-        genScriptId: selectedScript.id,
-        versionNumber: selectedScript.currentVersion,
-        processingMode: settings.processingMode,
-        aspectRatio: settings.aspectRatio,
-        pauseBefore: settings.pauseBefore,
-        modelTier: settings.modelTiers,
-      });
-      setAnalysisModalOpen(false);
-      setSelectedScript(null);
-    }
-  };
+  const handleWizardComplete = useCallback(() => {
+    setWizardOpen(false);
+    setSelectedScript(null);
+  }, []);
+
+  const handleWizardCancel = useCallback(() => {
+    setWizardOpen(false);
+    setSelectedScript(null);
+  }, []);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "-";
@@ -706,16 +698,17 @@ export const GeneratedScriptsGridView: React.FC<
         onSortChange={onSortChange}
         onFavouriteChange={onFavouriteChange}
       />
-      <AnalysisSettingsModal
-        open={analysisModalOpen}
-        onClose={() => {
-          setAnalysisModalOpen(false);
-          setSelectedScript(null);
-        }}
-        onConfirm={handleAnalysisConfirm}
-        scriptTitle={selectedScript?.scriptTitle}
-        isAnalyzing={isAnalyzingScript}
-      />
+      {selectedScript && (
+        <VideoGenerationWizard
+          open={wizardOpen}
+          mode="versioned"
+          scriptId={selectedScript.id}
+          versionId={selectedScript.currentVersion.toString()}
+          onComplete={handleWizardComplete}
+          onCancel={handleWizardCancel}
+          redirectOnSuccess={true}
+        />
+      )}
     </Box>
   );
 };
