@@ -7,6 +7,7 @@ import {
   Message as MessageIcon,
   Description,
   Timer,
+  VideoCameraFrontOutlined,
 } from "@mui/icons-material";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -26,20 +27,11 @@ import EditorSidebar from "./components/EditorSidebar";
 import EditorToolbar from "./components/EditorToolBar";
 import FeedbackDialog from "./components/FeedbackDialog";
 import CustomToast from "@/components/common/CustomToast";
-import VideoProgressIndicator from "./components/VideoGeneratorDialog";
 import { exportScriptToPDF } from "./components/pdfExportUtil";
 import type { ScriptData } from "./types";
 import DisclaimerDialog from "./components/DisclaimerDialog";
-import VideoGenerationControls from "./components/VideoGenerationControls";
-import type {
-  ProcessingMode,
-  AspectRatio,
-  ModelTierConfig,
-} from "@/components/common/ProcessingModeSelector";
-import { processorSteps } from "@/config/constants";
 import logger from "@/utils/logger";
-import { UrlEntry } from "@/types/urlManagerTypes";
-import { convertToPayload } from "@/utils/urlValidationUtils";
+import { VideoGenerationWizard } from "@/components/common/videoGenerationWizard";
 
 // Custom node definitions for Tiptap
 const SceneHeading = Node.create({
@@ -186,28 +178,12 @@ export default function ScriptEditor({
 }: ScriptEditorProps) {
   const theme = useTheme();
   const brand = getCurrentBrand();
-
-  const [processingMode, setProcessingMode] =
-    useState<ProcessingMode>("normal");
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
-  const [pauseBeforeSettings, setPauseBeforeSettings] = useState<string[]>([
-    ...processorSteps.images,
-    ...processorSteps.scenes,
-    ...processorSteps.audio,
-    ...processorSteps.video,
-  ]);
-  const [modelTiers, setModelTiers] = useState<ModelTierConfig>({
-    image: 4,
-    audio: 4,
-    video: 4,
-  });
-  const [urls, setUrls] = useState<UrlEntry[]>([]);
-
   const containerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const editorContentRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLStyleElement | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const getInitialContent = useCallback((): string => {
     return scriptData.scriptNarrativeParagraph || "";
@@ -270,7 +246,6 @@ export default function ScriptEditor({
     mandatoriesMentioned: undefined,
   });
 
-  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
   const [scriptContent, setScriptContent] = useState("");
   const [scriptVersion, setScriptVersion] = useState(
     requestedVersionNumber || currentVersionNumber || 1
@@ -321,25 +296,6 @@ export default function ScriptEditor({
   const currentVersionData = useMemo(
     () => propVersions?.find((v) => v.versionNumber === scriptVersion),
     [propVersions, scriptVersion]
-  );
-
-  const handleUrlsChange = useCallback((newUrls: UrlEntry[]) => {
-    setUrls(newUrls);
-  }, []);
-
-  const handleProcessingOptionsChange = useCallback(
-    (
-      mode: ProcessingMode,
-      ratio: AspectRatio,
-      pauseBefore: string[],
-      tiers: ModelTierConfig
-    ) => {
-      setProcessingMode(mode);
-      setAspectRatio(ratio);
-      setPauseBeforeSettings(pauseBefore);
-      setModelTiers(tiers);
-    },
-    []
   );
 
   // Note: localStorage is used here for disclaimer acknowledgment tracking
@@ -1085,47 +1041,56 @@ export default function ScriptEditor({
   }, [value, title, scriptVersion]);
 
   const handleGenerateVideo = useCallback(async () => {
-    if (isSaving) {
-      CustomToast("info", "Please wait until saving is complete");
-      return;
-    }
-
-    const plainTextContent = editor?.getText() || "";
-
-    if (!plainTextContent.trim()) {
-      CustomToast(
-        "info",
-        "Please add content to your script before generating a video"
-      );
-      return;
-    }
-
+    // Auto-save if needed
     if (hasUnsavedChanges) {
-      try {
-        const saveSuccess = await handleSave();
+      await handleSave();
+    }
 
-        if (!saveSuccess) {
-          CustomToast(
-            "error",
-            "Failed to save script. Please save before generating video."
-          );
-          return;
-        }
+    // Validation and content capture
+    if (genScriptId) {
+      // Versioned mode: script already exists, no content needed
+      logger.info("Opening wizard in versioned mode", {
+        scriptId: genScriptId,
+        versionId: scriptVersion,
+      });
+    } else {
+      // Non-versioned mode: need script content from editor
+      const currentContent = editor?.getHTML() || "";
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        setScriptContent(plainTextContent);
-        setIsVideoDialogOpen(true);
-      } catch (error) {
-        logger.error("Error saving script", { error });
-        CustomToast("error", "Failed to save script. Please try again.");
+      if (!currentContent.trim() || currentContent === "<p></p>") {
+        CustomToast(
+          "error",
+          "Please enter script content before generating video"
+        );
         return;
       }
-    } else {
-      setScriptContent(plainTextContent);
-      setIsVideoDialogOpen(true);
+
+      setScriptContent(currentContent);
+      logger.info("Opening wizard in non-versioned mode", {
+        contentLength: currentContent.length,
+      });
     }
-  }, [isSaving, editor, hasUnsavedChanges, handleSave]);
+
+    // Open wizard
+    setWizardOpen(true);
+  }, [
+    hasUnsavedChanges,
+    handleSave,
+    editor,
+    genScriptId,
+    scriptVersion,
+    title,
+  ]);
+
+  const handleWizardComplete = useCallback((result: any) => {
+    CustomToast("success", "Video generation started!");
+    setWizardOpen(false);
+    // Wizard redirects automatically
+  }, []);
+
+  const handleWizardCancel = useCallback(() => {
+    setWizardOpen(false);
+  }, []);
 
   const handleCloseDisclaimer = useCallback(() => {
     setDisclaimerOpen(false);
@@ -1345,18 +1310,22 @@ export default function ScriptEditor({
         </Paper>
       </Box>
 
-      {/* Video Generation Controls */}
-      <VideoGenerationControls
-        processingMode={processingMode}
-        aspectRatio={aspectRatio}
-        pauseBeforeSettings={pauseBeforeSettings}
-        modelTiers={modelTiers}
-        urls={urls}
-        onProcessingOptionsChange={handleProcessingOptionsChange}
-        onUrlsChange={handleUrlsChange}
-        onGenerateVideo={handleGenerateVideo}
-        isSaving={isSaving}
-      />
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleGenerateVideo}
+        disabled={isSaving}
+        startIcon={<VideoCameraFrontOutlined />}
+        fullWidth
+        sx={{
+          py: 1.5,
+          fontWeight: 600,
+          fontFamily: brand.fonts.heading,
+          borderRadius: `${brand.borderRadius}px`,
+        }}
+      >
+        Generate Video
+      </Button>
 
       <Fab
         color="primary"
@@ -1402,18 +1371,30 @@ export default function ScriptEditor({
         multiple
       />
 
-      <VideoProgressIndicator
-        open={isVideoDialogOpen}
-        onClose={() => setIsVideoDialogOpen(false)}
-        scriptContent={scriptContent}
-        processingMode={processingMode}
-        aspectRatio={aspectRatio}
-        pauseBeforeSettings={pauseBeforeSettings}
-        modelTiers={modelTiers}
-        urls={urls}
-        genScriptId={genScriptId}
-        currentVersionNumber={currentVersionNumber}
-      />
+      {genScriptId ? (
+        // Versioned mode: Generated script
+        <VideoGenerationWizard
+          open={wizardOpen}
+          mode="versioned"
+          scriptId={genScriptId}
+          versionId={scriptVersion?.toString()}
+          onComplete={handleWizardComplete}
+          onCancel={handleWizardCancel}
+          redirectOnSuccess={true}
+        />
+      ) : (
+        // Non-versioned mode: Manual entry
+        <VideoGenerationWizard
+          open={wizardOpen}
+          mode="non-versioned"
+          scriptContent={scriptContent}
+          title={title || "Untitled Script"}
+          description="Script created in Editor"
+          onComplete={handleWizardComplete}
+          onCancel={handleWizardCancel}
+          redirectOnSuccess={true}
+        />
+      )}
 
       <DisclaimerDialog
         open={disclaimerOpen}

@@ -173,7 +173,7 @@ export const useScriptAnalysisCore = () => {
       const cleanedDescription = cleanText(description) || 'PlaceHolder Description';
       const cleanedScript = cleanText(scriptContent);
 
-      if (!cleanedScript.trim()) {
+      if (!genScriptId && !cleanedScript.trim()) {
         const errorMsg = 'Script content cannot be empty.';
         CustomToast("error", errorMsg);
         setError({ message: errorMsg });

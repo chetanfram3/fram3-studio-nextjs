@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
-import { customAlphabet } from "nanoid";
+import React, { useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,37 +11,10 @@ import {
 import { useRouter } from "next/navigation";
 import { useTheme } from "@mui/material/styles";
 import { getCurrentBrand } from "@/config/brandConfig";
-import {
-  useScriptAnalysisCore,
-  type AnalysisOptions,
-  type AnalysisParams,
-} from "@/hooks/useScriptAnalysis";
-import ScriptAnalysisStepper from "./ScriptAnalysisStepper";
-import ScriptAnalysisActions from "./ScriptAnalysisActions";
 import ScriptInput from "./ScriptInput";
-import { AnalysisInProgress } from "@/components/common/AnalysisInProgress";
 import AnalysisDialogHeader from "./AnalysisDialogHeader";
 import CustomToast from "@/components/common/CustomToast";
-import CreditErrorDisplay from "@/components/common/CreditErrorDisplay";
-import type { CreditErrorResponse } from "@/types";
-import type {
-  ProcessingMode,
-  AspectRatio,
-  ModelTierConfig,
-} from "@/components/common/ProcessingModeSelector";
-import ProcessingModeSelector from "@/components/common/ProcessingModeSelector";
-import { UrlManager } from "@/components/common/UrlManager";
-import { UrlEntry } from "@/types/urlManagerTypes";
-import { convertToPayload } from "@/utils/urlValidationUtils";
-
-// Constants
-const STEPS: ReadonlyArray<string> = [
-  "Enter Script",
-  "Enter URLs",
-  "Processing Mode",
-];
-
-const nanoid = customAlphabet("1234567890abcdefghijklmnopqrstuvwxyz", 10);
+import { VideoGenerationWizard } from "@/components/common/videoGenerationWizard";
 
 interface AnalysisComponentProps {
   onClose?: () => void;
@@ -51,300 +23,74 @@ interface AnalysisComponentProps {
 /**
  * AnalysisComponent
  *
- * Enhanced multi-step script analysis workflow with:
- * - Step 1: Enter Script
- * - Step 2: Enter URLs (optional)
- * - Step 3: Processing Mode Selection & Analysis
+ * Simplified script analysis workflow using VideoGenerationWizard:
+ * - Step 1: Enter Script (pre-wizard)
+ * - Step 2: Open VideoGenerationWizard for URLs, Processing, and Generation
  *
  * Features:
- * - State maintained across steps (can go back/forth)
+ * - Consistent UX with other video generation flows
  * - Theme-aware styling
- * - Credit error handling
- * - Progressive disclosure of settings
+ * - Comprehensive error handling via wizard
+ * - Single source of truth for video generation
+ *
+ * Code reduction: ~200 lines removed (83% reduction)
  */
 const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
   const theme = useTheme();
   const brand = getCurrentBrand();
   const router = useRouter();
 
-  // Step management
-  const [activeStep, setActiveStep] = useState(0);
-
-  // Script and metadata state
+  // Script input state (pre-wizard)
   const [script, setScript] = useState("");
-  const [referenceUrls, setReferenceUrls] = useState<UrlEntry[]>([]);
+  const [showWizard, setShowWizard] = useState(false);
 
-  // Processing options state (Step 3)
-  const [processingMode, setProcessingMode] =
-    useState<ProcessingMode>("normal");
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
-  const [pauseBeforeSettings, setPauseBeforeSettings] = useState<string[]>([]);
-  const [modelTiers, setModelTiers] = useState<ModelTierConfig>({
-    image: 4,
-    audio: 4,
-    video: 4,
-  });
-
-  // ID generation
-  const generateIds = useCallback(
-    () => ({
-      scriptId: nanoid(),
-      versionId: nanoid(),
-    }),
-    []
-  );
-
-  const [ids, setIds] = useState(generateIds);
-
-  // Analysis hook
-  const {
-    analyzeScriptCore,
-    isAnalyzing,
-    error,
-    creditError,
-    analysisResults,
-    resetState,
-  } = useScriptAnalysisCore();
-
-  // Navigation handlers
-  const handleNext = useCallback(() => {
-    setActiveStep((prev) => Math.min(prev + 1, STEPS.length - 1));
-  }, []);
-
-  const handleBack = useCallback(() => {
-    // If error on step 2 (processing), regenerate IDs when going back
-    if ((error || creditError) && activeStep === 2) {
-      const currentScript = script;
-      const currentUrls = referenceUrls;
-      const newIds = generateIds();
-      setIds(newIds);
-      resetState();
-
-      // Wait for next render cycle
-      setTimeout(() => {
-        setScript(currentScript);
-        setReferenceUrls(currentUrls);
-        setActiveStep((prev) => prev - 1);
-      }, 0);
-    } else {
-      setActiveStep((prev) => Math.max(prev - 1, 0));
+  // Handle script input next
+  const handleScriptNext = useCallback(() => {
+    if (!script.trim()) {
+      CustomToast("error", "Please enter a script before continuing");
+      return;
     }
-  }, [
-    error,
-    creditError,
-    activeStep,
-    generateIds,
-    resetState,
-    script,
-    referenceUrls,
-  ]);
+    setShowWizard(true);
+  }, [script]);
 
-  // Check if next button should be disabled
-  const isNextDisabled = useMemo(() => {
-    switch (activeStep) {
-      case 0:
-        // Step 1: Script required
-        return !script.trim();
-      case 1:
-        // Step 2: URLs optional, always allow next
-        return false;
-      case 2:
-        // Step 3: Never disabled (analysis button handles validation)
-        return false;
-      default:
-        return false;
-    }
-  }, [activeStep, script]);
-
-  // Enhanced analyze handler
-  const handleAnalyzeWithParams = useCallback(async () => {
-    const options: AnalysisOptions = {
-      scriptContent: script,
-      urls: convertToPayload(referenceUrls),
-    };
-
-    const params: AnalysisParams = {
-      processingMode,
-      aspectRatio,
-      pauseBeforeSettings,
-      modelTiers,
-    };
-
-    await analyzeScriptCore(options, params);
-  }, [
-    script,
-    referenceUrls,
-    processingMode,
-    aspectRatio,
-    pauseBeforeSettings,
-    modelTiers,
-    analyzeScriptCore,
-  ]);
-
-  // Credit error handlers
-  const handleDismissCreditError = useCallback(() => {
-    resetState();
-    setActiveStep(0);
-  }, [resetState]);
-
-  const handleCreditRetry = useCallback(() => {
-    if (creditError?.scriptId && creditError?.versionId) {
-      router.push(
-        `/story/${creditError.scriptId}/version/${creditError.versionId}/3`
-      );
-    }
-  }, [creditError, router]);
-
-  const hasCreditError = useCallback(() => {
-    return creditError !== null && creditError !== undefined;
-  }, [creditError]);
-
-  // View details handler
-  const handleViewDetails = useCallback(() => {
-    if (analysisResults) {
-      const navigate = () => {
-        router.push(
-          `/story/${analysisResults.scriptId}/version/${analysisResults.versionId}`
-        );
-      };
-
-      // Show success toast
+  // Handle wizard completion
+  const handleWizardComplete = useCallback(
+    (result: any) => {
       CustomToast("success", "Analysis complete! Redirecting...");
 
-      // Navigate after short delay
-      setTimeout(navigate, 1000);
-    }
-  }, [analysisResults, router]);
-
-  // Auto-redirect on successful analysis
-  useEffect(() => {
-    if (analysisResults && activeStep === 2 && !isAnalyzing) {
-      const navigate = () => {
-        router.push(
-          `/story/${analysisResults.scriptId}/version/${analysisResults.versionId}/3`
-        );
-        resetState();
+      // Navigate to storyboard after short delay
+      setTimeout(() => {
+        router.push(`/story/${result.scriptId}/version/${result.versionId}/3`);
         if (onClose) {
           onClose();
         }
-      };
-
-      // Auto-navigate after 2 seconds
-      const timeoutId = setTimeout(navigate, 2000);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [analysisResults, activeStep, isAnalyzing, router, resetState, onClose]);
-
-  // Handle processing mode changes
-  const handleProcessingModeChange = useCallback(
-    (
-      mode: ProcessingMode,
-      ratio: AspectRatio,
-      settings: string[],
-      tiers: ModelTierConfig
-    ) => {
-      setProcessingMode(mode);
-      setAspectRatio(ratio);
-      setPauseBeforeSettings(settings);
-      setModelTiers(tiers);
+      }, 1000);
     },
-    []
+    [router, onClose]
   );
 
-  // Get step content
-  const getStepContent = useCallback(
-    (step: number): React.ReactNode => {
-      switch (step) {
-        case 0:
-          // Step 1: Enter Script
-          return <ScriptInput value={script} onChange={setScript} />;
+  // Handle wizard cancel
+  const handleWizardCancel = useCallback(() => {
+    setShowWizard(false);
+  }, []);
 
-        case 1:
-          // Step 2: Enter URLs (optional)
-          return (
-            <Box sx={{ mt: 2 }}>
-              {/* Guidance text */}
-              <Box
-                sx={{
-                  mb: 3,
-                  p: 2.5,
-                  borderRadius: `${brand.borderRadius}px`,
-                  bgcolor:
-                    theme.palette.mode === "light"
-                      ? "rgba(0, 0, 0, 0.02)"
-                      : "rgba(255, 255, 255, 0.02)",
-                  border: `1px solid ${theme.palette.divider}`,
-                }}
-              >
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    color: "text.primary",
-                    fontFamily: brand.fonts.heading,
-                    fontWeight: 600,
-                    mb: 1,
-                  }}
-                >
-                  Reference URLs (Optional)
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "text.secondary",
-                    fontFamily: brand.fonts.body,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  Add URLs to provide FRAM3 AI with additional context about
-                  your brand, products, or services. Useful links include
-                  company websites, product pages, brand guidelines, or
-                  marketing materials. This step is optional but can improve
-                  analysis accuracy.
-                </Typography>
-              </Box>
+  // If wizard is showing, render only the wizard
+  if (showWizard) {
+    return (
+      <VideoGenerationWizard
+        open={showWizard}
+        mode="non-versioned"
+        scriptContent={script}
+        title="Analyzed Script"
+        description="Script from Analysis Dialog"
+        onComplete={handleWizardComplete}
+        onCancel={handleWizardCancel}
+        redirectOnSuccess={false} // Handle redirect manually for toast timing
+      />
+    );
+  }
 
-              <UrlManager
-                value={referenceUrls}
-                onChange={setReferenceUrls}
-                label="Reference URLs"
-                helperText="Add up to 12 URLs for additional context (optional)"
-                config={{ maxUrls: 12 }}
-              />
-            </Box>
-          );
-
-        case 2:
-          // Step 3: Processing Mode & Analysis
-          return isAnalyzing ? (
-            <AnalysisInProgress message="FRAM3 AI is analyzing....." />
-          ) : (
-            <Box sx={{ mt: 2 }}>
-              <ProcessingModeSelector
-                onChange={handleProcessingModeChange}
-                initialMode={processingMode}
-                initialAspectRatio={aspectRatio}
-                initialGenerateImages={true}
-                initialGenerateAudio={true}
-                initialGenerateVideo={true}
-                defaultExpanded={true}
-              />
-            </Box>
-          );
-
-        default:
-          return null;
-      }
-    },
-    [
-      script,
-      referenceUrls,
-      isAnalyzing,
-      processingMode,
-      aspectRatio,
-      handleProcessingModeChange,
-    ]
-  );
-
+  // Script input step (pre-wizard)
   return (
     <Box
       sx={{
@@ -355,44 +101,124 @@ const AnalysisComponent: React.FC<AnalysisComponentProps> = ({ onClose }) => {
     >
       <AnalysisDialogHeader />
 
-      <ScriptAnalysisStepper activeStep={activeStep} steps={STEPS} />
-
-      <Box sx={{ mt: 4, mb: 4 }}>{getStepContent(activeStep)}</Box>
-
-      <ScriptAnalysisActions
-        activeStep={activeStep}
-        isAnalyzing={isAnalyzing}
-        isNextDisabled={isNextDisabled}
-        script={script}
-        onBack={handleBack}
-        onNext={handleNext}
-        onAnalyze={handleAnalyzeWithParams}
-        onViewDetails={handleViewDetails}
-        showDetailsButton={activeStep === 2 && analysisResults !== null}
-        totalSteps={STEPS.length}
-      />
-
-      {/* Credit error display */}
-      <CreditErrorDisplay
-        open={hasCreditError() && !!creditError}
-        onOpenChange={(open) => {
-          if (!open) {
-            handleDismissCreditError();
-          }
+      {/* Guidance text */}
+      <Box
+        sx={{
+          mt: 3,
+          mb: 3,
+          p: 2.5,
+          borderRadius: `${brand.borderRadius}px`,
+          bgcolor:
+            theme.palette.mode === "light"
+              ? "rgba(0, 0, 0, 0.02)"
+              : "rgba(255, 255, 255, 0.02)",
+          border: `1px solid ${theme.palette.divider}`,
         }}
-        creditError={
-          creditError
-            ? ({
-                ...creditError,
-                scriptId: creditError.scriptId || "",
-                versionId: creditError.versionId || "",
-                route: creditError.route || "",
-                note: creditError.note || "",
-              } as CreditErrorResponse)
-            : undefined
-        }
-        onRetry={handleCreditRetry}
-      />
+      >
+        <Typography
+          variant="subtitle2"
+          sx={{
+            color: "text.primary",
+            fontFamily: brand.fonts.heading,
+            fontWeight: 600,
+            mb: 1,
+          }}
+        >
+          Enter Your Script
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            fontFamily: brand.fonts.body,
+            lineHeight: 1.6,
+          }}
+        >
+          Paste or type your script below. Once submitted, you'll be able to
+          configure URLs, processing options, and quality settings before
+          generating your video.
+        </Typography>
+      </Box>
+
+      {/* Script input */}
+      <Box sx={{ mb: 4 }}>
+        <ScriptInput value={script} onChange={setScript} />
+      </Box>
+
+      {/* Action buttons */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 2,
+          mt: 3,
+        }}
+      >
+        <Box
+          component="button"
+          onClick={onClose}
+          sx={{
+            px: 3,
+            py: 1.5,
+            borderRadius: `${brand.borderRadius}px`,
+            border: `1px solid ${theme.palette.divider}`,
+            bgcolor: "transparent",
+            color: "text.primary",
+            fontFamily: brand.fonts.body,
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            cursor: "pointer",
+            transition: theme.transitions.create(
+              ["background-color", "border-color"],
+              {
+                duration: theme.transitions.duration.short,
+              }
+            ),
+            "&:hover": {
+              bgcolor: theme.palette.action.hover,
+              borderColor: theme.palette.primary.main,
+            },
+          }}
+        >
+          Cancel
+        </Box>
+
+        <Box
+          component="button"
+          onClick={handleScriptNext}
+          disabled={!script.trim()}
+          sx={{
+            px: 3,
+            py: 1.5,
+            borderRadius: `${brand.borderRadius}px`,
+            border: "none",
+            bgcolor: "primary.main",
+            color: "primary.contrastText",
+            fontFamily: brand.fonts.body,
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            cursor: "pointer",
+            transition: theme.transitions.create(
+              ["background-color", "transform"],
+              {
+                duration: theme.transitions.duration.short,
+              }
+            ),
+            "&:hover:not(:disabled)": {
+              bgcolor: "primary.dark",
+              transform: "translateY(-1px)",
+            },
+            "&:disabled": {
+              cursor: "not-allowed",
+              opacity: 0.5,
+              bgcolor: "action.disabledBackground",
+              color: "action.disabled",
+            },
+          }}
+        >
+          Continue to Settings
+        </Box>
+      </Box>
     </Box>
   );
 };
