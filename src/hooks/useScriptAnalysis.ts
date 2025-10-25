@@ -13,6 +13,12 @@ export interface AnalysisParams {
   aspectRatio?: AspectRatio;
   pauseBeforeSettings?: string[];
   modelTiers?: ModelTierConfig;
+  urls?: Array<{
+    type: string;
+    url: string;
+    label?: string;
+    customTypeLabel?: string;
+  }>;
 }
 
 export interface AnalysisOptions {
@@ -144,7 +150,6 @@ export const useScriptAnalysisCore = () => {
       scriptContent,
       title = "PlaceHolder Title",
       description = "PlaceHolder Description",
-      urls = []
     } = options;
 
     const {
@@ -155,9 +160,9 @@ export const useScriptAnalysisCore = () => {
         image: 4, // Default to ULTRA
         audio: 4, // Default to ULTRA  
         video: 4  // Default to ULTRA
-      }
+      },
     } = params;
-
+    const urls = params.urls || options.urls || [];
     setIsAnalyzing(true);
     setError(null);
     setCreditError(null);
