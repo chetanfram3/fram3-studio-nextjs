@@ -44,6 +44,8 @@ import {
 } from "@/hooks/useScriptAnalysis";
 import CreditErrorDisplay from "@/components/common/CreditErrorDisplay";
 import logger from "@/utils/logger";
+import { UrlEntry } from "@/types/urlManagerTypes";
+import { convertToPayload } from "@/utils/urlValidationUtils";
 
 // ==========================================
 // KEYFRAME ANIMATIONS
@@ -76,6 +78,7 @@ interface VideoProgressIndicatorProps {
   aspectRatio?: AspectRatio;
   pauseBeforeSettings?: string[];
   modelTiers?: ModelTierConfig;
+  urls?: UrlEntry[];
   genScriptId?: string;
   currentVersionNumber?: number;
 }
@@ -117,6 +120,7 @@ function VideoProgressIndicator({
   aspectRatio = "16:9",
   pauseBeforeSettings = [],
   modelTiers = { image: 4, audio: 4, video: 4 },
+  urls = [],
   genScriptId,
   currentVersionNumber,
 }: VideoProgressIndicatorProps) {
@@ -277,6 +281,7 @@ function VideoProgressIndicator({
       aspectRatio,
       pauseBeforeSettings,
       modelTiers,
+      urls: convertToPayload(urls),
     };
 
     // Store for retry
@@ -318,6 +323,7 @@ function VideoProgressIndicator({
     aspectRatio,
     pauseBeforeSettings,
     modelTiers,
+    urls,
     phases.length,
     analyzeScriptCore,
     router,
@@ -342,7 +348,14 @@ function VideoProgressIndicator({
       handleAnalyzeScript();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, scriptContent, processingMode, aspectRatio, pauseBeforeSettings]);
+  }, [
+    open,
+    processingMode,
+    aspectRatio,
+    pauseBeforeSettings,
+    modelTiers,
+    urls,
+  ]);
 
   useEffect(() => {
     if (error) {
@@ -636,12 +649,14 @@ export function VideoGeneratorWithMode({
   open,
   onClose,
   scriptContent,
+  urls = [],
   genScriptId,
   currentVersionNumber,
 }: {
   open: boolean;
   onClose: () => void;
   scriptContent: string;
+  urls?: UrlEntry[];
   genScriptId?: string;
   currentVersionNumber?: number;
 }) {
@@ -806,6 +821,7 @@ export function VideoGeneratorWithMode({
           aspectRatio={aspectRatio}
           pauseBeforeSettings={pauseBeforeSettings}
           modelTiers={modelTiers}
+          urls={urls}
           genScriptId={genScriptId}
           currentVersionNumber={currentVersionNumber}
         />
