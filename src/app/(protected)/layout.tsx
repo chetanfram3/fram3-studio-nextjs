@@ -11,14 +11,22 @@ import { useNotificationStore } from "@/store/notificationStore";
 import logger from "@/utils/logger";
 import ImpersonationBanner from "@/components/admin/ImpersonationBanner";
 import ContainerWidthControl from "@/components/layout/ContainerWidthControl";
+import { useAuthStore } from "@/store/authStore";
 
 export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { user, profileLoaded } = useAuthStore();
   // Initialize FCM when user is authenticated
   useEffect(() => {
+    // Wait for auth to be ready
+    if (!user || !profileLoaded) {
+      logger.debug("Skipping FCM - user not ready");
+      return;
+    }
+
     const setupFCM = async () => {
       try {
         await initializeFCM();
@@ -29,7 +37,7 @@ export default function ProtectedLayout({
     };
 
     setupFCM();
-  }, []);
+  }, [user, profileLoaded]);
 
   // Register service worker and listen for background messages
   useEffect(() => {

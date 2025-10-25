@@ -18,6 +18,7 @@ import { getCurrentBrand } from "@/config/brandConfig";
 import { ClientLayoutWrapper } from "@/components/layout/ClientLayoutWrapper";
 import { ToastProvider } from "@/providers/ToastProvider";
 import { AuthInitializer } from "@/components/auth/AuthInitializer";
+import SignInWizardProvider from "@/components/auth/signInWizard/SignInWizardProvider";
 
 // Get current brand for metadata and HTML attributes
 const brand = getCurrentBrand();
@@ -107,9 +108,11 @@ export default function RootLayout({
           <AppRouterCacheProvider>
             <ThemeProvider>
               <QueryProvider>
-                <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
-                <ToastProvider />
                 <AuthInitializer />
+                <SignInWizardProvider>
+                  <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+                  <ToastProvider />
+                </SignInWizardProvider>
               </QueryProvider>
             </ThemeProvider>
           </AppRouterCacheProvider>

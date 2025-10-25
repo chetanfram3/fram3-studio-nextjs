@@ -81,7 +81,15 @@ export async function getFCMToken(): Promise<string | null> {
  */
 async function saveFCMTokenToFirestore(token: string): Promise<void> {
     try {
+        // 🔒 CRITICAL: Check if auth is initialized
+        if (!auth) {
+            logger.warn('Firebase Auth not initialized, skipping FCM token save');
+            return;
+        }
+
         const user = auth.currentUser;
+
+        // 🔒 CRITICAL: Check if user exists
         if (!user) {
             logger.warn('No authenticated user, cannot save FCM token');
             return;
@@ -108,6 +116,8 @@ async function saveFCMTokenToFirestore(token: string): Promise<void> {
         logger.debug('✅ FCM token saved to Firestore successfully');
     } catch (error) {
         logger.error('❌ Error saving FCM token to Firestore:', error);
+        // ✅ FIX: Don't throw - just log and continue
+        // This prevents the entire app from breaking if FCM fails
     }
 }
 
@@ -227,12 +237,18 @@ export async function initializeFCM(): Promise<void> {
 export async function deleteFCMToken(): Promise<void> {
     try {
         const { fcmToken } = useNotificationStore.getState();
+
+        // 🔒 CRITICAL: Check if auth is initialized
+        if (!auth) {
+            logger.warn('Firebase Auth not initialized, skipping FCM token deletion');
+            return;
+        }
+
         const user = auth.currentUser;
 
         if (fcmToken && user) {
             logger.debug('Deleting FCM token from Firestore');
 
-            // Mark token as deleted in Firestore
             const tokenDoc = doc(db, 'users', user.uid, 'fcmTokens', fcmToken);
             await setDoc(tokenDoc, {
                 deleted: true,
@@ -245,5 +261,6 @@ export async function deleteFCMToken(): Promise<void> {
         }
     } catch (error) {
         logger.error('❌ Error deleting FCM token:', error);
+        // Don't throw - just log
     }
 }

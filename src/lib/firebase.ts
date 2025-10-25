@@ -159,21 +159,10 @@ if (typeof window !== 'undefined') {
             authStore.setProfileLoaded(true);
             authStore.setError(null);
           } else {
-            console.error('Auth state change: No profile found for authenticated user');
-            authStore.setError('User profile not found');
-            authStore.setUser(null);
+            logger.warn('Auth state change: No profile found - triggering wizard');
+            authStore.setUser(user);
             authStore.setProfileLoaded(false);
-            Cookies.remove('auth_token', { domain: cookieDomain });
-            localStorage.removeItem('auth_token_expiry');
-
-            // Clear refresh interval
-            if (tokenRefreshInterval) {
-              clearInterval(tokenRefreshInterval);
-              tokenRefreshInterval = null;
-            }
-
-            // Force sign out if no profile exists
-            await auth.signOut();
+            authStore.setError(null);
           }
         } catch (err) {
           console.error('Auth state change error:', err);
