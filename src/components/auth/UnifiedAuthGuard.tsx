@@ -324,7 +324,7 @@ function checkAccess(
 
     case "authenticated":
       // Must have user account and be enabled
-      return !!user && isEnabled;
+      return !!user;
 
     case "admin":
       // Must be admin or superadmin AND enabled
